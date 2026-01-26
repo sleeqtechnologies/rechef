@@ -1,0 +1,363 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+
+import '../constants/app_spacing.dart';
+
+class CustomBottomNavBar extends StatefulWidget {
+  final int currentIndex;
+  final Function(int) onTap;
+  final VoidCallback? onSocialMediaTap;
+  final VoidCallback? onCameraTap;
+  final Color accentColor;
+  final ValueChanged<bool>? onMenuStateChanged;
+
+  const CustomBottomNavBar({
+    super.key,
+    required this.currentIndex,
+    required this.onTap,
+    this.onSocialMediaTap,
+    this.onCameraTap,
+    this.accentColor = const Color(0xFFFF4F63),
+    this.onMenuStateChanged,
+  });
+
+  @override
+  State<CustomBottomNavBar> createState() => CustomBottomNavBarState();
+}
+
+class CustomBottomNavBarState extends State<CustomBottomNavBar>
+    with SingleTickerProviderStateMixin {
+  bool _isExpanded = false;
+  late AnimationController _animationController;
+  late Animation<double> _expandAnimation;
+  late Animation<double> _fadeAnimation;
+
+  static const double _expandedWidth = 220.0;
+  static const double _expandedHeight = 140.0;
+  static const double _collapsedSize = 56.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+
+    _expandAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.3, 1.0, curve: Curves.easeIn),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _toggleExpanded() {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _isExpanded = !_isExpanded;
+      if (_isExpanded) {
+        _animationController.forward();
+      } else {
+        _animationController.reverse();
+      }
+      widget.onMenuStateChanged?.call(_isExpanded);
+    });
+  }
+
+  void closeMenu() {
+    if (_isExpanded) {
+      _toggleExpanded();
+    }
+  }
+
+  void _handleOptionTap(VoidCallback? callback) {
+    HapticFeedback.selectionClick();
+    _toggleExpanded();
+    callback?.call();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final unselectedColor = theme.colorScheme.onSurface.withOpacity(0.6);
+    final selectedColor = theme.colorScheme.onSurface;
+
+    return SafeArea(
+      child: Padding(
+        padding: AppSpacing.bottomNavPadding,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: Stack(
+                    children: [
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        left: _getIndicatorPosition(widget.currentIndex),
+                        top: 0,
+                        child: Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(50),
+                          ),
+                        ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildIconContainer(
+                            context: context,
+                            index: 0,
+                            iconPath: 'assets/icons/recipe.svg',
+                            isSelected: widget.currentIndex == 0,
+                            selectedColor: selectedColor,
+                            unselectedColor: unselectedColor,
+                          ),
+                          const SizedBox(width: 16),
+                          _buildIconContainer(
+                            context: context,
+                            index: 1,
+                            iconPath: 'assets/icons/pantry.svg',
+                            isSelected: widget.currentIndex == 1,
+                            selectedColor: selectedColor,
+                            unselectedColor: unselectedColor,
+                          ),
+                          const SizedBox(width: 16),
+                          _buildIconContainer(
+                            context: context,
+                            index: 2,
+                            iconPath: 'assets/icons/cart.svg',
+                            isSelected: widget.currentIndex == 2,
+                            selectedColor: selectedColor,
+                            unselectedColor: unselectedColor,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                // Placeholder to maintain layout space for the action button
+                SizedBox(width: _collapsedSize, height: _collapsedSize),
+              ],
+            ),
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: AnimatedBuilder(
+                animation: _animationController,
+                builder: (context, child) {
+                  final width =
+                      _collapsedSize +
+                      (_expandedWidth - _collapsedSize) *
+                          _expandAnimation.value;
+                  final height =
+                      _collapsedSize +
+                      (_expandedHeight - _collapsedSize) *
+                          _expandAnimation.value;
+
+                  return GestureDetector(
+                    onTap: _toggleExpanded,
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      width: width,
+                      height: height,
+                      decoration: BoxDecoration(
+                        color: widget.accentColor,
+                        borderRadius: BorderRadius.circular(
+                          _collapsedSize / 2 +
+                              (35 - _collapsedSize / 2) *
+                                  _expandAnimation.value,
+                        ),
+                      ),
+                      child: Stack(
+                        children: [
+                          // Plus icon (fades out when expanding)
+                          Positioned.fill(
+                            child: Opacity(
+                              opacity: 1 - _expandAnimation.value,
+                              child: Center(
+                                child: SvgPicture.asset(
+                                  'assets/icons/plus.svg',
+                                  width: 24,
+                                  height: 24,
+                                  colorFilter: const ColorFilter.mode(
+                                    Colors.white,
+                                    BlendMode.srcIn,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Expanded menu content
+                          if (_expandAnimation.value > 0)
+                            Opacity(
+                              opacity: _fadeAnimation.value,
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildMenuOption(
+                                      title: 'Social Media / Blog',
+                                      subtitle: 'Enter URL Of Recipe',
+                                      iconPath: 'assets/icons/keyboard.svg',
+                                      onTap: () => _handleOptionTap(
+                                        widget.onSocialMediaTap,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    _buildMenuOption(
+                                      title: 'Camera',
+                                      subtitle: 'Take Picture Of Recipe',
+                                      iconPath: 'assets/icons/camera.svg',
+                                      onTap: () =>
+                                          _handleOptionTap(widget.onCameraTap),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuOption({
+    required String title,
+    required String subtitle,
+    required String iconPath,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: SvgPicture.asset(
+              iconPath,
+              width: 18,
+              height: 18,
+              colorFilter: ColorFilter.mode(
+                Colors.white.withOpacity(0.9),
+                BlendMode.srcIn,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIconContainer({
+    required BuildContext context,
+    required int index,
+    required String iconPath,
+    required bool isSelected,
+    required Color selectedColor,
+    required Color unselectedColor,
+  }) {
+    final targetColor = isSelected ? selectedColor : unselectedColor;
+    final startColor = isSelected ? unselectedColor : selectedColor;
+
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        widget.onTap(index);
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 56,
+        height: 56,
+        padding: const EdgeInsets.all(8),
+        alignment: Alignment.center,
+        child: TweenAnimationBuilder<Color?>(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          tween:
+              ColorTween(begin: startColor, end: targetColor) as Tween<Color?>,
+          builder: (context, color, child) {
+            return SvgPicture.asset(
+              iconPath,
+              width: 24,
+              height: 24,
+              colorFilter: ColorFilter.mode(
+                color ?? targetColor,
+                BlendMode.srcIn,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  double _getIndicatorPosition(int index) {
+    return index * (56 + 16).toDouble();
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "889706711750",
+    "project_id": "rechef-7ee76",
+    "storage_bucket": "rechef-7ee76.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:889706711750:android:5d3bb00c36dfbd4af0a5c7",
+        "android_client_info": {
+          "package_name": "com.rechef.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "889706711750-fal61jertrsg6q91o14k8j2kne4o5f0i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBjibWHbopYJaqTqKc9b8RY3TXoD1DKWfI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "889706711750-fal61jertrsg6q91o14k8j2kne4o5f0i.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "889706711750-4s97id07edh5e9is8o90lqtiip7h2j7u.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.rechef.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

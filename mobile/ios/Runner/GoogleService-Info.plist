@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>889706711750-4s97id07edh5e9is8o90lqtiip7h2j7u.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.889706711750-4s97id07edh5e9is8o90lqtiip7h2j7u</string>
+	<key>API_KEY</key>
+	<string>AIzaSyD5SkSU5Y_A08Tf3mM48TpddSwekDJDuxc</string>
+	<key>GCM_SENDER_ID</key>
+	<string>889706711750</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.rechef.app</string>
+	<key>PROJECT_ID</key>
+	<string>rechef-7ee76</string>
+	<key>STORAGE_BUCKET</key>
+	<string>rechef-7ee76.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:889706711750:ios:ec0107d4ecb71202f0a5c7</string>
+</dict>
+</plist>
