@@ -1,12 +1,26 @@
 {
   "folders": [
-    {
-      "path": "./api",
-      "name": "api",
-    },
-    {
-      "path": "./mobile",
-      "name": "mobile",
-    },
+    { "path": ".", "name": "root" },
+    { "path": "./api", "name": "api" },
+    { "path": "./mobile", "name": "mobile" },
   ],
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "api-debugger",
+        "skipFiles": ["<node_internals>/**"],
+        "console": "integratedTerminal",
+        "localRoot": "${workspaceFolder}/api",
+        "runtimeExecutable": "pnpm",
+        "runtimeArgs": ["dev"],
+        "presentation": {
+          "group": "",
+          "order": 1,
+        },
+      },
+    ],
+  },
 }

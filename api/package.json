@@ -12,13 +12,22 @@
   "license": "ISC",
   "packageManager": "pnpm@10.23.0",
   "dependencies": {
+    "@distube/ytdl-core": "^4.16.12",
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@tobyg74/tiktok-api-dl": "^1.3.7",
+    "@types/cheerio": "^1.0.0",
+    "cheerio": "^1.2.0",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
     "envalid": "^8.1.1",
     "express": "^5.2.1",
+    "fluent-ffmpeg": "^2.1.3",
+    "openai": "^6.16.0",
     "pg": "^8.17.2",
-    "winston": "^3.19.0"
+    "winston": "^3.19.0",
+    "youtube-transcript": "^1.2.1",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@epegzz/winston-dev-console": "^1.3.4",

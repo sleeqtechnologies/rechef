@@ -7,6 +7,7 @@ const env = cleanEnv(process.env, {
   PORT: num({ default: 1234 }),
   NODE_ENV: str({ choices: ["development", "production"] }),
   DATABASE_URL: str(),
+  OPENAI_API_KEY: str(),
 });
 
 export { env };
