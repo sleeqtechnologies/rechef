@@ -1,6 +1,6 @@
 import { YoutubeTranscript } from "youtube-transcript";
 import ytdl from "@distube/ytdl-core";
-import { logger } from "../../../../logger";
+import { logger } from "../../logger";
 
 interface YouTubeMetadata {
   title: string;

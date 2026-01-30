@@ -3,7 +3,7 @@ import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
-import { logger } from "../../../../logger";
+import { logger } from "../../logger";
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
@@ -21,7 +21,7 @@ interface FrameExtractionOptions {
 
 async function downloadVideo(
   videoUrl: string,
-  outputPath: string
+  outputPath: string,
 ): Promise<void> {
   const response = await fetch(videoUrl);
 
@@ -30,7 +30,7 @@ async function downloadVideo(
   }
 
   const buffer = await response.arrayBuffer();
-  fs.writeFileSync(outputPath, Buffer.from(buffer));
+  fs.writeFileSync(outputPath, new Uint8Array(buffer));
 }
 
 function getVideoDuration(videoPath: string): Promise<number> {
@@ -47,13 +47,9 @@ function getVideoDuration(videoPath: string): Promise<number> {
 
 async function extractFramesAtIntervals(
   videoPath: string,
-  options: FrameExtractionOptions = {}
+  options: FrameExtractionOptions = {},
 ): Promise<ExtractedFrame[]> {
-  const {
-    intervalSeconds = 3,
-    maxFrames = 20,
-    outputFormat = "jpg",
-  } = options;
+  const { intervalSeconds = 3, maxFrames = 20, outputFormat = "jpg" } = options;
 
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "frames-"));
   const frames: ExtractedFrame[] = [];
@@ -62,7 +58,7 @@ async function extractFramesAtIntervals(
     const duration = await getVideoDuration(videoPath);
     const frameCount = Math.min(
       Math.floor(duration / intervalSeconds),
-      maxFrames
+      maxFrames,
     );
 
     const extractPromises: Promise<ExtractedFrame>[] = [];
@@ -75,7 +71,7 @@ async function extractFramesAtIntervals(
         extractSingleFrame(videoPath, timestamp, outputPath).then(() => ({
           path: outputPath,
           timestamp,
-        }))
+        })),
       );
     }
 
@@ -93,7 +89,7 @@ async function extractFramesAtIntervals(
 function extractSingleFrame(
   videoPath: string,
   timestampSeconds: number,
-  outputPath: string
+  outputPath: string,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     ffmpeg(videoPath)
@@ -116,7 +112,7 @@ function frameToBase64(framePath: string): string {
 
 async function extractFramesAsBase64(
   videoPath: string,
-  options: FrameExtractionOptions = {}
+  options: FrameExtractionOptions = {},
 ): Promise<{ base64: string; timestamp: number }[]> {
   const frames = await extractFramesAtIntervals(videoPath, options);
 
@@ -135,7 +131,7 @@ async function extractFramesAsBase64(
 
 async function extractFramesFromUrl(
   videoUrl: string,
-  options: FrameExtractionOptions = {}
+  options: FrameExtractionOptions = {},
 ): Promise<{ base64: string; timestamp: number }[]> {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "video-"));
   const videoPath = path.join(tempDir, "video.mp4");

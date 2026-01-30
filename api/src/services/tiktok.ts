@@ -1,5 +1,5 @@
 import TiktokAPI from "@tobyg74/tiktok-api-dl";
-import { logger } from "../../../../logger";
+import { logger } from "../../logger";
 
 interface TikTokMetadata {
   title: string;
@@ -55,9 +55,4 @@ function isLongTikTokVideo(durationSeconds: number): boolean {
   return durationSeconds > 120;
 }
 
-export {
-  parseTikTokContent,
-  isLongTikTokVideo,
-  TikTokContent,
-  TikTokMetadata,
-};
+export { parseTikTokContent, isLongTikTokVideo, TikTokContent, TikTokMetadata };

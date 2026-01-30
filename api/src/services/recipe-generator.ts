@@ -1,12 +1,10 @@
-import OpenAI from "openai";
-import { env } from "../../../../env_config";
-import { logger } from "../../../../logger";
-import { RecipeSchema } from "./website.service";
-import { FrameWithFood } from "./food-detection.service";
-
-const openai = new OpenAI({
-  apiKey: env.OPENAI_API_KEY,
-});
+import { generateObject, type ModelMessage, type UserContent } from "ai";
+import { openai } from "@ai-sdk/openai";
+import { z } from "zod";
+import { logger } from "../../logger";
+import { RecipeSchema } from "./website";
+import { FrameWithFood } from "./food-detection";
+import { searchFoodImages, selectBestImageUrl } from "./image-search";
 
 interface GeneratedRecipe {
   name: string;
@@ -16,6 +14,7 @@ interface GeneratedRecipe {
   servings?: number;
   prepTimeMinutes?: number;
   cookTimeMinutes?: number;
+  imageUrl?: string;
 }
 
 interface Ingredient {
@@ -37,10 +36,28 @@ interface RecipeGenerationInput {
   sourceDescription?: string;
 }
 
+const ingredientSchema = z.object({
+  name: z.string().default(""),
+  quantity: z.string().default(""),
+  unit: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+const generatedRecipeSchema = z.object({
+  name: z.string().default("Untitled Recipe"),
+  description: z.string().default(""),
+  ingredients: z.array(ingredientSchema).default([]),
+  instructions: z.array(z.string()).default([]),
+  servings: z.number().nullable().optional(),
+  prepTimeMinutes: z.number().nullable().optional(),
+  cookTimeMinutes: z.number().nullable().optional(),
+  imageUrl: z.string().url().optional(),
+});
+
 async function generateRecipeFromContent(
-  input: RecipeGenerationInput
+  input: RecipeGenerationInput,
 ): Promise<GeneratedRecipe> {
-  const messages: OpenAI.ChatCompletionMessageParam[] = [
+  const messages: ModelMessage[] = [
     {
       role: "system",
       content: `You are a professional chef and recipe writer. Your task is to analyze the provided content (which may include video transcripts, images of food, or website content) and generate a complete, accurate recipe.
@@ -72,7 +89,7 @@ Guidelines:
     },
   ];
 
-  const userContent: OpenAI.ChatCompletionContentPart[] = [];
+  const userContent: UserContent = [];
 
   let textPrompt = "Generate a recipe based on the following content:\n\n";
 
@@ -104,50 +121,55 @@ Guidelines:
     const framesToInclude = input.foodFrames.slice(0, 5);
     for (const frame of framesToInclude) {
       userContent.push({
-        type: "image_url",
-        image_url: {
-          url: frame.base64,
-          detail: "low",
-        },
+        type: "image",
+        image: frame.base64,
       });
     }
   }
 
   if (input.imageBase64) {
     userContent.push({
-      type: "image_url",
-      image_url: {
-        url: input.imageBase64,
-        detail: "high",
-      },
+      type: "image",
+      image: input.imageBase64,
     });
   }
 
   messages.push({ role: "user", content: userContent });
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+    const { object } = await generateObject({
+      model: openai("gpt-5.2"),
+      schema: generatedRecipeSchema,
       messages,
-      max_tokens: 2000,
-      response_format: { type: "json_object" },
     });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error("No response from OpenAI");
-    }
+    const name = object.name || "Untitled Recipe";
+    const description = object.description || "";
+    const ingredients = object.ingredients || [];
 
-    const recipe = JSON.parse(content) as GeneratedRecipe;
+    const ingredientTerms = ingredients
+      .map((ingredient) => ingredient.name)
+      .filter(Boolean)
+      .slice(0, 3)
+      .join(" ");
+
+    const searchQuery = [name, ingredientTerms].filter(Boolean).join(" ");
+    const candidateUrls = await searchFoodImages(`${searchQuery} food`);
+    const imageUrl = await selectBestImageUrl({
+      recipeName: name,
+      description,
+      candidateUrls,
+    });
 
     return {
-      name: recipe.name || "Untitled Recipe",
-      description: recipe.description || "",
-      ingredients: recipe.ingredients || [],
-      instructions: recipe.instructions || [],
-      servings: recipe.servings,
-      prepTimeMinutes: recipe.prepTimeMinutes,
-      cookTimeMinutes: recipe.cookTimeMinutes,
+      name,
+      description,
+      ingredients,
+      instructions: object.instructions || [],
+      servings: object.servings ?? undefined,
+      prepTimeMinutes: object.prepTimeMinutes ?? undefined,
+      cookTimeMinutes: object.cookTimeMinutes ?? undefined,
+      imageUrl,
     };
   } catch (error) {
     logger.error("Error generating recipe:", error);
@@ -156,21 +178,21 @@ Guidelines:
 }
 
 async function generateRecipeFromImage(
-  imageBase64: string
+  imageBase64: string,
 ): Promise<GeneratedRecipe> {
   return generateRecipeFromContent({ imageBase64 });
 }
 
 async function generateRecipeFromTranscript(
   transcript: string,
-  foodFrames?: FrameWithFood[]
+  foodFrames?: FrameWithFood[],
 ): Promise<GeneratedRecipe> {
   return generateRecipeFromContent({ transcript, foodFrames });
 }
 
 async function generateRecipeFromWebsite(
   mainContent: string,
-  recipeSchema?: RecipeSchema
+  recipeSchema?: RecipeSchema,
 ): Promise<GeneratedRecipe> {
   return generateRecipeFromContent({
     websiteContent: { mainContent, recipeSchema },

@@ -1,10 +1,7 @@
-import OpenAI from "openai";
-import { env } from "../../../../env_config";
-import { logger } from "../../../../logger";
-
-const openai = new OpenAI({
-  apiKey: env.OPENAI_API_KEY,
-});
+import { generateObject } from "ai";
+import { openai } from "@ai-sdk/openai";
+import { z } from "zod";
+import { logger } from "../../logger";
 
 interface FrameWithFood {
   base64: string;
@@ -19,12 +16,19 @@ interface FoodDetectionResult {
   confidence: "high" | "medium" | "low";
 }
 
+const foodDetectionSchema = z.object({
+  containsFood: z.boolean().default(false),
+  description: z.string().optional(),
+  confidence: z.enum(["high", "medium", "low"]).default("medium"),
+});
+
 async function detectFoodInFrame(
-  imageBase64: string
+  imageBase64: string,
 ): Promise<FoodDetectionResult> {
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+    const { object } = await generateObject({
+      model: openai("gpt-5.2"),
+      schema: foodDetectionSchema,
       messages: [
         {
           role: "user",
@@ -51,29 +55,18 @@ Set containsFood to false for:
 - Non-food related content`,
             },
             {
-              type: "image_url",
-              image_url: {
-                url: imageBase64,
-                detail: "low",
-              },
+              type: "image",
+              image: imageBase64,
             },
           ],
         },
       ],
-      max_tokens: 200,
-      response_format: { type: "json_object" },
     });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      return { containsFood: false, confidence: "low" };
-    }
-
-    const result = JSON.parse(content);
     return {
-      containsFood: result.containsFood === true,
-      description: result.description,
-      confidence: result.confidence || "medium",
+      containsFood: object.containsFood === true,
+      description: object.description,
+      confidence: object.confidence || "medium",
     };
   } catch (error) {
     logger.error("Error detecting food in frame:", error);
@@ -82,7 +75,7 @@ Set containsFood to false for:
 }
 
 async function filterFoodFrames(
-  frames: { base64: string; timestamp: number }[]
+  frames: { base64: string; timestamp: number }[],
 ): Promise<FrameWithFood[]> {
   const results: FrameWithFood[] = [];
 
@@ -108,7 +101,7 @@ async function filterFoodFrames(
 
 async function selectBestFoodFrames(
   frames: FrameWithFood[],
-  maxFrames: number = 5
+  maxFrames: number = 5,
 ): Promise<FrameWithFood[]> {
   if (frames.length <= maxFrames) {
     return frames;
@@ -117,7 +110,11 @@ async function selectBestFoodFrames(
   const interval = Math.floor(frames.length / maxFrames);
   const selectedFrames: FrameWithFood[] = [];
 
-  for (let i = 0; i < frames.length && selectedFrames.length < maxFrames; i += interval) {
+  for (
+    let i = 0;
+    i < frames.length && selectedFrames.length < maxFrames;
+    i += interval
+  ) {
     selectedFrames.push(frames[i]);
   }
 
@@ -125,7 +122,7 @@ async function selectBestFoodFrames(
 }
 
 async function analyzeImageForFood(
-  imageBase64: string
+  imageBase64: string,
 ): Promise<{ containsFood: boolean; description: string }> {
   const result = await detectFoodInFrame(imageBase64);
   return {

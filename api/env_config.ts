@@ -9,6 +9,7 @@ const env = cleanEnv(process.env, {
   DATABASE_URL: str(),
   OPENAI_API_KEY: str(),
   SERVICE_ACCT_KEY: str(),
+  UNSPLASH_ACCESS_KEY: str(),
 });
 
 export { env };

@@ -14,6 +14,7 @@ const recipeTable = pgTable("recipes", {
   servings: integer("servings"),
   prepTimeMinutes: integer("prep_time_minutes"),
   cookTimeMinutes: integer("cook_time_minutes"),
+  imageUrl: text("image_url"),
   createdAt,
   updatedAt,
 });

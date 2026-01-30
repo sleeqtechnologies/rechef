@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "tsx watch ./app.ts"
+    "dev": "tsx watch ./app.ts",
+    "build": "tsc"
   },
   "keywords": [],
   "author": "",
@@ -24,7 +25,8 @@
     "express": "^5.2.1",
     "firebase-admin": "^13.6.0",
     "fluent-ffmpeg": "^2.1.3",
-    "openai": "^6.16.0",
+    "@ai-sdk/openai": "^2.0.0",
+    "ai": "^5.0.0",
     "pg": "^8.17.2",
     "postgres": "^3.4.8",
     "winston": "^3.19.0",

@@ -1,5 +1,5 @@
 import * as cheerio from "cheerio";
-import { logger } from "../../../../logger";
+import { logger } from "../../logger";
 
 interface RecipeSchema {
   name: string;
@@ -116,12 +116,14 @@ function normalizeImages(images: unknown): string[] {
   if (!images) return [];
   if (typeof images === "string") return [images];
   if (Array.isArray(images)) {
-    return images.map((img) => {
-      if (typeof img === "string") return img;
-      if (img && typeof img === "object" && "url" in img)
-        return String(img.url);
-      return "";
-    }).filter(Boolean);
+    return images
+      .map((img) => {
+        if (typeof img === "string") return img;
+        if (img && typeof img === "object" && "url" in img)
+          return String(img.url);
+        return "";
+      })
+      .filter(Boolean);
   }
   if (typeof images === "object" && images !== null && "url" in images) {
     return [String((images as Record<string, unknown>).url)];
@@ -143,23 +145,28 @@ function normalizeInstructions(instructions: unknown): string[] {
   if (typeof instructions === "string") return [instructions];
 
   if (Array.isArray(instructions)) {
-    return instructions.flatMap((instruction) => {
-      if (typeof instruction === "string") return instruction;
+    return instructions
+      .flatMap((instruction) => {
+        if (typeof instruction === "string") return instruction;
 
-      if (instruction && typeof instruction === "object") {
-        const obj = instruction as Record<string, unknown>;
+        if (instruction && typeof instruction === "object") {
+          const obj = instruction as Record<string, unknown>;
 
-        if (obj["@type"] === "HowToStep" && obj.text) {
-          return String(obj.text);
+          if (obj["@type"] === "HowToStep" && obj.text) {
+            return String(obj.text);
+          }
+
+          if (
+            obj["@type"] === "HowToSection" &&
+            Array.isArray(obj.itemListElement)
+          ) {
+            return normalizeInstructions(obj.itemListElement);
+          }
         }
 
-        if (obj["@type"] === "HowToSection" && Array.isArray(obj.itemListElement)) {
-          return normalizeInstructions(obj.itemListElement);
-        }
-      }
-
-      return [];
-    }).filter(Boolean);
+        return [];
+      })
+      .filter(Boolean);
   }
 
   return [];
@@ -226,11 +233,7 @@ function extractImages(html: string, baseUrl: string): string[] {
 }
 
 function cleanText(text: string): string {
-  return text
-    .replace(/\s+/g, " ")
-    .replace(/\n+/g, "\n")
-    .trim()
-    .slice(0, 10000);
+  return text.replace(/\s+/g, " ").replace(/\n+/g, "\n").trim().slice(0, 10000);
 }
 
 async function parseWebsiteContent(url: string): Promise<WebsiteContent> {
@@ -239,9 +242,7 @@ async function parseWebsiteContent(url: string): Promise<WebsiteContent> {
     const $ = cheerio.load(html);
 
     const title =
-      $('meta[property="og:title"]').attr("content") ||
-      $("title").text() ||
-      "";
+      $('meta[property="og:title"]').attr("content") || $("title").text() || "";
 
     const description =
       $('meta[property="og:description"]').attr("content") ||

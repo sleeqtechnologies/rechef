@@ -11,15 +11,7 @@ const parseContentSchema = z
 
 type ParseContentSchema = z.infer<typeof parseContentSchema>;
 
-const getJobStatusSchema = z.object({
-  jobId: z.string(),
-});
-
-type GetJobStatusSchema = z.infer<typeof getJobStatusSchema>;
-
 export {
   parseContentSchema,
   ParseContentSchema,
-  getJobStatusSchema,
-  GetJobStatusSchema,
 };

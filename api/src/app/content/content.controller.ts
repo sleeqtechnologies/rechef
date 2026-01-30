@@ -1,27 +1,19 @@
 import { logger } from "../../../logger";
 import { Request, Response } from "express";
-import { ParseContentSchema, GetJobStatusSchema } from "./content.validation";
-import { detectContentSource } from "./services/content-detector.service";
-import { parseYouTubeContent, isLongVideo } from "./services/youtube.service";
-import {
-  parseTikTokContent,
-  isLongTikTokVideo,
-} from "./services/tiktok.service";
-import { parseWebsiteContent } from "./services/website.service";
+import { ParseContentSchema } from "./content.validation";
+import { detectContentSource } from "../../services/content-detector";
+import { parseYouTubeContent } from "../../services/youtube";
+import { parseTikTokContent } from "../../services/tiktok";
+import { parseWebsiteContent } from "../../services/website";
 import {
   extractFramesFromUrl,
   downloadImageAsBase64,
-} from "./services/frame-extractor.service";
+} from "../../services/frame-extractor";
 import {
   filterFoodFrames,
   selectBestFoodFrames,
-} from "./services/food-detection.service";
-import { generateRecipeFromContent } from "./services/recipe-generator.service";
-import {
-  startAsyncJob,
-  getJobStatus,
-  shouldProcessAsync,
-} from "./services/job.service";
+} from "../../services/food-detection";
+import { generateRecipeFromContent } from "../../services/recipe-generator";
 
 const parseContent = async (
   req: Request<{}, {}, ParseContentSchema>,
@@ -37,17 +29,6 @@ const parseContent = async (
 
     if (!url) {
       return res.status(400).json({ error: "URL or image required" });
-    }
-
-    const isAsync = await shouldProcessAsync(url);
-
-    if (isAsync) {
-      const jobId = startAsyncJob(url);
-      return res.status(202).json({
-        jobId,
-        status: "processing",
-        message: "Content is being processed. Check job status for updates.",
-      });
     }
 
     const contentInfo = detectContentSource(url);
@@ -136,24 +117,4 @@ const parseContent = async (
   }
 };
 
-const checkJobStatus = async (
-  req: Request<GetJobStatusSchema>,
-  res: Response,
-) => {
-  try {
-    const { jobId } = req.params;
-
-    const status = getJobStatus(jobId);
-
-    if (!status) {
-      return res.status(404).json({ error: "Job not found" });
-    }
-
-    return res.status(200).json(status);
-  } catch (error) {
-    logger.error("Error checking job status:", error);
-    return res.status(500).json({ error: "Failed to check job status" });
-  }
-};
-
-export default { parseContent, checkJobStatus };
+export default { parseContent };
