@@ -11,6 +11,8 @@ class AuthRepository {
     : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
 
   final FirebaseAuth _firebaseAuth;
+  static const String _googleServerClientId =
+      '889706711750-fal61jertrsg6q91o14k8j2kne4o5f0i.apps.googleusercontent.com';
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   bool _googleSignInInitialized = false;
 
@@ -22,7 +24,7 @@ class AuthRepository {
     if (_googleSignInInitialized) return;
 
     try {
-      await _googleSignIn.initialize();
+      await _googleSignIn.initialize(serverClientId: _googleServerClientId);
       _googleSignIn.attemptLightweightAuthentication();
       _googleSignInInitialized = true;
     } catch (e) {

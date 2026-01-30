@@ -34,6 +34,7 @@
 				<key>CFBundleURLSchemes</key>
 				<array>
 					<string>com.rechef.app</string>
+					<string>com.googleusercontent.apps.889706711750-4s97id07edh5e9is8o90lqtiip7h2j7u</string>
 					<string>ShareMedia-$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 				</array>
 			</dict>
