@@ -36,6 +36,7 @@ class CustomBottomNavBarState extends State<CustomBottomNavBar>
   static const double _expandedWidth = 220.0;
   static const double _expandedHeight = 140.0;
   static const double _collapsedSize = 56.0;
+  static const double _pillOuterPadding = 8.0;
 
   @override
   void initState() {
@@ -106,7 +107,7 @@ class CustomBottomNavBarState extends State<CustomBottomNavBar>
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(_pillOuterPadding),
                   decoration: BoxDecoration(
                     color: Colors.grey[200],
                     borderRadius: BorderRadius.circular(50),
@@ -171,6 +172,9 @@ class CustomBottomNavBarState extends State<CustomBottomNavBar>
               child: AnimatedBuilder(
                 animation: _animationController,
                 builder: (context, child) {
+                  // Animate bottom padding: starts at _pillOuterPadding (centered), ends at 0 (aligned to nav bottom)
+                  final bottomPadding =
+                      _pillOuterPadding * (1 - _expandAnimation.value);
                   final width =
                       _collapsedSize +
                       (_expandedWidth - _collapsedSize) *
@@ -178,23 +182,27 @@ class CustomBottomNavBarState extends State<CustomBottomNavBar>
                   final height =
                       _collapsedSize +
                       (_expandedHeight - _collapsedSize) *
-                          _expandAnimation.value;
+                          _expandAnimation.value +
+                      _pillOuterPadding * _expandAnimation.value;
 
-                  return GestureDetector(
-                    onTap: _toggleExpanded,
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      width: width,
-                      height: height,
-                      decoration: BoxDecoration(
-                        color: widget.accentColor,
-                        borderRadius: BorderRadius.circular(
-                          _collapsedSize / 2 +
-                              (35 - _collapsedSize / 2) *
-                                  _expandAnimation.value,
+                  return Padding(
+                    padding: EdgeInsets.only(bottom: bottomPadding),
+                    child: GestureDetector(
+                      onTap: _toggleExpanded,
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        width: width,
+                        height: height,
+                        clipBehavior: Clip.hardEdge,
+                        decoration: BoxDecoration(
+                          color: widget.accentColor,
+                          borderRadius: BorderRadius.circular(
+                            _collapsedSize / 2 +
+                                (35 - _collapsedSize / 2) *
+                                    _expandAnimation.value,
+                          ),
                         ),
-                      ),
-                      child: Stack(
+                        child: Stack(
                         children: [
                           // Plus icon (fades out when expanding)
                           Positioned.fill(
@@ -215,35 +223,39 @@ class CustomBottomNavBarState extends State<CustomBottomNavBar>
                           ),
                           // Expanded menu content
                           if (_expandAnimation.value > 0)
-                            Opacity(
-                              opacity: _fadeAnimation.value,
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildMenuOption(
-                                      title: 'Social Media / Blog',
-                                      subtitle: 'Enter URL Of Recipe',
-                                      iconPath: 'assets/icons/keyboard.svg',
-                                      onTap: () => _handleOptionTap(
-                                        widget.onSocialMediaTap,
+                            Positioned.fill(
+                              child: Opacity(
+                                opacity: _fadeAnimation.value,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      _buildMenuOption(
+                                        title: 'Social Media / Blog',
+                                        subtitle: 'Enter URL Of Recipe',
+                                        iconPath: 'assets/icons/keyboard.svg',
+                                        onTap: () => _handleOptionTap(
+                                          widget.onSocialMediaTap,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    _buildMenuOption(
-                                      title: 'Camera',
-                                      subtitle: 'Take Picture Of Recipe',
-                                      iconPath: 'assets/icons/camera.svg',
-                                      onTap: () =>
-                                          _handleOptionTap(widget.onCameraTap),
-                                    ),
-                                  ],
+                                      const SizedBox(height: 12),
+                                      _buildMenuOption(
+                                        title: 'Camera',
+                                        subtitle: 'Take Picture Of Recipe',
+                                        iconPath: 'assets/icons/camera.svg',
+                                        onTap: () =>
+                                            _handleOptionTap(widget.onCameraTap),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   );
