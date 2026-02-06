@@ -5,7 +5,7 @@ import { env } from "../../env_config";
 import database from "./db";
 import schema from "./schema";
 
-const client = postgres(env.DATABASE_URL);
+const client = postgres(env.DATABASE_URL, { prepare: false });
 
 const drizzleClient = drizzle({ client, schema });
 

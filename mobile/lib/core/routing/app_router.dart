@@ -74,6 +74,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
+      // Recipe Import (for share extension and manual import) - no bottom bar
+      // Must be before /recipes/:id so it isn't matched as a param
+      GoRoute(
+        path: '/recipes/import',
+        name: 'recipe-import',
+        builder: (context, state) {
+          final url = state.uri.queryParameters['url'];
+          final imagePath = state.uri.queryParameters['image'];
+          return ImportRecipeScreen(
+            initialUrl: url,
+            initialImagePath: imagePath,
+          );
+        },
+      ),
+
       // Recipe Detail (no bottom bar)
       GoRoute(
         path: '/recipes/:id',
@@ -89,20 +104,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/camera',
         name: 'camera',
         builder: (context, state) => const CameraScreen(),
-      ),
-
-      // Recipe Import (for share extension and manual import) - no bottom bar
-      GoRoute(
-        path: '/recipes/import',
-        name: 'recipe-import',
-        builder: (context, state) {
-          final url = state.uri.queryParameters['url'];
-          final imagePath = state.uri.queryParameters['image'];
-          return ImportRecipeScreen(
-            initialUrl: url,
-            initialImagePath: imagePath,
-          );
-        },
       ),
 
       // Meal Planning - no bottom bar

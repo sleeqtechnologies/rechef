@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
+import '../domain/recipe.dart';
+import '../domain/ingredient.dart';
+import '../recipe_provider.dart';
 import 'demo_recipes.dart';
 
-class RecipeDetailScreen extends StatefulWidget {
+class RecipeDetailScreen extends ConsumerStatefulWidget {
   const RecipeDetailScreen({super.key, required this.recipeId});
 
   final String recipeId;
 
   @override
-  State<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
+  ConsumerState<RecipeDetailScreen> createState() =>
+      _RecipeDetailScreenState();
 }
 
-class _RecipeDetailScreenState extends State<RecipeDetailScreen>
+class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   late final ScrollController _scrollController;
@@ -33,12 +38,19 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen>
     super.dispose();
   }
 
+  Recipe _resolveRecipe() {
+    final fromProvider = ref.read(recipesProvider.notifier).byId(widget.recipeId);
+    if (fromProvider != null) return fromProvider;
+
+    final demo = DemoRecipes.byId(widget.recipeId);
+    return Recipe.fromDemo(demo);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final recipe = DemoRecipes.byId(widget.recipeId);
+    final recipe = _resolveRecipe();
     final screenWidth = MediaQuery.of(context).size.width;
     final topPadding = MediaQuery.of(context).padding.top;
-    // When the header image has collapsed into the toolbar.
     final collapseOffset = (screenWidth - kToolbarHeight - topPadding).clamp(
       0.0,
       double.infinity,
@@ -60,9 +72,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen>
             child: CustomScrollView(
               controller: _scrollController,
               slivers: [
-                // Adaptive app bar with image background
                 SliverAppBar(
-                  expandedHeight: screenWidth, // Square image
+                  expandedHeight: screenWidth,
                   pinned: true,
                   floating: false,
                   backgroundColor: Colors.transparent,
@@ -113,20 +124,26 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen>
                       children: [
                         Hero(
                           tag: 'recipe-image-${recipe.id}',
-                          child: Image.network(
-                            recipe.imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.grey.shade200,
-                                alignment: Alignment.center,
-                                child: const Icon(Icons.restaurant, size: 48),
-                              );
-                            },
-                          ),
+                          child: recipe.imageUrl != null
+                              ? Image.network(
+                                  recipe.imageUrl!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      color: Colors.grey.shade200,
+                                      alignment: Alignment.center,
+                                      child: const Icon(Icons.restaurant,
+                                          size: 48),
+                                    );
+                                  },
+                                )
+                              : Container(
+                                  color: Colors.grey.shade200,
+                                  alignment: Alignment.center,
+                                  child:
+                                      const Icon(Icons.restaurant, size: 48),
+                                ),
                         ),
-                        // When collapsed, add a subtle white scrim so buttons
-                        // remain visible over the white content below.
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 180),
                           curve: Curves.easeOut,
@@ -138,55 +155,59 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen>
                     ),
                   ),
                 ),
-
-                // Content
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Title
                         Text(
-                          recipe.title,
-                          style:
-                              Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.2,
-                                  ),
+                          recipe.name,
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                height: 1.2,
+                              ),
                         ),
-                        const SizedBox(height: 16),
-
-                        // Author info
-                        if (recipe.author != null) ...[
-                          _AuthorRow(author: recipe.author!),
-                          const SizedBox(height: 16),
+                        if (recipe.description.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            recipe.description,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: Colors.grey.shade600,
+                                  height: 1.4,
+                                ),
+                          ),
                         ],
-
-                        // Time and servings
+                        const SizedBox(height: 16),
                         Row(
                           children: [
-                            _MetaInfo(
-                              icon: Icons.access_time_outlined,
-                              label: '${recipe.minutes} min',
-                            ),
-                            const SizedBox(width: 20),
-                            _MetaInfo(
-                              icon: Icons.restaurant_outlined,
-                              label: '${recipe.servings} servings',
-                            ),
+                            if (recipe.totalMinutes > 0)
+                              _MetaInfo(
+                                icon: Icons.access_time_outlined,
+                                label: '${recipe.totalMinutes} min',
+                              ),
+                            if (recipe.totalMinutes > 0 &&
+                                recipe.servings != null)
+                              const SizedBox(width: 20),
+                            if (recipe.servings != null)
+                              _MetaInfo(
+                                icon: Icons.restaurant_outlined,
+                                label: '${recipe.servings} servings',
+                              ),
                           ],
                         ),
                         const SizedBox(height: 24),
-
-                        // Tab bar
                         _TabBarWidget(controller: _tabController),
                       ],
                     ),
                   ),
                 ),
-
-                // Tab content
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -200,14 +221,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen>
                     ),
                   ),
                 ),
-
-                // Spacer so content doesn't hide behind floating CTA.
                 const SliverToBoxAdapter(child: SizedBox(height: 120)),
               ],
             ),
           ),
-
-          // Floating CTA (no bottom bar/background)
           Positioned(
             left: 0,
             right: 0,
@@ -253,7 +270,6 @@ class _AppBarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Keep this small for performance: glass effects are expensive on large areas.
     return FakeGlass(
       shape: LiquidRoundedSuperellipse(borderRadius: 999),
       settings: LiquidGlassSettings(
@@ -269,62 +285,6 @@ class _AppBarButton extends StatelessWidget {
           padding: EdgeInsets.zero,
         ),
       ),
-    );
-  }
-}
-
-class _AuthorRow extends StatelessWidget {
-  const _AuthorRow({required this.author});
-
-  final RecipeAuthor author;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        // Avatar
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.grey.shade800,
-            shape: BoxShape.circle,
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            author.name.isNotEmpty ? author.name[0].toUpperCase() : '?',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        // Name and source
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                author.name,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-              if (author.sourceUrl != null)
-                Text(
-                  author.sourceUrl!,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey.shade600,
-                      ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }
@@ -403,7 +363,7 @@ class _TabBarWidget extends StatelessWidget {
 class _IngredientsTab extends StatelessWidget {
   const _IngredientsTab({required this.recipe});
 
-  final DemoRecipe recipe;
+  final Recipe recipe;
 
   @override
   Widget build(BuildContext context) {
@@ -413,7 +373,7 @@ class _IngredientsTab extends StatelessWidget {
       children: [
         const SizedBox(height: 8),
         Text(
-          'Ingredients – (${recipe.ingredientsInPantry} in Pantry)',
+          'Ingredients',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -446,36 +406,27 @@ class _IngredientsTab extends StatelessWidget {
 class _IngredientRow extends StatelessWidget {
   const _IngredientRow({required this.ingredient});
 
-  final RecipeIngredient ingredient;
+  final Ingredient ingredient;
 
   @override
   Widget build(BuildContext context) {
-    final checkedFill = const Color(0xFFF7B6C0);
-    final checkedIcon = const Color(0xFFE05A6B);
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
-          // Checkbox
           Container(
             width: 24,
             height: 24,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: ingredient.inPantry ? checkedFill : Colors.white,
+              color: Colors.white,
               border: Border.all(
-                color:
-                    ingredient.inPantry ? Colors.transparent : Colors.grey.shade300,
+                color: Colors.grey.shade300,
                 width: 1.5,
               ),
             ),
-            child: ingredient.inPantry
-                ? Icon(Icons.check, size: 16, color: checkedIcon)
-                : null,
           ),
           const SizedBox(width: 12),
-          // Name
           Expanded(
             child: Text(
               ingredient.name,
@@ -484,9 +435,8 @@ class _IngredientRow extends StatelessWidget {
                   ),
             ),
           ),
-          // Quantity
           Text(
-            ingredient.quantity,
+            ingredient.displayQuantity,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey.shade600,
                 ),
@@ -500,7 +450,7 @@ class _IngredientRow extends StatelessWidget {
 class _CookingTab extends StatelessWidget {
   const _CookingTab({required this.recipe});
 
-  final DemoRecipe recipe;
+  final Recipe recipe;
 
   @override
   Widget build(BuildContext context) {
@@ -516,10 +466,10 @@ class _CookingTab extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         ...List.generate(
-          recipe.steps.length,
+          recipe.instructions.length,
           (index) => _StepRow(
             stepNumber: index + 1,
-            text: recipe.steps[index],
+            text: recipe.instructions[index],
           ),
         ),
       ],

@@ -49,23 +49,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     }
   }
 
-  Future<void> _continueWithoutAccount() async {
-    setState(() {
-      _loadingButton = 'anonymous';
-      _error = null;
-    });
-
-    try {
-      await ref.read(authRepositoryProvider).signInAnonymously();
-    } catch (e) {
-      setState(() => _error = 'Anonymous sign-in failed: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _loadingButton = null);
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -190,26 +173,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                TextButton(
-                  onPressed: _loading ? null : _continueWithoutAccount,
-                  child: _loadingButton == 'anonymous'
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text(
-                          'Continue Without an Account',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
-                          ),
-                        ),
-                ),
               ],
             ),
           ),

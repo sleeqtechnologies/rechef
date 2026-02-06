@@ -1,4 +1,79 @@
-// TODO: Implement recipe model
+import 'ingredient.dart';
+import '../presentation/demo_recipes.dart';
+
 class Recipe {
-  // TODO: Add recipe properties
+  const Recipe({
+    required this.id,
+    required this.name,
+    this.description = '',
+    required this.ingredients,
+    required this.instructions,
+    this.servings,
+    this.prepTimeMinutes,
+    this.cookTimeMinutes,
+    this.imageUrl,
+  });
+
+  final String id;
+  final String name;
+  final String description;
+  final List<Ingredient> ingredients;
+  final List<String> instructions;
+  final int? servings;
+  final int? prepTimeMinutes;
+  final int? cookTimeMinutes;
+  final String? imageUrl;
+
+  int get totalMinutes => (prepTimeMinutes ?? 0) + (cookTimeMinutes ?? 0);
+
+  factory Recipe.fromJson(Map<String, dynamic> json) {
+    final ingredients = (json['ingredients'] as List<dynamic>?)
+            ?.map((e) => Ingredient.fromJson(e as Map<String, dynamic>))
+            .toList() ??
+        [];
+
+    final instructions = (json['instructions'] as List<dynamic>?)
+            ?.map((e) => e as String)
+            .toList() ??
+        [];
+
+    return Recipe(
+      id: json['id'] as String? ??
+          DateTime.now().millisecondsSinceEpoch.toString(),
+      name: json['name'] as String? ?? 'Untitled Recipe',
+      description: json['description'] as String? ?? '',
+      ingredients: ingredients,
+      instructions: instructions,
+      servings: json['servings'] as int?,
+      prepTimeMinutes: json['prepTimeMinutes'] as int?,
+      cookTimeMinutes: json['cookTimeMinutes'] as int?,
+      imageUrl: json['imageUrl'] as String?,
+    );
+  }
+
+  factory Recipe.fromDemo(DemoRecipe demo) {
+    return Recipe(
+      id: demo.id,
+      name: demo.title,
+      ingredients: demo.ingredients
+          .map((i) => Ingredient(name: i.name, quantity: i.quantity))
+          .toList(),
+      instructions: demo.steps,
+      servings: demo.servings,
+      prepTimeMinutes: demo.minutes,
+      imageUrl: demo.imageUrl,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'description': description,
+        'ingredients': ingredients.map((e) => e.toJson()).toList(),
+        'instructions': instructions,
+        if (servings != null) 'servings': servings,
+        if (prepTimeMinutes != null) 'prepTimeMinutes': prepTimeMinutes,
+        if (cookTimeMinutes != null) 'cookTimeMinutes': cookTimeMinutes,
+        if (imageUrl != null) 'imageUrl': imageUrl,
+      };
 }

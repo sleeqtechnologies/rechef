@@ -5,6 +5,9 @@ class ApiEndpoints {
 
   static String get baseUrl => apiBaseUrl;
 
+  // Content parsing
+  static String get parseContent => '/api/contents/parse';
+
   // Recipe endpoints
   static String get importRecipe => '$baseUrl/api/recipes/import';
   static String get extractFromImage => '$baseUrl/api/recipes/extract';
