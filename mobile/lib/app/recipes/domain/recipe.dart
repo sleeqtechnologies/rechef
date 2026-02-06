@@ -1,5 +1,4 @@
 import 'ingredient.dart';
-import '../presentation/demo_recipes.dart';
 
 class Recipe {
   const Recipe({
@@ -48,20 +47,6 @@ class Recipe {
       prepTimeMinutes: json['prepTimeMinutes'] as int?,
       cookTimeMinutes: json['cookTimeMinutes'] as int?,
       imageUrl: json['imageUrl'] as String?,
-    );
-  }
-
-  factory Recipe.fromDemo(DemoRecipe demo) {
-    return Recipe(
-      id: demo.id,
-      name: demo.title,
-      ingredients: demo.ingredients
-          .map((i) => Ingredient(name: i.name, quantity: i.quantity))
-          .toList(),
-      instructions: demo.steps,
-      servings: demo.servings,
-      prepTimeMinutes: demo.minutes,
-      imageUrl: demo.imageUrl,
     );
   }
 

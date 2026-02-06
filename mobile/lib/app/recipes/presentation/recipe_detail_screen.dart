@@ -6,7 +6,6 @@ import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import '../domain/recipe.dart';
 import '../domain/ingredient.dart';
 import '../recipe_provider.dart';
-import 'demo_recipes.dart';
 
 class RecipeDetailScreen extends ConsumerStatefulWidget {
   const RecipeDetailScreen({super.key, required this.recipeId});
@@ -38,17 +37,55 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
     super.dispose();
   }
 
-  Recipe _resolveRecipe() {
-    final fromProvider = ref.read(recipesProvider.notifier).byId(widget.recipeId);
-    if (fromProvider != null) return fromProvider;
-
-    final demo = DemoRecipes.byId(widget.recipeId);
-    return Recipe.fromDemo(demo);
-  }
-
   @override
   Widget build(BuildContext context) {
-    final recipe = _resolveRecipe();
+    final recipesAsync = ref.watch(recipesProvider);
+    final recipe = recipesAsync.value
+        ?.where((r) => r.id == widget.recipeId)
+        .firstOrNull;
+
+    if (recipesAsync.isLoading) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (recipe == null) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/recipes');
+              }
+            },
+          ),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.search_off_rounded, size: 56, color: Colors.grey.shade300),
+              const SizedBox(height: 16),
+              Text(
+                'Recipe not found',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     final screenWidth = MediaQuery.of(context).size.width;
     final topPadding = MediaQuery.of(context).padding.top;
     final collapseOffset = (screenWidth - kToolbarHeight - topPadding).clamp(
@@ -87,7 +124,13 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                       glassColor: _isCollapsed
                           ? const Color(0xCCFFFFFF)
                           : const Color(0x33FFFFFF),
-                      onPressed: () => context.pop(),
+                      onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go('/recipes');
+                      }
+                    },
                     ),
                   ),
                   actions: [

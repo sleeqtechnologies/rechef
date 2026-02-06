@@ -7,15 +7,13 @@ import '../../../core/constants/app_spacing.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../domain/recipe.dart';
 import '../recipe_provider.dart';
-import 'demo_recipes.dart';
 
 class RecipeListScreen extends ConsumerWidget {
   const RecipeListScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final parsedRecipes = ref.watch(recipesProvider);
-    final demoRecipes = DemoRecipes.all;
+    final recipesAsync = ref.watch(recipesProvider);
 
     return Scaffold(
       appBar: CustomAppBar(
@@ -55,69 +53,82 @@ class RecipeListScreen extends ConsumerWidget {
         bottom: false,
         child: Padding(
           padding: const EdgeInsets.only(top: 8),
-          child: parsedRecipes.isEmpty
-              ? _DemoGrid(recipes: demoRecipes)
-              : _MixedGrid(
-                  parsedRecipes: parsedRecipes,
-                  demoRecipes: demoRecipes,
-                ),
+          child: recipesAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) => Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.error_outline, size: 48, color: Colors.grey.shade300),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Failed to load recipes',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: () => ref.invalidate(recipesProvider),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+            data: (recipes) => recipes.isEmpty
+                ? const _EmptyState()
+                : _RecipeGrid(recipes: recipes),
+          ),
         ),
       ),
     );
   }
 }
 
-class _MixedGrid extends StatelessWidget {
-  const _MixedGrid({required this.parsedRecipes, required this.demoRecipes});
-
-  final List<Recipe> parsedRecipes;
-  final List<DemoRecipe> demoRecipes;
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
 
   @override
   Widget build(BuildContext context) {
-    final totalCount = parsedRecipes.length + demoRecipes.length;
-
-    return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.horizontalMargin,
-        8,
-        AppSpacing.horizontalMargin,
-        140,
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.restaurant_menu_outlined,
+              size: 64,
+              color: Colors.grey.shade300,
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'No recipes yet',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade600,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Import a recipe from a URL or photo to get started',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey.shade500,
+                    height: 1.4,
+                  ),
+            ),
+          ],
+        ),
       ),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 18,
-        childAspectRatio: 0.78,
-      ),
-      itemCount: totalCount,
-      itemBuilder: (context, index) {
-        if (index < parsedRecipes.length) {
-          final recipe = parsedRecipes[index];
-          return _RecipeCard(
-            id: recipe.id,
-            title: recipe.name,
-            imageUrl: recipe.imageUrl,
-            onTap: () => context.push('/recipes/${recipe.id}'),
-          );
-        }
-
-        final demo = demoRecipes[index - parsedRecipes.length];
-        return _RecipeCard(
-          id: demo.id,
-          title: demo.title,
-          imageUrl: demo.imageUrl,
-          onTap: () => context.push('/recipes/${demo.id}'),
-        );
-      },
     );
   }
 }
 
-class _DemoGrid extends StatelessWidget {
-  const _DemoGrid({required this.recipes});
+class _RecipeGrid extends StatelessWidget {
+  const _RecipeGrid({required this.recipes});
 
-  final List<DemoRecipe> recipes;
+  final List<Recipe> recipes;
 
   @override
   Widget build(BuildContext context) {
@@ -139,7 +150,7 @@ class _DemoGrid extends StatelessWidget {
         final recipe = recipes[index];
         return _RecipeCard(
           id: recipe.id,
-          title: recipe.title,
+          title: recipe.name,
           imageUrl: recipe.imageUrl,
           onTap: () => context.push('/recipes/${recipe.id}'),
         );

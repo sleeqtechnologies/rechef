@@ -64,10 +64,23 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
     }
   }
 
-  void _saveAndViewRecipe() {
+  Future<void> _saveAndViewRecipe() async {
     if (_parsedRecipe == null) return;
-    ref.read(recipesProvider.notifier).addRecipe(_parsedRecipe!);
-    context.go('/recipes/${_parsedRecipe!.id}');
+
+    setState(() => _isLoading = true);
+
+    try {
+      final saved =
+          await ref.read(recipesProvider.notifier).addRecipe(_parsedRecipe!);
+      if (!mounted) return;
+      context.go('/recipes/${saved.id}');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString().replaceFirst('Exception: ', '');
+        _isLoading = false;
+      });
+    }
   }
 
   @override
