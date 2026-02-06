@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../auth/providers/auth_providers.dart';
+import '../../recipe_import/data/import_repository.dart';
+import '../../recipe_import/pending_jobs_provider.dart';
 import '../domain/recipe.dart';
 import '../recipe_provider.dart';
 
@@ -14,6 +16,7 @@ class RecipeListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final recipesAsync = ref.watch(recipesProvider);
+    final pendingJobs = ref.watch(pendingJobsProvider);
 
     return Scaffold(
       appBar: CustomAppBar(
@@ -75,9 +78,12 @@ class RecipeListScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            data: (recipes) => recipes.isEmpty
+            data: (recipes) => recipes.isEmpty && pendingJobs.isEmpty
                 ? const _EmptyState()
-                : _RecipeGrid(recipes: recipes),
+                : _RecipeGrid(
+                    recipes: recipes,
+                    pendingJobs: pendingJobs,
+                  ),
           ),
         ),
       ),
@@ -126,12 +132,15 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _RecipeGrid extends StatelessWidget {
-  const _RecipeGrid({required this.recipes});
+  const _RecipeGrid({required this.recipes, required this.pendingJobs});
 
   final List<Recipe> recipes;
+  final List<ContentJob> pendingJobs;
 
   @override
   Widget build(BuildContext context) {
+    final totalItems = pendingJobs.length + recipes.length;
+
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.horizontalMargin,
@@ -145,9 +154,12 @@ class _RecipeGrid extends StatelessWidget {
         mainAxisSpacing: 18,
         childAspectRatio: 0.78,
       ),
-      itemCount: recipes.length,
+      itemCount: totalItems,
       itemBuilder: (context, index) {
-        final recipe = recipes[index];
+        if (index < pendingJobs.length) {
+          return const _PendingRecipeCard();
+        }
+        final recipe = recipes[index - pendingJobs.length];
         return _RecipeCard(
           id: recipe.id,
           title: recipe.name,
@@ -155,6 +167,102 @@ class _RecipeGrid extends StatelessWidget {
           onTap: () => context.push('/recipes/${recipe.id}'),
         );
       },
+    );
+  }
+}
+
+class _PendingRecipeCard extends StatefulWidget {
+  const _PendingRecipeCard();
+
+  @override
+  State<_PendingRecipeCard> createState() => _PendingRecipeCardState();
+}
+
+class _PendingRecipeCardState extends State<_PendingRecipeCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+    _animation = Tween<double>(begin: 0.3, end: 0.7).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final imageSize = constraints.maxWidth;
+            return AnimatedBuilder(
+              animation: _animation,
+              builder: (context, child) {
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Container(
+                    width: imageSize,
+                    height: imageSize,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200.withValues(alpha: _animation.value + 0.3),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.grey.shade400,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Generating...',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color: Colors.grey.shade500,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+        const SizedBox(height: 10),
+        Container(
+          height: 14,
+          width: 100,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(7),
+          ),
+        ),
+      ],
     );
   }
 }

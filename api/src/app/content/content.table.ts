@@ -39,6 +39,9 @@ const savedContentTable = pgTable("saved_contents", {
 
 const contentJobTable = pgTable("content_jobs", {
   id: dbId,
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => userTable.id),
   savedContentId: uuid("saved_content_id").references(
     () => savedContentTable.id
   ),

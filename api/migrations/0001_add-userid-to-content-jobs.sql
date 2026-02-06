@@ -1,0 +1,2 @@
+ALTER TABLE "content_jobs" ADD COLUMN "user_id" uuid NOT NULL;--> statement-breakpoint
+ALTER TABLE "content_jobs" ADD CONSTRAINT "content_jobs_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;

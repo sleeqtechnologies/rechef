@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../recipes/domain/recipe.dart';
-import '../../recipes/recipe_provider.dart';
+import '../data/import_repository.dart';
 import '../import_provider.dart';
+import '../pending_jobs_provider.dart';
 
 class ImportRecipeScreen extends ConsumerStatefulWidget {
   const ImportRecipeScreen({super.key, this.initialUrl, this.initialImagePath});
@@ -18,16 +18,15 @@ class ImportRecipeScreen extends ConsumerStatefulWidget {
 
 class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
   late final TextEditingController _urlController;
-  bool _isLoading = false;
+  bool _isSubmitting = false;
   String? _error;
-  Recipe? _parsedRecipe;
 
   @override
   void initState() {
     super.initState();
     _urlController = TextEditingController(text: widget.initialUrl);
     if (widget.initialUrl != null && widget.initialUrl!.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _parseContent());
+      WidgetsBinding.instance.addPostFrameCallback((_) => _submitContent());
     }
   }
 
@@ -37,48 +36,45 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
     super.dispose();
   }
 
-  Future<void> _parseContent() async {
+  Future<void> _submitContent() async {
     final url = _urlController.text.trim();
     if (url.isEmpty) return;
 
     setState(() {
-      _isLoading = true;
+      _isSubmitting = true;
       _error = null;
-      _parsedRecipe = null;
     });
 
     try {
       final repo = ref.read(importRepositoryProvider);
-      final recipe = await repo.parseContent(url);
+      final result = await repo.submitContent(url);
       if (!mounted) return;
-      setState(() {
-        _parsedRecipe = recipe;
-        _isLoading = false;
-      });
+
+      ref.read(pendingJobsProvider.notifier).addJob(
+        ContentJob(
+          id: result.jobId,
+          status: 'pending',
+          savedContentId: result.savedContentId,
+        ),
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Recipe is being generated in the background'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+
+      context.go('/recipes');
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _error = e.toString().replaceFirst('Exception: ', '');
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _saveAndViewRecipe() async {
-    if (_parsedRecipe == null) return;
-
-    setState(() => _isLoading = true);
-
-    try {
-      final saved =
-          await ref.read(recipesProvider.notifier).addRecipe(_parsedRecipe!);
-      if (!mounted) return;
-      context.go('/recipes/${saved.id}');
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
-        _isLoading = false;
+        _isSubmitting = false;
       });
     }
   }
@@ -122,7 +118,7 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
                       Expanded(
                         child: TextField(
                           controller: _urlController,
-                          enabled: !_isLoading,
+                          enabled: !_isSubmitting,
                           decoration: InputDecoration(
                             hintText: 'https://...',
                             hintStyle: TextStyle(color: Colors.grey.shade400),
@@ -153,14 +149,14 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
                           ),
                           keyboardType: TextInputType.url,
                           textInputAction: TextInputAction.go,
-                          onSubmitted: (_) => _parseContent(),
+                          onSubmitted: (_) => _submitContent(),
                         ),
                       ),
                       const SizedBox(width: 12),
                       SizedBox(
                         height: 50,
                         child: ElevatedButton(
-                          onPressed: _isLoading ? null : _parseContent,
+                          onPressed: _isSubmitting ? null : _submitContent,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.red.shade400,
                             foregroundColor: Colors.white,
@@ -170,10 +166,19 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
                             elevation: 0,
                             padding: const EdgeInsets.symmetric(horizontal: 20),
                           ),
-                          child: const Text(
-                            'Import',
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                          ),
+                          child: _isSubmitting
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text(
+                                  'Import',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
                         ),
                       ),
                     ],
@@ -183,16 +188,11 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
             ),
             const SizedBox(height: 24),
             Expanded(
-              child: _isLoading
-                  ? _LoadingView()
+              child: _isSubmitting
+                  ? _SubmittingView()
                   : _error != null
-                  ? _ErrorView(error: _error!, onRetry: _parseContent)
-                  : _parsedRecipe != null
-                  ? _RecipeResultView(
-                      recipe: _parsedRecipe!,
-                      onSave: _saveAndViewRecipe,
-                    )
-                  : _EmptyView(),
+                      ? _ErrorView(error: _error!, onRetry: _submitContent)
+                      : _EmptyView(),
             ),
           ],
         ),
@@ -201,7 +201,7 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
   }
 }
 
-class _LoadingView extends StatelessWidget {
+class _SubmittingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -218,17 +218,10 @@ class _LoadingView extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            'Parsing recipe...',
+            'Submitting...',
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'This may take a moment',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade400),
           ),
         ],
       ),
@@ -301,160 +294,6 @@ class _EmptyView extends StatelessWidget {
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade400),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RecipeResultView extends StatelessWidget {
-  const _RecipeResultView({required this.recipe, required this.onSave});
-
-  final Recipe recipe;
-  final VoidCallback onSave;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (recipe.imageUrl != null)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: AspectRatio(
-                aspectRatio: 16 / 10,
-                child: Image.network(
-                  recipe.imageUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: Colors.grey.shade100,
-                    alignment: Alignment.center,
-                    child: const Icon(Icons.restaurant, size: 40),
-                  ),
-                ),
-              ),
-            ),
-          const SizedBox(height: 20),
-          Text(
-            recipe.name,
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          if (recipe.description.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              recipe.description,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey.shade600,
-                height: 1.4,
-              ),
-            ),
-          ],
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              if (recipe.totalMinutes > 0)
-                _MetaChip(
-                  icon: Icons.access_time_outlined,
-                  label: '${recipe.totalMinutes} min',
-                ),
-              if (recipe.totalMinutes > 0 && recipe.servings != null)
-                const SizedBox(width: 12),
-              if (recipe.servings != null)
-                _MetaChip(
-                  icon: Icons.restaurant_outlined,
-                  label: '${recipe.servings} servings',
-                ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Text(
-            '${recipe.ingredients.length} ingredients',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          ...recipe.ingredients.map(
-            (ing) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade300,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      '${ing.displayQuantity} ${ing.name}'.trim(),
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            height: 54,
-            child: ElevatedButton(
-              onPressed: onSave,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade400,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 0,
-              ),
-              child: const Text(
-                'Save Recipe',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MetaChip extends StatelessWidget {
-  const _MetaChip({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: Colors.grey.shade600),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.grey.shade700,
-              fontWeight: FontWeight.w500,
-            ),
           ),
         ],
       ),

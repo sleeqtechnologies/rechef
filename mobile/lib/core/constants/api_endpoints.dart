@@ -4,6 +4,10 @@ class ApiEndpoints {
   // Content parsing
   static String get parseContent => '/api/contents/parse';
 
+  // Content jobs
+  static String get contentJobs => '/api/contents/jobs';
+  static String contentJob(String jobId) => '/api/contents/jobs/$jobId';
+
   // Recipe endpoints
   static String get recipes => '/api/recipes';
   static String recipe(String id) => '/api/recipes/$id';

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_handler/share_handler.dart';
 
+import 'app/recipe_import/pending_jobs_provider.dart';
 import 'core/routing/app_router.dart';
 import 'core/services/share_handler_service.dart';
 import 'core/services/share_handler_provider.dart';
@@ -15,11 +16,20 @@ class RechefApp extends ConsumerStatefulWidget {
   ConsumerState<RechefApp> createState() => _RechefAppState();
 }
 
-class _RechefAppState extends ConsumerState<RechefApp> {
+class _RechefAppState extends ConsumerState<RechefApp>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initializeShareHandler();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(pendingJobsProvider.notifier).checkJobs();
+    }
   }
 
   void _initializeShareHandler() {
@@ -95,6 +105,7 @@ class _RechefAppState extends ConsumerState<RechefApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     ref.read(shareHandlerServiceProvider).dispose();
     super.dispose();
   }
