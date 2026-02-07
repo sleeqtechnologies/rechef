@@ -25,6 +25,9 @@ class Recipe {
 
   int get totalMinutes => (prepTimeMinutes ?? 0) + (cookTimeMinutes ?? 0);
 
+  int get ingredientsInPantry =>
+      ingredients.where((i) => i.inPantry).length;
+
   factory Recipe.fromJson(Map<String, dynamic> json) {
     final ingredients = (json['ingredients'] as List<dynamic>?)
             ?.map((e) => Ingredient.fromJson(e as Map<String, dynamic>))

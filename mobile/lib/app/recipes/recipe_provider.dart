@@ -41,3 +41,16 @@ class RecipesNotifier extends AsyncNotifier<List<Recipe>> {
 
 final recipesProvider =
     AsyncNotifierProvider<RecipesNotifier, List<Recipe>>(RecipesNotifier.new);
+
+/// Single recipe by ID. Use in detail screen: ref.watch(recipeByIdProvider(recipeId))
+final recipeByIdProvider =
+    Provider.family<AsyncValue<Recipe?>, String>((ref, recipeId) {
+  final recipesAsync = ref.watch(recipesProvider);
+  return recipesAsync.whenData((recipes) {
+    try {
+      return recipes.firstWhere((r) => r.id == recipeId);
+    } catch (_) {
+      return null;
+    }
+  });
+});

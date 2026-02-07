@@ -40,15 +40,49 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    final recipesAsync = ref.watch(recipesProvider);
-    final recipe = recipesAsync.value
-        ?.where((r) => r.id == widget.recipeId)
-        .firstOrNull;
+    final recipeAsync = ref.watch(recipeByIdProvider(widget.recipeId));
+    final recipe = recipeAsync.value;
 
-    if (recipesAsync.isLoading) {
+    if (recipeAsync.isLoading) {
       return const Scaffold(
         backgroundColor: Colors.white,
         body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (recipeAsync.hasError) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/recipes');
+              }
+            },
+          ),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.error_outline_rounded, size: 56, color: Colors.grey.shade400),
+              const SizedBox(height: 16),
+              Text(
+                'Could not load recipe',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -212,7 +246,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              recipe.title,
+                              recipe.name,
                               style: Theme.of(context).textTheme.headlineSmall
                                   ?.copyWith(
                                     fontWeight: FontWeight.w700,
@@ -220,20 +254,23 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                                   ),
                             ),
                             const SizedBox(height: 16),
-                            if (recipe.author != null) ...[
-                              _AuthorRow(author: recipe.author!),
-                              const SizedBox(height: 16),
-                            ],
+                            _AuthorRow(
+                              author: _AuthorInfo(
+                                name: 'Rechef',
+                                sourceUrl: null,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
                             Row(
                               children: [
                                 _MetaInfo(
                                   iconAsset: 'assets/icons/clock.svg',
-                                  label: '${recipe.minutes} min',
+                                  label: '${recipe.totalMinutes} min',
                                 ),
                                 const SizedBox(width: 20),
                                 _MetaInfo(
                                   iconAsset: 'assets/icons/servings.svg',
-                                  label: '${recipe.servings} servings',
+                                  label: '${recipe.servings ?? 0} servings',
                                 ),
                               ],
                             ),
@@ -327,16 +364,22 @@ class _AppBarButton extends StatelessWidget {
   }
 }
 
+class _AuthorInfo {
+  const _AuthorInfo({required this.name, this.sourceUrl});
+
+  final String name;
+  final String? sourceUrl;
+}
+
 class _AuthorRow extends StatelessWidget {
   const _AuthorRow({required this.author});
 
-  final RecipeAuthor author;
+  final _AuthorInfo author;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        // Avatar
         Container(
           width: 40,
           height: 40,
@@ -355,23 +398,24 @@ class _AuthorRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        // Name and source
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 author.name,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
               if (author.sourceUrl != null)
                 Text(
                   author.sourceUrl!,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: Colors.grey.shade600),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -606,9 +650,9 @@ class _CookingTab extends StatelessWidget {
         const SizedBox(height: 20),
         Column(
           children: [
-            for (var i = 0; i < recipe.steps.length; i++) ...[
-              _StepRow(stepNumber: i + 1, text: recipe.steps[i]),
-              if (i != recipe.steps.length - 1)
+            for (var i = 0; i < recipe.instructions.length; i++) ...[
+              _StepRow(stepNumber: i + 1, text: recipe.instructions[i]),
+              if (i != recipe.instructions.length - 1)
                 Divider(height: 24, thickness: 1, color: Colors.grey.shade200),
             ],
           ],

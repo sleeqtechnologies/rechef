@@ -4,12 +4,14 @@ class Ingredient {
     required this.quantity,
     this.unit,
     this.notes,
+    this.inPantry = false,
   });
 
   final String name;
   final String quantity;
   final String? unit;
   final String? notes;
+  final bool inPantry;
 
   String get displayQuantity {
     final parts = [quantity, unit].where((e) => e != null && e.isNotEmpty);
@@ -22,6 +24,7 @@ class Ingredient {
       quantity: json['quantity'] as String? ?? '',
       unit: json['unit'] as String?,
       notes: json['notes'] as String?,
+      inPantry: json['inPantry'] as bool? ?? false,
     );
   }
 
@@ -30,5 +33,6 @@ class Ingredient {
         'quantity': quantity,
         if (unit != null) 'unit': unit,
         if (notes != null) 'notes': notes,
+        if (inPantry) 'inPantry': inPantry,
       };
 }
