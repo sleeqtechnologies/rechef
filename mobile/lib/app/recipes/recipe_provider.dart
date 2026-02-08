@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../recipe_import/import_provider.dart';
 import 'data/recipe_repository.dart';
+import 'domain/ingredient.dart';
 import 'domain/recipe.dart';
 
 final recipeRepositoryProvider = Provider<RecipeRepository>((ref) {
@@ -35,13 +36,50 @@ class RecipesNotifier extends AsyncNotifier<List<Recipe>> {
     await repo.delete(id);
     state = AsyncData((state.value ?? []).where((r) => r.id != id).toList());
   }
+
+  Future<void> matchPantry(String recipeId) async {
+    final repo = ref.read(recipeRepositoryProvider);
+    final updatedIngredients = await repo.matchPantry(recipeId);
+    _updateRecipeIngredients(recipeId, updatedIngredients);
+  }
+
+  Future<void> toggleIngredient(String recipeId, int index) async {
+    final recipes = state.value ?? [];
+    final recipeIndex = recipes.indexWhere((r) => r.id == recipeId);
+    if (recipeIndex == -1) return;
+
+    final recipe = recipes[recipeIndex];
+    if (index < 0 || index >= recipe.ingredients.length) return;
+    final updatedIngredients = List<Ingredient>.from(recipe.ingredients);
+    updatedIngredients[index] = updatedIngredients[index].copyWith(
+      inPantry: !updatedIngredients[index].inPantry,
+    );
+    final updated = List<Recipe>.from(recipes);
+    updated[recipeIndex] = recipe.copyWith(ingredients: updatedIngredients);
+    state = AsyncData(updated);
+
+    try {
+      final repo = ref.read(recipeRepositoryProvider);
+      await repo.toggleIngredient(recipeId, index);
+    } catch (_) {
+      state = AsyncData(recipes);
+    }
+  }
+
+  void _updateRecipeIngredients(String recipeId, List<Ingredient> ingredients) {
+    final recipes = state.value ?? [];
+    final idx = recipes.indexWhere((r) => r.id == recipeId);
+    if (idx == -1) return;
+    final updated = List<Recipe>.from(recipes);
+    updated[idx] = recipes[idx].copyWith(ingredients: ingredients);
+    state = AsyncData(updated);
+  }
 }
 
 final recipesProvider = AsyncNotifierProvider<RecipesNotifier, List<Recipe>>(
   RecipesNotifier.new,
 );
 
-/// Single recipe by ID. Use in detail screen: ref.watch(recipeByIdProvider(recipeId))
 final recipeByIdProvider = Provider.family<AsyncValue<Recipe?>, String>((
   ref,
   recipeId,

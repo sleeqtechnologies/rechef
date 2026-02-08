@@ -1,7 +1,7 @@
 import { logger } from "../../../logger";
 import { Request, Response } from "express";
 import * as pantryRepository from "./pantry.repository";
-import { categorize, classifyWithAI } from "../../services/ingredient-categorizer";
+import { categorizeMany } from "../../services/ingredient-categorizer";
 
 const formatItem = (item: pantryRepository.PantryItem) => ({
   id: item.id,
@@ -20,29 +20,19 @@ const addItems = async (req: Request, res: Response) => {
         .json({ error: "items must be a non-empty array of strings" });
     }
 
-    const parsed: { userId: string; name: string; category: string }[] = items
-      .map((name: string) => String(name).trim())
-      .filter((name: string) => name.length > 0)
-      .map((name: string) => ({
-        userId,
-        name,
-        category: categorize(name) as string,
-      }));
+    const categorized = await categorizeMany(
+      items.map((name: string) => String(name)),
+    );
 
-    if (parsed.length === 0) {
+    if (categorized.length === 0) {
       return res.status(400).json({ error: "No valid item names provided" });
     }
 
-    const unknowns = parsed.filter((i) => i.category === "Other");
-    if (unknowns.length > 0) {
-      const aiResults = await classifyWithAI(unknowns.map((i) => i.name));
-      for (const item of unknowns) {
-        const aiCategory = aiResults.get(item.name.toLowerCase().trim());
-        if (aiCategory && aiCategory !== "Other") {
-          item.category = aiCategory;
-        }
-      }
-    }
+    const parsed = categorized.map((i) => ({
+      userId,
+      name: i.name,
+      category: i.category,
+    }));
 
     const created = await pantryRepository.createMany(parsed);
 
@@ -66,9 +56,7 @@ const getItems = async (req: Request, res: Response) => {
     logger.error("Error fetching pantry items:", error);
     return res.status(500).json({
       error:
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch pantry items",
+        error instanceof Error ? error.message : "Failed to fetch pantry items",
     });
   }
 };
@@ -92,9 +80,7 @@ const deleteItem = async (req: Request, res: Response) => {
     logger.error("Error deleting pantry item:", error);
     return res.status(500).json({
       error:
-        error instanceof Error
-          ? error.message
-          : "Failed to delete pantry item",
+        error instanceof Error ? error.message : "Failed to delete pantry item",
     });
   }
 };

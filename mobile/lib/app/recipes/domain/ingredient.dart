@@ -28,6 +28,14 @@ class Ingredient {
     );
   }
 
+  Ingredient copyWith({bool? inPantry}) => Ingredient(
+    name: name,
+    quantity: quantity,
+    unit: unit,
+    notes: notes,
+    inPantry: inPantry ?? this.inPantry,
+  );
+
   Map<String, dynamic> toJson() => {
     'name': name,
     'quantity': quantity,

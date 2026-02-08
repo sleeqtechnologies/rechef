@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../app/pantry/presentation/add_item_sheet.dart';
 import '../app/pantry/pantry_provider.dart';
+import '../app/grocery/grocery_provider.dart';
 import '../app/recipe_import/presentation/import_url_sheet.dart';
 import '../app/recipe_import/data/import_repository.dart';
 import '../app/recipe_import/import_provider.dart';
@@ -147,6 +149,48 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
     router.go('/camera');
   }
 
+  Future<void> _onOrderOnlineTap(BuildContext context) async {
+    // Show a loading indicator
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(width: 12),
+            Text('Creating your shopping list...'),
+          ],
+        ),
+        duration: Duration(seconds: 10),
+      ),
+    );
+
+    try {
+      final url = await ref.read(groceryProvider.notifier).createOrder();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      final uri = Uri.parse(url);
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red.shade400,
+        ),
+      );
+    }
+  }
+
   void _onPantryAddTap(BuildContext context) {
     showModalBottomSheet<List<String>>(
       context: context,
@@ -213,14 +257,23 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
         onCameraTap: _onCameraTap,
         onPlusPrimaryAction: widget.location.startsWith('/pantry')
             ? () => _onPantryAddTap(context)
-            : null,
+            : widget.location.startsWith('/grocery')
+                ? () => _onOrderOnlineTap(context)
+                : null,
         accentColor: _accentColor,
         onMenuStateChanged: (isExpanded) {
           setState(() {
             _isMenuExpanded = isExpanded;
           });
         },
+        actionLabel: widget.location.startsWith('/grocery')
+            ? 'Order Online'
+            : null,
+        actionColor: widget.location.startsWith('/grocery')
+            ? const Color(0xFF2E7D32)
+            : null,
       ),
     );
   }
 }
+

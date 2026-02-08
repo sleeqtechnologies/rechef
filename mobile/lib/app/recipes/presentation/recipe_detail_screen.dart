@@ -7,6 +7,7 @@ import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import '../domain/recipe.dart';
 import '../domain/ingredient.dart';
 import '../recipe_provider.dart';
+import '../../grocery/grocery_provider.dart';
 
 class RecipeDetailScreen extends ConsumerStatefulWidget {
   const RecipeDetailScreen({super.key, required this.recipeId});
@@ -23,12 +24,24 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
   late final TabController _tabController;
   late final ScrollController _scrollController;
   bool _isCollapsed = false;
+  bool _isMatchingPantry = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _scrollController = ScrollController();
+    _runPantryMatch();
+  }
+
+  Future<void> _runPantryMatch() async {
+    try {
+      await ref.read(recipesProvider.notifier).matchPantry(widget.recipeId);
+    } catch (_) {
+      // Silently ignore matching errors
+    } finally {
+      if (mounted) setState(() => _isMatchingPantry = false);
+    }
   }
 
   @override
@@ -293,7 +306,16 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                       animation: _tabController,
                       builder: (context, _) {
                         return _tabController.index == 0
-                            ? _IngredientsTab(recipe: recipe)
+                            ? _IngredientsTab(
+                                recipe: recipe,
+                                isMatchingPantry: _isMatchingPantry,
+                                onToggle: (index) {
+                                  ref
+                                      .read(recipesProvider.notifier)
+                                      .toggleIngredient(
+                                          widget.recipeId, index);
+                                },
+                              )
                             : _CookingTab(recipe: recipe);
                       },
                     ),
@@ -312,16 +334,58 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
               builder: (context, _) {
                 return _BottomButton(
                   isIngredientsTab: _tabController.index == 0,
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          _tabController.index == 0
-                              ? 'Added to grocery list (demo)'
-                              : 'Starting cooking mode (demo)',
+                  onPressed: () async {
+                    if (_tabController.index == 0) {
+                      final missing = recipe.ingredients
+                          .where((i) => !i.inPantry)
+                          .toList();
+
+                      if (missing.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('All ingredients are in your pantry!'),
+                          ),
+                        );
+                        return;
+                      }
+
+                      try {
+                        final added = await ref
+                            .read(groceryProvider.notifier)
+                            .addItems(
+                              recipeId: widget.recipeId,
+                              items: missing
+                                  .map((i) => {
+                                        'name': i.name,
+                                        'quantity': i.quantity,
+                                        if (i.unit != null) 'unit': i.unit,
+                                      })
+                                  .toList(),
+                            );
+                        if (context.mounted) {
+                          final msg = added == 0
+                              ? 'Items already in grocery list'
+                              : 'Added $added item${added == 1 ? '' : 's'} to grocery list';
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(msg)),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Failed to add to grocery list'),
+                            ),
+                          );
+                        }
+                      }
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Starting cooking mode (coming soon)'),
                         ),
-                      ),
-                    );
+                      );
+                    }
                   },
                 );
               },
@@ -523,9 +587,15 @@ class _TabBarWidget extends StatelessWidget {
 }
 
 class _IngredientsTab extends StatelessWidget {
-  const _IngredientsTab({required this.recipe});
+  const _IngredientsTab({
+    required this.recipe,
+    required this.onToggle,
+    this.isMatchingPantry = false,
+  });
 
   final Recipe recipe;
+  final void Function(int index) onToggle;
+  final bool isMatchingPantry;
 
   @override
   Widget build(BuildContext context) {
@@ -534,17 +604,35 @@ class _IngredientsTab extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 8),
-        Text(
-          'Ingredients – (${recipe.ingredientsInPantry} in Pantry)',
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+        Row(
+          children: [
+            Text(
+              'Ingredients – (${recipe.ingredientsInPantry} in Pantry)',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            if (isMatchingPantry) ...[
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.grey.shade400,
+                ),
+              ),
+            ],
+          ],
         ),
         const SizedBox(height: 16),
         Column(
           children: [
             for (var i = 0; i < recipe.ingredients.length; i++) ...[
-              _IngredientRow(ingredient: recipe.ingredients[i]),
+              _IngredientRow(
+                ingredient: recipe.ingredients[i],
+                onTap: () => onToggle(i),
+              ),
               if (i != recipe.ingredients.length - 1)
                 Divider(height: 1, thickness: 1, color: dividerColor),
             ],
@@ -556,9 +644,10 @@ class _IngredientsTab extends StatelessWidget {
 }
 
 class _IngredientRow extends StatelessWidget {
-  const _IngredientRow({required this.ingredient});
+  const _IngredientRow({required this.ingredient, required this.onTap});
 
   final Ingredient ingredient;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -566,65 +655,69 @@ class _IngredientRow extends StatelessWidget {
     final textColor =
         Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final quantityWidth = constraints.maxWidth * 0.35;
-          return Row(
-            children: [
-              // Checkbox
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: ingredient.inPantry ? checkedFill : Colors.white,
-                  border: Border.all(
-                    color: ingredient.inPantry
-                        ? Colors.transparent
-                        : Colors.grey.shade300,
-                    width: 1.5,
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final quantityWidth = constraints.maxWidth * 0.35;
+            return Row(
+              children: [
+                // Checkbox
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: ingredient.inPantry ? checkedFill : Colors.white,
+                    border: Border.all(
+                      color: ingredient.inPantry
+                          ? Colors.transparent
+                          : Colors.grey.shade300,
+                      width: 1.5,
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: ingredient.inPantry
+                      ? SvgPicture.asset(
+                          'assets/icons/check-mark.svg',
+                          width: 14,
+                          height: 14,
+                          colorFilter: ColorFilter.mode(
+                            textColor,
+                            BlendMode.srcIn,
+                          ),
+                        )
+                      : null,
+                ),
+                const SizedBox(width: 12),
+                // Name
+                Expanded(
+                  child: Text(
+                    ingredient.name,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
                   ),
                 ),
-                alignment: Alignment.center,
-                child: ingredient.inPantry
-                    ? SvgPicture.asset(
-                        'assets/icons/check-mark.svg',
-                        width: 14,
-                        height: 14,
-                        colorFilter: ColorFilter.mode(
-                          textColor,
-                          BlendMode.srcIn,
-                        ),
-                      )
-                    : null,
-              ),
-              const SizedBox(width: 12),
-              // Name
-              Expanded(
-                child: Text(
-                  ingredient.name,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                // Quantity (capped at 27% of row width)
+                SizedBox(
+                  width: quantityWidth,
+                  child: Text(
+                    ingredient.displayQuantity,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
+                    textAlign: TextAlign.end,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-              // Quantity (capped at 27% of row width)
-              SizedBox(
-                width: quantityWidth,
-                child: Text(
-                  ingredient.quantity,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
-                  textAlign: TextAlign.end,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }

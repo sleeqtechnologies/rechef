@@ -10,6 +10,7 @@ const env = cleanEnv(process.env, {
   OPENAI_API_KEY: str(),
   SERVICE_ACCT_KEY: str(),
   UNSPLASH_ACCESS_KEY: str(),
+  INSTACART_API_KEY: str(),
 });
 
 export { env };

@@ -11,16 +11,20 @@ class ApiEndpoints {
   // Recipe endpoints
   static String get recipes => '/api/recipes';
   static String recipe(String id) => '/api/recipes/$id';
+  static String matchPantry(String recipeId) =>
+      '/api/recipes/$recipeId/match-pantry';
+  static String toggleIngredient(String recipeId, int index) =>
+      '/api/recipes/$recipeId/ingredients/$index';
 
   // Pantry endpoints
   static String get pantry => '/api/pantry';
   static String pantryItem(String id) => '/api/pantry/$id';
 
   // Grocery list endpoints
-  static String get groceryList => '/api/grocery';
-  static String generateGroceryList(List<String> recipeIds) =>
-      '/api/grocery/generate?recipes=${recipeIds.join(',')}';
+  static String get grocery => '/api/grocery';
+  static String groceryItem(String id) => '/api/grocery/$id';
+  static String get groceryChecked => '/api/grocery/checked';
 
-  // Instacart endpoints
-  static String get instacartCart => '/api/instacart/cart';
+  // Instacart / ordering
+  static String get groceryOrder => '/api/grocery/order';
 }

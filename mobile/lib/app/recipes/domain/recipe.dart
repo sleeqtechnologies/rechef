@@ -27,6 +27,18 @@ class Recipe {
 
   int get ingredientsInPantry => ingredients.where((i) => i.inPantry).length;
 
+  Recipe copyWith({List<Ingredient>? ingredients}) => Recipe(
+    id: id,
+    name: name,
+    description: description,
+    ingredients: ingredients ?? this.ingredients,
+    instructions: instructions,
+    servings: servings,
+    prepTimeMinutes: prepTimeMinutes,
+    cookTimeMinutes: cookTimeMinutes,
+    imageUrl: imageUrl,
+  );
+
   factory Recipe.fromJson(Map<String, dynamic> json) {
     final ingredients =
         (json['ingredients'] as List<dynamic>?)

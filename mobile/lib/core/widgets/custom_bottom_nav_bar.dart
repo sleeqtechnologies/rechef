@@ -16,6 +16,12 @@ class CustomBottomNavBar extends StatefulWidget {
   final Color accentColor;
   final ValueChanged<bool>? onMenuStateChanged;
 
+  /// When set, the action button morphs from a circle into a pill with this label.
+  final String? actionLabel;
+
+  /// Override color for the action button (used with actionLabel).
+  final Color? actionColor;
+
   const CustomBottomNavBar({
     super.key,
     required this.currentIndex,
@@ -25,6 +31,8 @@ class CustomBottomNavBar extends StatefulWidget {
     this.onPlusPrimaryAction,
     this.accentColor = const Color(0xFFFF4F63),
     this.onMenuStateChanged,
+    this.actionLabel,
+    this.actionColor,
   });
 
   @override
@@ -41,6 +49,7 @@ class CustomBottomNavBarState extends State<CustomBottomNavBar>
   static const double _expandedWidth = 220.0;
   static const double _expandedHeight = 140.0;
   static const double _collapsedSize = 56.0;
+  static const double _labelButtonWidth = 136.0;
   static const double _pillOuterPadding = 8.0;
 
   @override
@@ -199,25 +208,34 @@ class CustomBottomNavBarState extends State<CustomBottomNavBar>
               child: AnimatedBuilder(
                 animation: _animationController,
                 builder: (context, child) {
+                  final hasLabel = widget.actionLabel != null;
+                  final buttonColor = hasLabel
+                      ? (widget.actionColor ?? const Color(0xFF2E7D32))
+                      : widget.accentColor;
+
                   // Animate bottom padding: starts at _pillOuterPadding (centered), ends at 0 (aligned to nav bottom)
                   final bottomPadding =
                       _pillOuterPadding * (1 - _expandAnimation.value);
+                  final baseWidth = hasLabel
+                      ? _labelButtonWidth
+                      : _collapsedSize;
                   final width =
-                      _collapsedSize +
-                      (_expandedWidth - _collapsedSize) *
-                          _expandAnimation.value;
+                      baseWidth +
+                      (_expandedWidth - baseWidth) * _expandAnimation.value;
                   final height =
                       _collapsedSize +
                       (_expandedHeight - _collapsedSize) *
                           _expandAnimation.value +
                       _pillOuterPadding * _expandAnimation.value;
 
-                  final fabContent = Container(
+                  final fabContent = AnimatedContainer(
+                    duration: const Duration(milliseconds: 350),
+                    curve: Curves.easeInOut,
                     width: width,
                     height: height,
                     clipBehavior: Clip.hardEdge,
                     decoration: BoxDecoration(
-                      color: widget.accentColor,
+                      color: buttonColor,
                       borderRadius: BorderRadius.circular(
                         _collapsedSize / 2 +
                             (35 - _collapsedSize / 2) * _expandAnimation.value,
@@ -225,12 +243,16 @@ class CustomBottomNavBarState extends State<CustomBottomNavBar>
                     ),
                     child: Stack(
                       children: [
-                        // Plus icon (fades out when expanding)
+                        // Plus icon -- always in tree, fades out when label appears or menu expands
                         Positioned.fill(
                           child: IgnorePointer(
-                            ignoring: _expandAnimation.value > 0,
-                            child: Opacity(
-                              opacity: 1 - _expandAnimation.value,
+                            ignoring: _expandAnimation.value > 0 || hasLabel,
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                              opacity: hasLabel
+                                  ? 0.0
+                                  : (1 - _expandAnimation.value),
                               child: Center(
                                 child: SvgPicture.asset(
                                   'assets/icons/plus.svg',
@@ -239,6 +261,29 @@ class CustomBottomNavBarState extends State<CustomBottomNavBar>
                                   colorFilter: const ColorFilter.mode(
                                     Colors.white,
                                     BlendMode.srcIn,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Label text -- always in tree, fades in when actionLabel is set
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            ignoring: !hasLabel || _expandAnimation.value > 0,
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                              opacity: hasLabel
+                                  ? (1 - _expandAnimation.value)
+                                  : 0.0,
+                              child: Center(
+                                child: Text(
+                                  widget.actionLabel ?? '',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
                                   ),
                                 ),
                               ),
@@ -294,8 +339,10 @@ class CustomBottomNavBarState extends State<CustomBottomNavBar>
                             onTap: () {
                               if (widget.onPlusPrimaryAction != null) {
                                 widget.onPlusPrimaryAction!();
-                              } else {
+                              } else if (!hasLabel) {
                                 _toggleExpanded();
+                              } else {
+                                widget.onPlusPrimaryAction?.call();
                               }
                             },
                             behavior: HitTestBehavior.opaque,

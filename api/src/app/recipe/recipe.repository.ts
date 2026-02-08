@@ -32,9 +32,19 @@ const findById = async (id: string): Promise<Recipe | undefined> => {
   return recipe;
 };
 
+const updateIngredients = async (
+  id: string,
+  ingredients: unknown,
+): Promise<void> => {
+  await db
+    .update(recipeTable)
+    .set({ ingredients })
+    .where(eq(recipeTable.id, id));
+};
+
 const deleteById = async (id: string): Promise<void> => {
   await db.delete(recipeTable).where(eq(recipeTable.id, id));
 };
 
-export { create, findAllByUserId, findById, deleteById };
+export { create, findAllByUserId, findById, updateIngredients, deleteById };
 export type { Recipe, NewRecipe };

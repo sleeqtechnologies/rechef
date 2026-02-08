@@ -62,13 +62,17 @@ class RecipeListScreen extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.error_outline, size: 48, color: Colors.grey.shade300),
+                  Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Colors.grey.shade300,
+                  ),
                   const SizedBox(height: 12),
                   Text(
                     'Failed to load recipes',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey.shade600,
-                        ),
+                      color: Colors.grey.shade600,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   TextButton(
@@ -80,10 +84,7 @@ class RecipeListScreen extends ConsumerWidget {
             ),
             data: (recipes) => recipes.isEmpty && pendingJobs.isEmpty
                 ? const _EmptyState()
-                : _RecipeGrid(
-                    recipes: recipes,
-                    pendingJobs: pendingJobs,
-                  ),
+                : _RecipeGrid(recipes: recipes, pendingJobs: pendingJobs),
           ),
         ),
       ),
@@ -111,18 +112,18 @@ class _EmptyState extends StatelessWidget {
             Text(
               'No recipes yet',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade600,
-                  ),
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade600,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               'Import a recipe from a URL or photo to get started',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey.shade500,
-                    height: 1.4,
-                  ),
+                color: Colors.grey.shade500,
+                height: 1.4,
+              ),
             ),
           ],
         ),
@@ -190,9 +191,10 @@ class _PendingRecipeCardState extends State<_PendingRecipeCard>
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
-    _animation = Tween<double>(begin: 0.3, end: 0.7).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0.3,
+      end: 0.7,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -218,7 +220,9 @@ class _PendingRecipeCardState extends State<_PendingRecipeCard>
                     width: imageSize,
                     height: imageSize,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade200.withValues(alpha: _animation.value + 0.3),
+                      color: Colors.grey.shade200.withValues(
+                        alpha: _animation.value + 0.3,
+                      ),
                       borderRadius: BorderRadius.circular(24),
                     ),
                     child: Center(
@@ -236,9 +240,7 @@ class _PendingRecipeCardState extends State<_PendingRecipeCard>
                           const SizedBox(height: 10),
                           Text(
                             'Generating...',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
+                            style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
                                   color: Colors.grey.shade500,
                                   fontWeight: FontWeight.w500,
@@ -335,13 +337,15 @@ class _RecipeCard extends StatelessWidget {
             },
           ),
           const SizedBox(height: 10),
-          Text(
-            title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              height: 1.15,
+          Flexible(
+            child: Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
+              ),
             ),
           ),
         ],

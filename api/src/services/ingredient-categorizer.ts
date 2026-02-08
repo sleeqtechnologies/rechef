@@ -503,4 +503,38 @@ async function classifyWithAI(
   return result;
 }
 
-export { categorize, classifyWithAI, CATEGORIES, type Category };
+// ── Hybrid helper: local + AI in one call ───────────────────────────────────
+
+interface CategorizedItem {
+  name: string;
+  category: string;
+}
+
+/**
+ * Categorizes an array of ingredient names using the hybrid approach:
+ * 1. Instant local keyword matching
+ * 2. AI fallback for anything that resolved to "Other"
+ *
+ * Returns a list of { name, category } in the same order as the input.
+ */
+async function categorizeMany(names: string[]): Promise<CategorizedItem[]> {
+  const items: CategorizedItem[] = names
+    .map((n) => n.trim())
+    .filter((n) => n.length > 0)
+    .map((name) => ({ name, category: categorize(name) as string }));
+
+  const unknowns = items.filter((i) => i.category === "Other");
+  if (unknowns.length > 0) {
+    const aiResults = await classifyWithAI(unknowns.map((i) => i.name));
+    for (const item of unknowns) {
+      const aiCategory = aiResults.get(item.name.toLowerCase().trim());
+      if (aiCategory && aiCategory !== "Other") {
+        item.category = aiCategory;
+      }
+    }
+  }
+
+  return items;
+}
+
+export { categorize, classifyWithAI, categorizeMany, CATEGORIES, type Category };

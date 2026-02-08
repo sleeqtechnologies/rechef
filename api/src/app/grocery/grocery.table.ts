@@ -14,7 +14,6 @@ const groceryListTable = pgTable("grocery_lists", {
   userId: uuid("user_id")
     .notNull()
     .references(() => userTable.id),
-  recipeId: uuid("recipe_id").references(() => recipeTable.id),
   name: varchar("name", { length: 255 }).notNull(),
   status: groceryListStatusEnum().notNull().default("active"),
   createdAt,
@@ -26,9 +25,11 @@ const groceryListItemTable = pgTable("grocery_list_items", {
   groceryListId: uuid("grocery_list_id")
     .notNull()
     .references(() => groceryListTable.id),
+  recipeId: uuid("recipe_id").references(() => recipeTable.id),
   name: varchar("name", { length: 255 }).notNull(),
   quantity: varchar("quantity", { length: 50 }),
   unit: varchar("unit", { length: 50 }),
+  category: varchar("category", { length: 100 }).notNull().default("Other"),
   checked: boolean("checked").notNull().default(false),
   createdAt,
 });
