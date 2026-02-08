@@ -25,22 +25,24 @@ class Recipe {
 
   int get totalMinutes => (prepTimeMinutes ?? 0) + (cookTimeMinutes ?? 0);
 
-  int get ingredientsInPantry =>
-      ingredients.where((i) => i.inPantry).length;
+  int get ingredientsInPantry => ingredients.where((i) => i.inPantry).length;
 
   factory Recipe.fromJson(Map<String, dynamic> json) {
-    final ingredients = (json['ingredients'] as List<dynamic>?)
+    final ingredients =
+        (json['ingredients'] as List<dynamic>?)
             ?.map((e) => Ingredient.fromJson(e as Map<String, dynamic>))
             .toList() ??
         [];
 
-    final instructions = (json['instructions'] as List<dynamic>?)
+    final instructions =
+        (json['instructions'] as List<dynamic>?)
             ?.map((e) => e as String)
             .toList() ??
         [];
 
     return Recipe(
-      id: json['id'] as String? ??
+      id:
+          json['id'] as String? ??
           DateTime.now().millisecondsSinceEpoch.toString(),
       name: json['name'] as String? ?? 'Untitled Recipe',
       description: json['description'] as String? ?? '',
@@ -54,14 +56,14 @@ class Recipe {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'description': description,
-        'ingredients': ingredients.map((e) => e.toJson()).toList(),
-        'instructions': instructions,
-        if (servings != null) 'servings': servings,
-        if (prepTimeMinutes != null) 'prepTimeMinutes': prepTimeMinutes,
-        if (cookTimeMinutes != null) 'cookTimeMinutes': cookTimeMinutes,
-        if (imageUrl != null) 'imageUrl': imageUrl,
-      };
+    'id': id,
+    'name': name,
+    'description': description,
+    'ingredients': ingredients.map((e) => e.toJson()).toList(),
+    'instructions': instructions,
+    if (servings != null) 'servings': servings,
+    if (prepTimeMinutes != null) 'prepTimeMinutes': prepTimeMinutes,
+    if (cookTimeMinutes != null) 'cookTimeMinutes': cookTimeMinutes,
+    if (imageUrl != null) 'imageUrl': imageUrl,
+  };
 }

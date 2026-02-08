@@ -29,10 +29,10 @@ class Ingredient {
   }
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'quantity': quantity,
-        if (unit != null) 'unit': unit,
-        if (notes != null) 'notes': notes,
-        if (inPantry) 'inPantry': inPantry,
-      };
+    'name': name,
+    'quantity': quantity,
+    if (unit != null) 'unit': unit,
+    if (notes != null) 'notes': notes,
+    if (inPantry) 'inPantry': inPantry,
+  };
 }

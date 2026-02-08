@@ -1,11 +1,13 @@
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
+import ffprobeInstaller from "@ffprobe-installer/ffprobe";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { logger } from "../../logger";
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+ffmpeg.setFfprobePath(ffprobeInstaller.path);
 
 interface ExtractedFrame {
   path: string;

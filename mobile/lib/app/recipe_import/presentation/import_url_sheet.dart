@@ -2,26 +2,16 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
-/// Bottom sheet for adding pantry items. Frosted glass style; text field at
-/// top for comma-separated ingredients; submit via keyboard checkmark.
-class AddItemSheet extends StatefulWidget {
-  const AddItemSheet({super.key});
-
-  /// Parses comma-separated input into trimmed non-empty ingredient names.
-  static List<String> parseIngredients(String text) {
-    if (text.trim().isEmpty) return [];
-    return text
-        .split(',')
-        .map((s) => s.trim())
-        .where((s) => s.isNotEmpty)
-        .toList();
-  }
+/// Frosted-glass bottom sheet for entering a recipe URL.
+/// Returns the trimmed URL string when the user taps Done on the keyboard.
+class ImportUrlSheet extends StatefulWidget {
+  const ImportUrlSheet({super.key});
 
   @override
-  State<AddItemSheet> createState() => _AddItemSheetState();
+  State<ImportUrlSheet> createState() => _ImportUrlSheetState();
 }
 
-class _AddItemSheetState extends State<AddItemSheet> {
+class _ImportUrlSheetState extends State<ImportUrlSheet> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
 
@@ -36,8 +26,10 @@ class _AddItemSheetState extends State<AddItemSheet> {
   }
 
   void _submit() {
-    final ingredients = AddItemSheet.parseIngredients(_controller.text);
-    Navigator.of(context).pop(ingredients);
+    final url = _controller.text.trim();
+    if (url.isNotEmpty) {
+      Navigator.of(context).pop(url);
+    }
   }
 
   @override
@@ -65,6 +57,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Drag handle
                   Center(
                     child: Padding(
                       padding: const EdgeInsets.only(top: 8, bottom: 4),
@@ -78,12 +71,12 @@ class _AddItemSheetState extends State<AddItemSheet> {
                       ),
                     ),
                   ),
-                  // Text field (no border)
+                  // URL text field (no border)
                   TextField(
                     controller: _controller,
                     focusNode: _focusNode,
                     decoration: InputDecoration(
-                      hintText: 'e.g. flour, sugar, salt',
+                      hintText: 'Paste recipe URL here...',
                       hintStyle: TextStyle(
                         color: Colors.grey.shade600,
                         fontWeight: FontWeight.w400,
@@ -96,10 +89,10 @@ class _AddItemSheetState extends State<AddItemSheet> {
                         vertical: 12,
                       ),
                     ),
+                    keyboardType: TextInputType.url,
                     textInputAction: TextInputAction.done,
                     onSubmitted: (_) => _submit(),
-                    maxLines: 3,
-                    minLines: 1,
+                    maxLines: 1,
                   ),
                 ],
               ),

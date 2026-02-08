@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter/foundation.dart';
 
 import '../constants/app_spacing.dart';
 
@@ -9,6 +10,7 @@ class CustomBottomNavBar extends StatefulWidget {
   final Function(int) onTap;
   final VoidCallback? onSocialMediaTap;
   final VoidCallback? onCameraTap;
+
   /// When set, tapping the plus button runs this instead of expanding the menu.
   final VoidCallback? onPlusPrimaryAction;
   final Color accentColor;
@@ -88,9 +90,13 @@ class CustomBottomNavBarState extends State<CustomBottomNavBar>
   }
 
   void _handleOptionTap(VoidCallback? callback) {
+    debugPrint(
+      '[CustomBottomNavBar] _handleOptionTap callback=${callback != null}',
+    );
     HapticFeedback.selectionClick();
     _toggleExpanded();
     callback?.call();
+    debugPrint('[CustomBottomNavBar] _handleOptionTap callback invoked');
   }
 
   @override
@@ -104,7 +110,25 @@ class CustomBottomNavBarState extends State<CustomBottomNavBar>
         padding: AppSpacing.bottomNavPadding,
         child: Stack(
           clipBehavior: Clip.none,
+          alignment: Alignment.bottomCenter,
           children: [
+            // Invisible widget to force the stack size to accommodate the expanded menu
+            // This ensures hit testing works for the expanded menu items
+            AnimatedBuilder(
+              animation: _expandAnimation,
+              builder: (context, child) {
+                final menuHeight =
+                    _collapsedSize +
+                    (_expandedHeight - _collapsedSize) *
+                        _expandAnimation.value +
+                    _pillOuterPadding * _expandAnimation.value;
+                // Ensure we don't shrink below the row height (approx 72)
+                return SizedBox(
+                  height: menuHeight > 72 ? menuHeight : 72,
+                  width: double.infinity,
+                );
+              },
+            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -188,33 +212,23 @@ class CustomBottomNavBarState extends State<CustomBottomNavBar>
                           _expandAnimation.value +
                       _pillOuterPadding * _expandAnimation.value;
 
-                  return Padding(
-                    padding: EdgeInsets.only(bottom: bottomPadding),
-                    child: GestureDetector(
-                      onTap: () {
-                        if (widget.onPlusPrimaryAction != null) {
-                          widget.onPlusPrimaryAction!();
-                        } else {
-                          _toggleExpanded();
-                        }
-                      },
-                      behavior: HitTestBehavior.opaque,
-                      child: Container(
-                        width: width,
-                        height: height,
-                        clipBehavior: Clip.hardEdge,
-                        decoration: BoxDecoration(
-                          color: widget.accentColor,
-                          borderRadius: BorderRadius.circular(
-                            _collapsedSize / 2 +
-                                (35 - _collapsedSize / 2) *
-                                    _expandAnimation.value,
-                          ),
-                        ),
-                        child: Stack(
-                        children: [
-                          // Plus icon (fades out when expanding)
-                          Positioned.fill(
+                  final fabContent = Container(
+                    width: width,
+                    height: height,
+                    clipBehavior: Clip.hardEdge,
+                    decoration: BoxDecoration(
+                      color: widget.accentColor,
+                      borderRadius: BorderRadius.circular(
+                        _collapsedSize / 2 +
+                            (35 - _collapsedSize / 2) * _expandAnimation.value,
+                      ),
+                    ),
+                    child: Stack(
+                      children: [
+                        // Plus icon (fades out when expanding)
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            ignoring: _expandAnimation.value > 0,
                             child: Opacity(
                               opacity: 1 - _expandAnimation.value,
                               child: Center(
@@ -230,43 +244,63 @@ class CustomBottomNavBarState extends State<CustomBottomNavBar>
                               ),
                             ),
                           ),
-                          // Expanded menu content
-                          if (_expandAnimation.value > 0)
-                            Positioned.fill(
-                              child: Opacity(
-                                opacity: _fadeAnimation.value,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      _buildMenuOption(
-                                        title: 'Social Media / Blog',
-                                        subtitle: 'Enter URL Of Recipe',
-                                        iconPath: 'assets/icons/keyboard.svg',
-                                        onTap: () => _handleOptionTap(
-                                          widget.onSocialMediaTap,
-                                        ),
+                        ),
+                        // Expanded menu content (scrollable so it doesn't overflow during animation)
+                        if (_expandAnimation.value > 0)
+                          Positioned.fill(
+                            child: Opacity(
+                              opacity: _fadeAnimation.value,
+                              child: SingleChildScrollView(
+                                physics: const NeverScrollableScrollPhysics(),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                  horizontal: 20,
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    _buildMenuOption(
+                                      title: 'Social Media / Blog',
+                                      subtitle: 'Enter URL Of Recipe',
+                                      iconPath: 'assets/icons/keyboard.svg',
+                                      onTap: () => _handleOptionTap(
+                                        widget.onSocialMediaTap,
                                       ),
-                                      const SizedBox(height: 12),
-                                      _buildMenuOption(
-                                        title: 'Camera',
-                                        subtitle: 'Take Picture Of Recipe',
-                                        iconPath: 'assets/icons/camera.svg',
-                                        onTap: () =>
-                                            _handleOptionTap(widget.onCameraTap),
-                                      ),
-                                    ],
-                                  ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    _buildMenuOption(
+                                      title: 'Camera',
+                                      subtitle: 'Take Picture Of Recipe',
+                                      iconPath: 'assets/icons/camera.svg',
+                                      onTap: () =>
+                                          _handleOptionTap(widget.onCameraTap),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
-                          ],
-                        ),
-                      ),
+                          ),
+                      ],
                     ),
+                  );
+
+                  return Padding(
+                    padding: EdgeInsets.only(bottom: bottomPadding),
+                    child: _isExpanded
+                        ? fabContent
+                        : GestureDetector(
+                            onTap: () {
+                              if (widget.onPlusPrimaryAction != null) {
+                                widget.onPlusPrimaryAction!();
+                              } else {
+                                _toggleExpanded();
+                              }
+                            },
+                            behavior: HitTestBehavior.opaque,
+                            child: fabContent,
+                          ),
                   );
                 },
               ),
@@ -283,54 +317,60 @@ class CustomBottomNavBarState extends State<CustomBottomNavBar>
     required String iconPath,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: SvgPicture.asset(
-              iconPath,
-              width: 18,
-              height: 18,
-              colorFilter: ColorFilter.mode(
-                Colors.white.withOpacity(0.9),
-                BlendMode.srcIn,
               ),
-            ),
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: SvgPicture.asset(
+                  iconPath,
+                  width: 18,
+                  height: 18,
+                  colorFilter: ColorFilter.mode(
+                    Colors.white.withOpacity(0.9),
+                    BlendMode.srcIn,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

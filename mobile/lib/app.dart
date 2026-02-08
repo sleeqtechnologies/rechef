@@ -46,11 +46,9 @@ class _RechefAppState extends ConsumerState<RechefApp>
   void _handleSharedContent(SharedMedia media) {
     final router = ref.read(routerProvider);
 
-    // Extract URL or image from shared content
     final url = ShareHandlerService.extractUrl(media);
     final imagePath = ShareHandlerService.extractImagePath(media);
 
-    // Build URI for navigation
     String? targetPath;
     if (url != null) {
       final uri = Uri(path: '/recipes/import', queryParameters: {'url': url});

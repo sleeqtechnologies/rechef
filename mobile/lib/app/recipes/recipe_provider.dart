@@ -33,18 +33,19 @@ class RecipesNotifier extends AsyncNotifier<List<Recipe>> {
   Future<void> deleteRecipe(String id) async {
     final repo = ref.read(recipeRepositoryProvider);
     await repo.delete(id);
-    state = AsyncData(
-      (state.value ?? []).where((r) => r.id != id).toList(),
-    );
+    state = AsyncData((state.value ?? []).where((r) => r.id != id).toList());
   }
 }
 
-final recipesProvider =
-    AsyncNotifierProvider<RecipesNotifier, List<Recipe>>(RecipesNotifier.new);
+final recipesProvider = AsyncNotifierProvider<RecipesNotifier, List<Recipe>>(
+  RecipesNotifier.new,
+);
 
 /// Single recipe by ID. Use in detail screen: ref.watch(recipeByIdProvider(recipeId))
-final recipeByIdProvider =
-    Provider.family<AsyncValue<Recipe?>, String>((ref, recipeId) {
+final recipeByIdProvider = Provider.family<AsyncValue<Recipe?>, String>((
+  ref,
+  recipeId,
+) {
   final recipesAsync = ref.watch(recipesProvider);
   return recipesAsync.whenData((recipes) {
     try {

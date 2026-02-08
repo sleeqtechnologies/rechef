@@ -1,54 +1,73 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/widgets/custom_app_bar.dart';
+import '../domain/pantry_item.dart';
+import '../pantry_provider.dart';
 
-/// Demo data: categories and items matching the design.
-class _PantryDemoData {
-  static const List<({String name, List<String> items})> categories = [
-    (name: 'Herbes & Spices', items: [
-      'Onion powder',
-      'Thyme',
-      'Salt',
-      'Olive oil',
-      'Chilli powder',
-      'Chicken stock',
-    ]),
-    (name: 'Vegetables & Olis', items: [
-      'Olive oil',
-      'Onions',
-    ]),
-    (name: 'Meats And Seafood', items: [
-      'Chicken stock',
-    ]),
-  ];
-}
-
-class PantryScreen extends StatelessWidget {
+class PantryScreen extends ConsumerWidget {
   const PantryScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final byCategoryAsync = ref.watch(pantryByCategoryProvider);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: const CustomAppBar(title: 'Pantry'),
-      body: ListView(
-        padding: EdgeInsets.fromLTRB(
-          AppSpacing.horizontalMargin,
-          8,
-          AppSpacing.horizontalMargin,
-          140,
+      body: byCategoryAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              'Failed to load pantry.\n$error',
+              textAlign: TextAlign.center,
+            ),
+          ),
         ),
-        children: [
-          for (final category in _PantryDemoData.categories) ...[
-            _CategoryHeader(title: category.name),
-            Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
-            for (final item in category.items) ...[
-              _PantryItemRow(name: item),
-              Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
+        data: (byCategory) {
+          if (byCategory.isEmpty) {
+            return Center(
+              child: Text(
+                'Your pantry is empty.\nTap + to add ingredients.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Colors.grey.shade500,
+                    ),
+              ),
+            );
+          }
+
+          return ListView(
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.horizontalMargin,
+              8,
+              AppSpacing.horizontalMargin,
+              140,
+            ),
+            children: [
+              for (final entry in byCategory.entries) ...[
+                _CategoryHeader(title: entry.key),
+                Divider(
+                    height: 1, thickness: 1, color: Colors.grey.shade200),
+                for (final item in entry.value) ...[
+                  _PantryItemRow(
+                    item: item,
+                    onDismissed: () {
+                      ref
+                          .read(pantryProvider.notifier)
+                          .deleteItem(item.id);
+                    },
+                  ),
+                  Divider(
+                      height: 1, thickness: 1, color: Colors.grey.shade200),
+                ],
+              ],
             ],
-          ],
-        ],
+          );
+        },
       ),
     );
   }
@@ -74,17 +93,32 @@ class _CategoryHeader extends StatelessWidget {
 }
 
 class _PantryItemRow extends StatelessWidget {
-  const _PantryItemRow({required this.name});
+  const _PantryItemRow({
+    required this.item,
+    required this.onDismissed,
+  });
 
-  final String name;
+  final PantryItem item;
+  final VoidCallback onDismissed;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      child: Text(
-        name,
-        style: Theme.of(context).textTheme.bodyMedium,
+    return Dismissible(
+      key: ValueKey(item.id),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) => onDismissed(),
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        color: Colors.red.shade400,
+        child: const Icon(Icons.delete_outline, color: Colors.white),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Text(
+          item.name,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
       ),
     );
   }

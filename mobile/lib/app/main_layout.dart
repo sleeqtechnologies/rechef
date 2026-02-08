@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../app/pantry/presentation/add_item_sheet.dart';
+import '../app/pantry/pantry_provider.dart';
+import '../app/recipe_import/presentation/import_url_sheet.dart';
+import '../app/recipe_import/data/import_repository.dart';
+import '../app/recipe_import/import_provider.dart';
+import '../app/recipe_import/pending_jobs_provider.dart';
 import '../core/routing/app_router.dart';
 import '../core/widgets/custom_bottom_nav_bar.dart';
 
@@ -19,6 +24,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
   final GlobalKey<CustomBottomNavBarState> _navBarKey =
       GlobalKey<CustomBottomNavBarState>();
   bool _isMenuExpanded = false;
+  bool _pendingImportSheet = false;
 
   int _getCurrentIndex(String location) {
     if (location.startsWith('/recipes')) {
@@ -47,9 +53,93 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
   }
 
   void _onSocialMediaTap() {
-    final router = ref.read(routerProvider);
-    // TODO: Navigate to social media/URL import screen
-    router.go('/recipes/import');
+    debugPrint('[MainLayout] _onSocialMediaTap called');
+    setState(() {
+      _pendingImportSheet = true;
+    });
+  }
+
+  void _showImportUrlSheet() {
+    debugPrint('[MainLayout] _showImportUrlSheet called, mounted=$mounted');
+    if (!mounted) {
+      debugPrint('[MainLayout] _showImportUrlSheet skipped: not mounted');
+      return;
+    }
+    showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final keyboardHeight = MediaQuery.of(sheetContext).viewInsets.bottom;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const ImportUrlSheet(),
+              Container(
+                height: keyboardHeight,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.80),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    ).then((url) {
+      debugPrint('[MainLayout] Import sheet closed with url=$url');
+      if (url != null && url.isNotEmpty) {
+        _submitRecipeUrl(url);
+      }
+    });
+    debugPrint('[MainLayout] showModalBottomSheet invoked');
+  }
+
+  Future<void> _submitRecipeUrl(String url) async {
+    try {
+      final repo = ref.read(importRepositoryProvider);
+      final result = await repo.submitContent(url);
+
+      ref
+          .read(pendingJobsProvider.notifier)
+          .addJob(
+            ContentJob(
+              id: result.jobId,
+              status: 'pending',
+              savedContentId: result.savedContentId,
+            ),
+          );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Recipe is being generated in the background'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+
+      final router = ref.read(routerProvider);
+      router.go('/recipes');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.red.shade400,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
   }
 
   void _onCameraTap() {
@@ -58,15 +148,50 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
   }
 
   void _onPantryAddTap(BuildContext context) {
-    showModalBottomSheet<void>(
+    showModalBottomSheet<List<String>>(
       context: context,
-      builder: (context) => const AddItemSheet(),
-    );
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const AddItemSheet(),
+              Container(
+                height: keyboardHeight,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.80),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    ).then((ingredients) {
+      if (ingredients != null && ingredients.isNotEmpty) {
+        ref.read(pantryProvider.notifier).addItems(ingredients);
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final currentIndex = _getCurrentIndex(widget.location);
+
+    // If the import sheet was requested, show it after this frame completes.
+    if (_pendingImportSheet) {
+      debugPrint(
+        '[MainLayout] build: _pendingImportSheet=true, scheduling postFrameCallback',
+      );
+      _pendingImportSheet = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        debugPrint('[MainLayout] postFrameCallback fired, mounted=$mounted');
+        if (mounted) _showImportUrlSheet();
+      });
+    }
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -74,7 +199,6 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
       body: _isMenuExpanded
           ? GestureDetector(
               onTap: () {
-                // Close menu when tapping outside
                 _navBarKey.currentState?.closeMenu();
               },
               behavior: HitTestBehavior.translucent,

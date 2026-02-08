@@ -1,0 +1,1 @@
+ALTER TABLE "user_pantry" ADD COLUMN "category" varchar(100) DEFAULT 'Other' NOT NULL;
