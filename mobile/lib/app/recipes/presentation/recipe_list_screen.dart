@@ -4,19 +4,64 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/constants/app_spacing.dart';
+import '../../auth/presentation/account_sheet.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../recipe_import/data/import_repository.dart';
 import '../../recipe_import/pending_jobs_provider.dart';
 import '../domain/recipe.dart';
 import '../recipe_provider.dart';
 
-class RecipeListScreen extends ConsumerWidget {
+class RecipeListScreen extends ConsumerStatefulWidget {
   const RecipeListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RecipeListScreen> createState() => _RecipeListScreenState();
+}
+
+class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
+  final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  void _onSearchChanged() {
+    setState(() => _searchQuery = _searchController.text);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+
+  List<Recipe> _filterRecipes(List<Recipe> recipes) {
+    final q = _searchQuery.trim().toLowerCase();
+    if (q.isEmpty) return recipes;
+    return recipes
+        .where(
+          (r) =>
+              r.name.toLowerCase().contains(q) ||
+              (r.description.isNotEmpty &&
+                  r.description.toLowerCase().contains(q)),
+        )
+        .toList();
+  }
+
+  static const _accentColor = Color(0xFFFF4F63);
+
+  @override
+  Widget build(BuildContext context) {
     final recipesAsync = ref.watch(recipesProvider);
     final pendingJobs = ref.watch(pendingJobsProvider);
+    final user = ref.watch(userModelProvider);
+    final initials = user?.initials ?? 'AN';
 
     return Scaffold(
       appBar: CustomAppBar(
@@ -24,68 +69,120 @@ class RecipeListScreen extends ConsumerWidget {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: const Icon(Icons.logout_rounded, size: 22),
-              onPressed: () async {
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Sign Out'),
-                    content: const Text('Are you sure you want to sign out?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancel'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text('Sign Out'),
-                      ),
-                    ],
+            child: GestureDetector(
+              onTap: () => AccountSheet.show(context),
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: const BoxDecoration(
+                  color: _accentColor,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  initials,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
                   ),
-                );
-                if (confirmed == true) {
-                  await ref.read(authRepositoryProvider).signOut();
-                }
-              },
+                ),
+              ),
             ),
           ),
         ],
       ),
       body: SafeArea(
         bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: recipesAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 48,
-                    color: Colors.grey.shade300,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.horizontalMargin,
+                8,
+                AppSpacing.horizontalMargin,
+                12,
+              ),
+              child: TextField(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                decoration: InputDecoration(
+                  hintText: 'Search recipes…',
+                  prefixIcon: Icon(
+                    Icons.search_rounded,
+                    size: 22,
+                    color: Colors.grey.shade500,
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Failed to load recipes',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey.shade600,
-                    ),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: Icon(
+                            Icons.clear_rounded,
+                            size: 20,
+                            color: Colors.grey.shade600,
+                          ),
+                          onPressed: () {
+                            _searchController.clear();
+                          },
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
                   ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () => ref.invalidate(recipesProvider),
-                    child: const Text('Retry'),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
                   ),
-                ],
+                ),
               ),
             ),
-            data: (recipes) => recipes.isEmpty && pendingJobs.isEmpty
-                ? const _EmptyState()
-                : _RecipeGrid(recipes: recipes, pendingJobs: pendingJobs),
-          ),
+            Expanded(
+              child: recipesAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, _) => Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Colors.grey.shade300,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Failed to load recipes',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: () => ref.invalidate(recipesProvider),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+                data: (recipes) {
+                  final filtered = _filterRecipes(recipes);
+                  if (filtered.isEmpty && pendingJobs.isEmpty) {
+                    return const _EmptyState();
+                  }
+                  if (filtered.isEmpty && recipes.isNotEmpty) {
+                    return _NoSearchResults(query: _searchQuery);
+                  }
+                  return _RecipeGrid(
+                    recipes: filtered,
+                    pendingJobs:
+                        _searchQuery.trim().isEmpty ? pendingJobs : [],
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -120,6 +217,50 @@ class _EmptyState extends StatelessWidget {
             Text(
               'Import a recipe from a URL or photo to get started',
               textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.grey.shade500,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NoSearchResults extends StatelessWidget {
+  const _NoSearchResults({required this.query});
+
+  final String query;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.search_off_rounded,
+              size: 64,
+              color: Colors.grey.shade300,
+            ),
+            const SizedBox(height: 20),
+            Text(
+              query.trim().isEmpty
+                  ? 'No matches'
+                  : 'No matches for "${query.trim()}"',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Try a different search term',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Colors.grey.shade500,
                 height: 1.4,
