@@ -15,6 +15,8 @@ class ApiEndpoints {
       '/api/recipes/$recipeId/match-pantry';
   static String toggleIngredient(String recipeId, int index) =>
       '/api/recipes/$recipeId/ingredients/$index';
+  static String recipeChat(String recipeId) =>
+      '/api/recipes/$recipeId/chat';
 
   // Pantry endpoints
   static String get pantry => '/api/pantry';

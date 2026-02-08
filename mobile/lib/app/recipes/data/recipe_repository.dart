@@ -91,4 +91,40 @@ class RecipeRepository {
       throw Exception('Failed to delete recipe');
     }
   }
+
+
+  Future<List<Map<String, dynamic>>> fetchChatHistory(String recipeId) async {
+    final response = await _apiClient.get(ApiEndpoints.recipeChat(recipeId));
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to fetch chat history');
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final list = data['messages'] as List<dynamic>;
+    return list.cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> sendChatMessage(
+    String recipeId, {
+    required String message,
+    String? imageBase64,
+    int? currentStep,
+  }) async {
+    final body = <String, dynamic>{'message': message};
+    if (imageBase64 != null) body['imageBase64'] = imageBase64;
+    if (currentStep != null) body['currentStep'] = currentStep;
+
+    final response = await _apiClient.post(
+      ApiEndpoints.recipeChat(recipeId),
+      body: body,
+    );
+
+    if (response.statusCode != 200) {
+      final error = jsonDecode(response.body);
+      throw Exception(error['error'] ?? 'Failed to send message');
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
 }

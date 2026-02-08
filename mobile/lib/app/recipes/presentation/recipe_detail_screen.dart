@@ -9,6 +9,7 @@ import '../domain/recipe.dart';
 import '../domain/ingredient.dart';
 import '../recipe_provider.dart';
 import '../../grocery/grocery_provider.dart';
+import 'cooking_mode_sheet.dart';
 import 'edit_recipe_sheet.dart';
 
 bool _hasSourceOrAuthor(Recipe recipe) {
@@ -446,11 +447,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                         }
                       }
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Starting cooking mode (coming soon)'),
-                        ),
-                      );
+                      CookingModeSheet.show(context, recipe);
                     }
                   },
                 );

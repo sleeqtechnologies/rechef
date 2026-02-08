@@ -1,5 +1,6 @@
 import { Router } from "express";
 import recipeController from "./recipe.controller";
+import chatController from "../chat/chat.controller";
 
 const router = Router();
 
@@ -10,5 +11,9 @@ router.put("/:id", recipeController.updateRecipe);
 router.post("/:id/match-pantry", recipeController.matchPantry);
 router.patch("/:id/ingredients/:index", recipeController.toggleIngredient);
 router.delete("/:id", recipeController.deleteRecipe);
+
+// Chat
+router.get("/:id/chat", chatController.getChatHistory);
+router.post("/:id/chat", chatController.sendMessage);
 
 export default router;

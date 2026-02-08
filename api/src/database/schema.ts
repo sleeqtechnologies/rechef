@@ -1,3 +1,4 @@
+import { chatMessageTable } from "../app/chat/chat.table";
 import { savedContentTable, contentJobTable } from "../app/content/content.table";
 import { groceryListItemTable, groceryListTable } from "../app/grocery/grocery.table";
 import { userPantryTable } from "../app/pantry/pantry.table";
@@ -12,4 +13,5 @@ export default {
   groceryListTable,
   groceryListItemTable,
   userPantryTable,
+  chatMessageTable,
 };

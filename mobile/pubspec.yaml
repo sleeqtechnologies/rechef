@@ -31,6 +31,10 @@ dependencies:
   url_launcher: ^6.3.2
   purchases_flutter: ^9.11.0
   purchases_ui_flutter: ^9.11.0
+  flutter_chat_core: ^2.9.0
+  flutter_chat_ui: ^2.11.1
+  speech_to_text: ^7.3.0
+  flutter_markdown_plus: ^1.0.7
 
 dev_dependencies:
   flutter_test:

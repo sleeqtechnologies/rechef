@@ -1,7 +1,10 @@
 import { logger } from "../../../logger";
 import { Request, Response } from "express";
 import { ParseContentSchema } from "./content.validation";
-import { detectContentSource, ContentSource } from "../../services/content-detector";
+import {
+  detectContentSource,
+  ContentSource,
+} from "../../services/content-detector";
 import { parseYouTubeContent } from "../../services/youtube";
 import { parseTikTokContent } from "../../services/tiktok";
 import { parseWebsiteContent } from "../../services/website";
@@ -28,7 +31,9 @@ interface GenerateRecipeResult {
   savedContentThumbnailUrl?: string | null;
 }
 
-function contentSourceToType(source: ContentSource): "video" | "image" | "website" {
+function contentSourceToType(
+  source: ContentSource,
+): "video" | "image" | "website" {
   switch (source) {
     case "youtube":
     case "tiktok":
@@ -49,7 +54,9 @@ const parseContent = async (
     const userId = req.user.id;
 
     const sourceUrl = url || "image-upload";
-    const contentType = url ? contentSourceToType(detectContentSource(url).source) : "image";
+    const contentType = url
+      ? contentSourceToType(detectContentSource(url).source)
+      : "image";
 
     const savedContent = await contentRepo.createSavedContent({
       userId,
@@ -68,13 +75,22 @@ const parseContent = async (
       savedContentId: savedContent.id,
     });
 
-    processContentInBackground(job.id, savedContent.id, userId, { url, imageBase64 }, {
-      userName: req.user.name,
-    });
+    processContentInBackground(
+      job.id,
+      savedContent.id,
+      userId,
+      { url, imageBase64 },
+      {
+        userName: req.user.name,
+      },
+    );
   } catch (error) {
     logger.error("Error initiating content parse:", error);
     return res.status(500).json({
-      error: error instanceof Error ? error.message : "Failed to initiate content parsing",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to initiate content parsing",
     });
   }
 };
