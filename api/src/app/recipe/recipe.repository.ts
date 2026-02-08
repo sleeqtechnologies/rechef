@@ -56,9 +56,29 @@ const updateIngredients = async (
     .where(eq(recipeTable.id, id));
 };
 
+interface UpdateRecipeData {
+  name?: string;
+  description?: string;
+  ingredients?: unknown;
+  instructions?: string;
+  servings?: number | null;
+  prepTimeMinutes?: number | null;
+  cookTimeMinutes?: number | null;
+}
+
+const update = async (id: string, data: UpdateRecipeData): Promise<Recipe> => {
+  const [recipe] = await db
+    .update(recipeTable)
+    .set(data)
+    .where(eq(recipeTable.id, id))
+    .returning();
+
+  return recipe;
+};
+
 const deleteById = async (id: string): Promise<void> => {
   await db.delete(recipeTable).where(eq(recipeTable.id, id));
 };
 
-export { create, findAllByUserId, findById, updateIngredients, deleteById };
-export type { Recipe, NewRecipe };
+export { create, findAllByUserId, findById, update, updateIngredients, deleteById };
+export type { Recipe, NewRecipe, UpdateRecipeData };

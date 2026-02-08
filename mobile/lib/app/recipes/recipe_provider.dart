@@ -31,6 +31,19 @@ class RecipesNotifier extends AsyncNotifier<List<Recipe>> {
     }
   }
 
+  Future<Recipe> updateRecipe(Recipe recipe) async {
+    final repo = ref.read(recipeRepositoryProvider);
+    final saved = await repo.update(recipe);
+    final recipes = state.value ?? [];
+    final idx = recipes.indexWhere((r) => r.id == saved.id);
+    if (idx != -1) {
+      final updated = List<Recipe>.from(recipes);
+      updated[idx] = saved;
+      state = AsyncData(updated);
+    }
+    return saved;
+  }
+
   Future<void> deleteRecipe(String id) async {
     final repo = ref.read(recipeRepositoryProvider);
     await repo.delete(id);

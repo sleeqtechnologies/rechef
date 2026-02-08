@@ -35,15 +35,24 @@ class Recipe {
 
   int get ingredientsInPantry => ingredients.where((i) => i.inPantry).length;
 
-  Recipe copyWith({List<Ingredient>? ingredients}) => Recipe(
+  Recipe copyWith({
+    String? name,
+    String? description,
+    List<Ingredient>? ingredients,
+    List<String>? instructions,
+    int? servings,
+    int? prepTimeMinutes,
+    int? cookTimeMinutes,
+  }) =>
+      Recipe(
         id: id,
-        name: name,
-        description: description,
+        name: name ?? this.name,
+        description: description ?? this.description,
         ingredients: ingredients ?? this.ingredients,
-        instructions: instructions,
-        servings: servings,
-        prepTimeMinutes: prepTimeMinutes,
-        cookTimeMinutes: cookTimeMinutes,
+        instructions: instructions ?? this.instructions,
+        servings: servings ?? this.servings,
+        prepTimeMinutes: prepTimeMinutes ?? this.prepTimeMinutes,
+        cookTimeMinutes: cookTimeMinutes ?? this.cookTimeMinutes,
         imageUrl: imageUrl,
         sourceUrl: sourceUrl,
         sourceTitle: sourceTitle,

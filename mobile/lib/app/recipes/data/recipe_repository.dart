@@ -39,6 +39,22 @@ class RecipeRepository {
     return Recipe.fromJson(recipeJson);
   }
 
+  Future<Recipe> update(Recipe recipe) async {
+    final response = await _apiClient.put(
+      ApiEndpoints.recipe(recipe.id),
+      body: recipe.toJson(),
+    );
+
+    if (response.statusCode != 200) {
+      final error = jsonDecode(response.body);
+      throw Exception(error['error'] ?? 'Failed to update recipe');
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final recipeJson = data['recipe'] as Map<String, dynamic>;
+    return Recipe.fromJson(recipeJson);
+  }
+
   Future<List<Ingredient>> matchPantry(String recipeId) async {
     final response = await _apiClient.post(
       ApiEndpoints.matchPantry(recipeId),

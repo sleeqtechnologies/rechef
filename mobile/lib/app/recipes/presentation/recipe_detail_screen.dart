@@ -9,6 +9,7 @@ import '../domain/recipe.dart';
 import '../domain/ingredient.dart';
 import '../recipe_provider.dart';
 import '../../grocery/grocery_provider.dart';
+import 'edit_recipe_sheet.dart';
 
 bool _hasSourceOrAuthor(Recipe recipe) {
   final hasName =
@@ -55,6 +56,26 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
       // Silently ignore matching errors
     } finally {
       if (mounted) setState(() => _isMatchingPantry = false);
+    }
+  }
+
+  Future<void> _openEditSheet(Recipe recipe) async {
+    final updated = await EditRecipeSheet.show(context, recipe);
+    if (updated != null && mounted) {
+      try {
+        await ref.read(recipesProvider.notifier).updateRecipe(updated);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Recipe updated')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to save: $e')),
+          );
+        }
+      }
     }
   }
 
@@ -204,6 +225,15 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                     ),
                   ),
                   actions: [
+                    _AppBarButton(
+                      icon: Icons.edit_outlined,
+                      iconColor: _isCollapsed ? Colors.black : Colors.white,
+                      glassColor: _isCollapsed
+                          ? const Color(0xCCFFFFFF)
+                          : const Color(0x33FFFFFF),
+                      onPressed: () => _openEditSheet(recipe),
+                    ),
+                    const SizedBox(width: 4),
                     _AppBarButton(
                       icon: Icons.bookmark_border,
                       iconColor: _isCollapsed ? Colors.black : Colors.white,

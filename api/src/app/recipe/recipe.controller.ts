@@ -73,8 +73,7 @@ const saveRecipe = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error("Error saving recipe:", error);
     return res.status(500).json({
-      error:
-        error instanceof Error ? error.message : "Failed to save recipe",
+      error: error instanceof Error ? error.message : "Failed to save recipe",
     });
   }
 };
@@ -84,12 +83,13 @@ const getRecipes = async (req: Request, res: Response) => {
     const userId = req.user.id;
     const recipes = await recipeRepository.findAllByUserId(userId);
 
-    return res.status(200).json({ recipes: recipes.map((r) => formatRecipe(r)) });
+    return res
+      .status(200)
+      .json({ recipes: recipes.map((r) => formatRecipe(r)) });
   } catch (error) {
     logger.error("Error fetching recipes:", error);
     return res.status(500).json({
-      error:
-        error instanceof Error ? error.message : "Failed to fetch recipes",
+      error: error instanceof Error ? error.message : "Failed to fetch recipes",
     });
   }
 };
@@ -111,8 +111,7 @@ const getRecipeById = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error("Error fetching recipe:", error);
     return res.status(500).json({
-      error:
-        error instanceof Error ? error.message : "Failed to fetch recipe",
+      error: error instanceof Error ? error.message : "Failed to fetch recipe",
     });
   }
 };
@@ -167,8 +166,7 @@ const matchPantry = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error("Error matching pantry:", error);
     return res.status(500).json({
-      error:
-        error instanceof Error ? error.message : "Failed to match pantry",
+      error: error instanceof Error ? error.message : "Failed to match pantry",
     });
   }
 };
@@ -202,9 +200,42 @@ const toggleIngredient = async (req: Request, res: Response) => {
     logger.error("Error toggling ingredient:", error);
     return res.status(500).json({
       error:
-        error instanceof Error
-          ? error.message
-          : "Failed to toggle ingredient",
+        error instanceof Error ? error.message : "Failed to toggle ingredient",
+    });
+  }
+};
+
+const updateRecipe = async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const recipe = await recipeRepository.findById(id);
+
+    if (!recipe) {
+      return res.status(404).json({ error: "Recipe not found" });
+    }
+
+    if (recipe.userId !== req.user.id) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const { name, description, ingredients, instructions, servings, prepTimeMinutes, cookTimeMinutes } = req.body;
+
+    const updateData: Record<string, unknown> = {};
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (ingredients !== undefined) updateData.ingredients = ingredients;
+    if (instructions !== undefined) updateData.instructions = JSON.stringify(instructions);
+    if (servings !== undefined) updateData.servings = servings;
+    if (prepTimeMinutes !== undefined) updateData.prepTimeMinutes = prepTimeMinutes;
+    if (cookTimeMinutes !== undefined) updateData.cookTimeMinutes = cookTimeMinutes;
+
+    const updated = await recipeRepository.update(id, updateData);
+
+    return res.status(200).json({ recipe: formatRecipe(updated) });
+  } catch (error) {
+    logger.error("Error updating recipe:", error);
+    return res.status(500).json({
+      error: error instanceof Error ? error.message : "Failed to update recipe",
     });
   }
 };
@@ -227,8 +258,7 @@ const deleteRecipe = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error("Error deleting recipe:", error);
     return res.status(500).json({
-      error:
-        error instanceof Error ? error.message : "Failed to delete recipe",
+      error: error instanceof Error ? error.message : "Failed to delete recipe",
     });
   }
 };
@@ -237,6 +267,7 @@ export default {
   saveRecipe,
   getRecipes,
   getRecipeById,
+  updateRecipe,
   matchPantry,
   toggleIngredient,
   deleteRecipe,
