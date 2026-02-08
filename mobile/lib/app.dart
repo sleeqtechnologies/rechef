@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:share_handler/share_handler.dart';
 
+import 'app/auth/providers/auth_providers.dart';
 import 'app/recipe_import/pending_jobs_provider.dart';
+import 'app/subscription/subscription_provider.dart';
 import 'core/routing/app_router.dart';
 import 'core/services/share_handler_service.dart';
 import 'core/services/share_handler_provider.dart';
@@ -23,6 +26,27 @@ class _RechefAppState extends ConsumerState<RechefApp>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initializeShareHandler();
+    _syncRevenueCatUser();
+  }
+
+  /// Keep RevenueCat user in sync with Firebase Auth state.
+  void _syncRevenueCatUser() {
+    ref.listenManual(authStateProvider, (previous, next) async {
+      final user = next.value;
+      try {
+        if (user != null) {
+          // User signed in – log in to RevenueCat with Firebase UID.
+          await Purchases.logIn(user.uid);
+        } else if (previous?.value != null) {
+          // User signed out – revert to anonymous RevenueCat user.
+          await Purchases.logOut();
+        }
+      } catch (e) {
+        debugPrint('[RechefApp] RevenueCat user sync error: $e');
+      }
+      // Refresh subscription status after auth change.
+      ref.invalidate(subscriptionProvider);
+    });
   }
 
   @override

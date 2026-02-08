@@ -19,6 +19,10 @@ const recipeTable = pgTable("recipes", {
   prepTimeMinutes: integer("prep_time_minutes"),
   cookTimeMinutes: integer("cook_time_minutes"),
   imageUrl: text("image_url"),
+  sourceUrl: text("source_url"),
+  sourceTitle: varchar("source_title", { length: 512 }),
+  sourceAuthorName: varchar("source_author_name", { length: 255 }),
+  sourceAuthorAvatarUrl: text("source_author_avatar_url"),
   createdAt,
   updatedAt,
 });

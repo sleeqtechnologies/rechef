@@ -3,11 +3,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../domain/recipe.dart';
 import '../domain/ingredient.dart';
 import '../recipe_provider.dart';
 import '../../grocery/grocery_provider.dart';
+
+bool _hasSourceOrAuthor(Recipe recipe) {
+  final hasName =
+      recipe.sourceAuthorName != null &&
+      recipe.sourceAuthorName!.trim().isNotEmpty;
+  final hasUrl =
+      recipe.sourceUrl != null && recipe.sourceUrl!.trim().isNotEmpty;
+  final hasTitle =
+      recipe.sourceTitle != null && recipe.sourceTitle!.trim().isNotEmpty;
+  final hasAvatar =
+      recipe.sourceAuthorAvatarUrl != null &&
+      recipe.sourceAuthorAvatarUrl!.trim().isNotEmpty;
+  return hasName || hasUrl || hasTitle || hasAvatar;
+}
 
 class RecipeDetailScreen extends ConsumerStatefulWidget {
   const RecipeDetailScreen({super.key, required this.recipeId});
@@ -15,8 +30,7 @@ class RecipeDetailScreen extends ConsumerStatefulWidget {
   final String recipeId;
 
   @override
-  ConsumerState<RecipeDetailScreen> createState() =>
-      _RecipeDetailScreenState();
+  ConsumerState<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
 }
 
 class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
@@ -70,7 +84,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
+            icon: const Icon(Icons.arrow_back_ios_new),
             onPressed: () {
               if (context.canPop()) {
                 context.pop();
@@ -84,14 +98,18 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline_rounded, size: 56, color: Colors.grey.shade400),
+              Icon(
+                Icons.error_outline_rounded,
+                size: 56,
+                color: Colors.grey.shade400,
+              ),
               const SizedBox(height: 16),
               Text(
                 'Could not load recipe',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
@@ -106,7 +124,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
+            icon: const Icon(Icons.arrow_back_ios_new),
             onPressed: () {
               if (context.canPop()) {
                 context.pop();
@@ -120,14 +138,18 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.search_off_rounded, size: 56, color: Colors.grey.shade300),
+              Icon(
+                Icons.search_off_rounded,
+                size: 56,
+                color: Colors.grey.shade300,
+              ),
               const SizedBox(height: 16),
               Text(
                 'Recipe not found',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
@@ -167,18 +189,18 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                   leading: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: _AppBarButton(
-                      icon: Icons.arrow_back,
+                      icon: Icons.arrow_back_ios_new,
                       iconColor: _isCollapsed ? Colors.black : Colors.white,
                       glassColor: _isCollapsed
                           ? const Color(0xCCFFFFFF)
                           : const Color(0x33FFFFFF),
                       onPressed: () {
-                      if (context.canPop()) {
-                        context.pop();
-                      } else {
-                        context.go('/recipes');
-                      }
-                    },
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/recipes');
+                        }
+                      },
                     ),
                   ),
                   actions: [
@@ -223,16 +245,17 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                                     return Container(
                                       color: Colors.grey.shade200,
                                       alignment: Alignment.center,
-                                      child: const Icon(Icons.restaurant,
-                                          size: 48),
+                                      child: const Icon(
+                                        Icons.restaurant,
+                                        size: 48,
+                                      ),
                                     );
                                   },
                                 )
                               : Container(
                                   color: Colors.grey.shade200,
                                   alignment: Alignment.center,
-                                  child:
-                                      const Icon(Icons.restaurant, size: 48),
+                                  child: const Icon(Icons.restaurant, size: 48),
                                 ),
                         ),
                         AnimatedContainer(
@@ -266,14 +289,24 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                                     height: 1.2,
                                   ),
                             ),
-                            const SizedBox(height: 16),
-                            _AuthorRow(
-                              author: _AuthorInfo(
-                                name: 'Rechef',
-                                sourceUrl: null,
+                            if (_hasSourceOrAuthor(recipe)) ...[
+                              const SizedBox(height: 16),
+                              _AuthorRow(
+                                author: _AuthorInfo(
+                                  name:
+                                      recipe.sourceAuthorName
+                                              ?.trim()
+                                              .isNotEmpty ==
+                                          true
+                                      ? recipe.sourceAuthorName!
+                                      : '',
+                                  sourceUrl: recipe.sourceUrl,
+                                  sourceTitle: recipe.sourceTitle,
+                                  avatarUrl: recipe.sourceAuthorAvatarUrl,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 16),
+                              const SizedBox(height: 16),
+                            ],
                             Row(
                               children: [
                                 _MetaInfo(
@@ -312,8 +345,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                                 onToggle: (index) {
                                   ref
                                       .read(recipesProvider.notifier)
-                                      .toggleIngredient(
-                                          widget.recipeId, index);
+                                      .toggleIngredient(widget.recipeId, index);
                                 },
                               )
                             : _CookingTab(recipe: recipe);
@@ -343,7 +375,9 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                       if (missing.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('All ingredients are in your pantry!'),
+                            content: Text(
+                              'All ingredients are in your pantry!',
+                            ),
                           ),
                         );
                         return;
@@ -355,20 +389,22 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                             .addItems(
                               recipeId: widget.recipeId,
                               items: missing
-                                  .map((i) => {
-                                        'name': i.name,
-                                        'quantity': i.quantity,
-                                        if (i.unit != null) 'unit': i.unit,
-                                      })
+                                  .map(
+                                    (i) => {
+                                      'name': i.name,
+                                      'quantity': i.quantity,
+                                      if (i.unit != null) 'unit': i.unit,
+                                    },
+                                  )
                                   .toList(),
                             );
                         if (context.mounted) {
                           final msg = added == 0
                               ? 'Items already in grocery list'
                               : 'Added $added item${added == 1 ? '' : 's'} to grocery list';
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(msg)),
-                          );
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text(msg)));
                         }
                       } catch (e) {
                         if (context.mounted) {
@@ -429,10 +465,17 @@ class _AppBarButton extends StatelessWidget {
 }
 
 class _AuthorInfo {
-  const _AuthorInfo({required this.name, this.sourceUrl});
+  const _AuthorInfo({
+    required this.name,
+    this.sourceUrl,
+    this.sourceTitle,
+    this.avatarUrl,
+  });
 
   final String name;
   final String? sourceUrl;
+  final String? sourceTitle;
+  final String? avatarUrl;
 }
 
 class _AuthorRow extends StatelessWidget {
@@ -440,53 +483,134 @@ class _AuthorRow extends StatelessWidget {
 
   final _AuthorInfo author;
 
+  String get _displayName =>
+      author.name.trim().isNotEmpty ? author.name.trim() : '';
+
+  String get _sourceUrlDisplay {
+    if (author.sourceUrl == null || author.sourceUrl!.trim().isEmpty) return '';
+    // Show a clean, short version of the URL
+    final url = author.sourceUrl!.trim();
+    try {
+      final uri = Uri.parse(url);
+      return uri.host + uri.path;
+    } catch (_) {
+      return url;
+    }
+  }
+
+  Future<void> _openSourceUrl() async {
+    if (author.sourceUrl == null || author.sourceUrl!.trim().isEmpty) return;
+    final uri = Uri.tryParse(author.sourceUrl!.trim());
+    if (uri != null) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.grey.shade800,
-            shape: BoxShape.circle,
+    final showNameLine = _displayName.isNotEmpty;
+    final hasUrl = _sourceUrlDisplay.isNotEmpty;
+
+    return GestureDetector(
+      onTap: hasUrl ? _openSourceUrl : null,
+      child: Row(
+        children: [
+          ClipOval(
+            child:
+                author.avatarUrl != null && author.avatarUrl!.trim().isNotEmpty
+                ? Image.network(
+                    author.avatarUrl!,
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _buildInitialsAvatar(context),
+                  )
+                : _buildInitialsAvatar(context),
           ),
-          alignment: Alignment.center,
-          child: Text(
-            author.name.isNotEmpty ? author.name[0].toUpperCase() : '?',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (showNameLine)
+                  Text(
+                    _displayName,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                if (hasUrl)
+                  Text(
+                    _sourceUrlDisplay,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      decoration: TextDecoration.underline,
+                      decorationColor: Theme.of(context).colorScheme.primary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
             ),
           ),
+          if (hasUrl)
+            Icon(
+              Icons.open_in_new_rounded,
+              size: 16,
+              color: Colors.grey.shade500,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInitialsAvatar(BuildContext context) {
+    final initial = author.name.isNotEmpty
+        ? author.name
+              .trim()
+              .split(RegExp(r'\s+'))
+              .map((s) => s.isNotEmpty ? s[0] : '')
+              .take(2)
+              .join()
+              .toUpperCase()
+        : '?';
+    if (initial.isEmpty) return _buildInitialsAvatarFallback(context);
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade800,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        initial.length > 2 ? initial.substring(0, 2) : initial,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                author.name,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              if (author.sourceUrl != null)
-                Text(
-                  author.sourceUrl!,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(color: Colors.grey.shade600),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-            ],
-          ),
+      ),
+    );
+  }
+
+  Widget _buildInitialsAvatarFallback(BuildContext context) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade800,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: const Text(
+        '?',
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
         ),
-      ],
+      ),
     );
   }
 }
@@ -697,9 +821,9 @@ class _IngredientRow extends StatelessWidget {
                 Expanded(
                   child: Text(
                     ingredient.name,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
                 // Quantity (capped at 27% of row width)
@@ -707,9 +831,9 @@ class _IngredientRow extends StatelessWidget {
                   width: quantityWidth,
                   child: Text(
                     ingredient.displayQuantity,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey.shade600,
+                    ),
                     textAlign: TextAlign.end,
                     overflow: TextOverflow.ellipsis,
                   ),

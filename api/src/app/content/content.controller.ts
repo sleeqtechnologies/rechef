@@ -13,9 +13,20 @@ import {
   filterFoodFrames,
   selectBestFoodFrames,
 } from "../../services/food-detection";
+import type { GeneratedRecipe } from "../../services/recipe-generator";
 import { generateRecipeFromContent } from "../../services/recipe-generator";
 import * as contentRepo from "./content.repository";
 import * as recipeRepo from "../recipe/recipe.repository";
+
+interface GenerateRecipeResult {
+  recipe: GeneratedRecipe;
+  sourceUrl?: string | null;
+  sourceTitle?: string | null;
+  sourceAuthorName?: string | null;
+  sourceAuthorAvatarUrl?: string | null;
+  savedContentTitle?: string | null;
+  savedContentThumbnailUrl?: string | null;
+}
 
 function contentSourceToType(source: ContentSource): "video" | "image" | "website" {
   switch (source) {
@@ -57,7 +68,9 @@ const parseContent = async (
       savedContentId: savedContent.id,
     });
 
-    processContentInBackground(job.id, savedContent.id, userId, { url, imageBase64 });
+    processContentInBackground(job.id, savedContent.id, userId, { url, imageBase64 }, {
+      userName: req.user.name,
+    });
   } catch (error) {
     logger.error("Error initiating content parse:", error);
     return res.status(500).json({
@@ -71,15 +84,27 @@ async function processContentInBackground(
   savedContentId: string,
   userId: string,
   input: { url?: string; imageBase64?: string },
+  options?: { userName?: string },
 ) {
   try {
     await contentRepo.updateJobStatus(jobId, "processing", { progress: 10 });
 
-    const recipe = await generateRecipe(input);
+    const result = await generateRecipe(input, options);
+
+    if (
+      result.savedContentTitle != null ||
+      result.savedContentThumbnailUrl != null
+    ) {
+      await contentRepo.updateSavedContentMetadata(savedContentId, {
+        title: result.savedContentTitle ?? undefined,
+        thumbnailUrl: result.savedContentThumbnailUrl ?? undefined,
+      });
+    }
 
     await contentRepo.updateJobStatus(jobId, "completed", { progress: 100 });
     await contentRepo.updateSavedContentStatus(savedContentId, "processed");
 
+    const { recipe } = result;
     await recipeRepo.create({
       userId,
       savedContentId,
@@ -91,6 +116,10 @@ async function processContentInBackground(
       prepTimeMinutes: recipe.prepTimeMinutes ?? null,
       cookTimeMinutes: recipe.cookTimeMinutes ?? null,
       imageUrl: recipe.imageUrl ?? null,
+      sourceUrl: result.sourceUrl ?? null,
+      sourceTitle: result.sourceTitle ?? null,
+      sourceAuthorName: result.sourceAuthorName ?? null,
+      sourceAuthorAvatarUrl: result.sourceAuthorAvatarUrl ?? null,
     });
 
     logger.info(`Job ${jobId} completed successfully`);
@@ -103,9 +132,18 @@ async function processContentInBackground(
   }
 }
 
-async function generateRecipe(input: { url?: string; imageBase64?: string }) {
+async function generateRecipe(
+  input: { url?: string; imageBase64?: string },
+  options?: { userName?: string },
+): Promise<GenerateRecipeResult> {
   if (input.imageBase64) {
-    return generateRecipeFromContent({ imageBase64: input.imageBase64 });
+    const recipe = await generateRecipeFromContent({
+      imageBase64: input.imageBase64,
+    });
+    return {
+      recipe,
+      sourceAuthorName: options?.userName ?? null,
+    };
   }
 
   if (!input.url) {
@@ -126,12 +164,25 @@ async function generateRecipe(input: { url?: string; imageBase64?: string }) {
       });
       const foodFrames = await filterFoodFrames(frames);
       const bestFrames = await selectBestFoodFrames(foodFrames);
-      return generateRecipeFromContent({
+      const recipe = await generateRecipeFromContent({
         transcript: youtubeContent.transcript,
         foodFrames: bestFrames,
+        firstFrameBase64: frames[0]?.base64,
         sourceTitle: youtubeContent.metadata.title,
         sourceDescription: youtubeContent.metadata.description,
+        sourceImageUrls: youtubeContent.metadata.thumbnailUrl
+          ? [youtubeContent.metadata.thumbnailUrl]
+          : undefined,
       });
+      return {
+        recipe,
+        sourceUrl: input.url,
+        sourceTitle: youtubeContent.metadata.title,
+        sourceAuthorName: youtubeContent.metadata.channelName || null,
+        sourceAuthorAvatarUrl: null,
+        savedContentTitle: youtubeContent.metadata.title,
+        savedContentThumbnailUrl: youtubeContent.metadata.thumbnailUrl || null,
+      };
     }
 
     case "tiktok": {
@@ -145,29 +196,71 @@ async function generateRecipe(input: { url?: string; imageBase64?: string }) {
       });
       const foodFrames = await filterFoodFrames(frames);
       const bestFrames = await selectBestFoodFrames(foodFrames);
-      return generateRecipeFromContent({
+      const recipe = await generateRecipeFromContent({
         transcript: tiktokContent.transcript,
         foodFrames: bestFrames,
+        firstFrameBase64: frames[0]?.base64,
         sourceTitle: tiktokContent.metadata.title,
         sourceDescription: tiktokContent.metadata.description,
+        sourceImageUrls: tiktokContent.metadata.thumbnailUrl
+          ? [tiktokContent.metadata.thumbnailUrl]
+          : undefined,
       });
+      return {
+        recipe,
+        sourceUrl: input.url,
+        sourceTitle: tiktokContent.metadata.title || null,
+        sourceAuthorName: tiktokContent.metadata.authorName || null,
+        sourceAuthorAvatarUrl: tiktokContent.metadata.authorAvatarUrl || null,
+        savedContentTitle: tiktokContent.metadata.title || null,
+        savedContentThumbnailUrl: tiktokContent.metadata.thumbnailUrl || null,
+      };
     }
 
     case "website": {
       const websiteContent = await parseWebsiteContent(input.url);
-      return generateRecipeFromContent({
+      const websiteImageUrls: string[] = [];
+      if (websiteContent.recipeSchema?.image?.[0])
+        websiteImageUrls.push(websiteContent.recipeSchema.image[0]);
+      if (websiteContent.ogImageUrl)
+        websiteImageUrls.push(websiteContent.ogImageUrl);
+      if (websiteContent.images?.[0])
+        websiteImageUrls.push(websiteContent.images[0]);
+      const recipe = await generateRecipeFromContent({
         websiteContent: {
           mainContent: websiteContent.mainContent,
           recipeSchema: websiteContent.recipeSchema,
         },
         sourceTitle: websiteContent.title,
         sourceDescription: websiteContent.description,
+        sourceImageUrls:
+          websiteImageUrls.length > 0 ? websiteImageUrls : undefined,
       });
+      const thumb =
+        websiteContent.recipeSchema?.image?.[0] ??
+        websiteContent.ogImageUrl ??
+        websiteContent.images?.[0] ??
+        null;
+      return {
+        recipe,
+        sourceUrl: input.url,
+        sourceTitle: websiteContent.title || null,
+        sourceAuthorName: websiteContent.recipeSchema?.author ?? null,
+        sourceAuthorAvatarUrl: null,
+        savedContentTitle: websiteContent.title || null,
+        savedContentThumbnailUrl: thumb,
+      };
     }
 
     case "image": {
       const imageData = await downloadImageAsBase64(input.url);
-      return generateRecipeFromContent({ imageBase64: imageData });
+      const recipe = await generateRecipeFromContent({
+        imageBase64: imageData,
+      });
+      return {
+        recipe,
+        sourceUrl: input.url,
+      };
     }
 
     default:
@@ -185,6 +278,10 @@ const formatRecipe = (recipe: recipeRepo.Recipe) => ({
   prepTimeMinutes: recipe.prepTimeMinutes,
   cookTimeMinutes: recipe.cookTimeMinutes,
   imageUrl: recipe.imageUrl,
+  sourceUrl: recipe.sourceUrl ?? undefined,
+  sourceTitle: recipe.sourceTitle ?? undefined,
+  sourceAuthorName: recipe.sourceAuthorName ?? undefined,
+  sourceAuthorAvatarUrl: recipe.sourceAuthorAvatarUrl ?? undefined,
 });
 
 const getJobs = async (req: Request, res: Response) => {
@@ -195,7 +292,7 @@ const getJobs = async (req: Request, res: Response) => {
 
     const results = await contentRepo.findJobsWithRecipes(userId, statuses);
 
-    const jobs = results.map(({ job, recipe }) => ({
+    const jobs = results.map(({ job, recipe, savedContent }) => ({
       id: job.id,
       savedContentId: job.savedContentId,
       status: job.status,
@@ -203,6 +300,13 @@ const getJobs = async (req: Request, res: Response) => {
       error: job.error,
       createdAt: job.createdAt,
       recipe: recipe ? formatRecipe(recipe) : undefined,
+      savedContent: savedContent
+        ? {
+            sourceUrl: savedContent.sourceUrl,
+            title: savedContent.title ?? undefined,
+            thumbnailUrl: savedContent.thumbnailUrl ?? undefined,
+          }
+        : undefined,
     }));
 
     return res.status(200).json({ jobs });
@@ -235,6 +339,13 @@ const getJobById = async (req: Request, res: Response) => {
       error: result.job.error,
       createdAt: result.job.createdAt,
       recipe: result.recipe ? formatRecipe(result.recipe) : undefined,
+      savedContent: result.savedContent
+        ? {
+            sourceUrl: result.savedContent.sourceUrl,
+            title: result.savedContent.title ?? undefined,
+            thumbnailUrl: result.savedContent.thumbnailUrl ?? undefined,
+          }
+        : undefined,
     });
   } catch (error) {
     logger.error("Error fetching job:", error);

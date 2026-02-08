@@ -46,6 +46,25 @@ const updateSavedContentStatus = async (
     .where(eq(savedContentTable.id, contentId));
 };
 
+const TITLE_MAX_LENGTH = 255;
+
+const updateSavedContentMetadata = async (
+  contentId: string,
+  data: { title?: string; thumbnailUrl?: string }
+): Promise<void> => {
+  const set: { title?: string; thumbnailUrl?: string } = {};
+  if (data.title !== undefined) {
+    set.title = data.title.length > TITLE_MAX_LENGTH
+      ? data.title.slice(0, TITLE_MAX_LENGTH)
+      : data.title;
+  }
+  if (data.thumbnailUrl !== undefined) set.thumbnailUrl = data.thumbnailUrl;
+  await db
+    .update(savedContentTable)
+    .set(set)
+    .where(eq(savedContentTable.id, contentId));
+};
+
 const findJobsByUserId = async (
   userId: string,
   statuses?: string[]
@@ -88,7 +107,18 @@ const findJobWithRecipe = async (jobId: string) => {
 
   if (!job) return undefined;
 
-  let recipe = undefined;
+  let recipe: (typeof recipeTable.$inferSelect) | undefined;
+  let savedContent: SavedContent | undefined;
+
+  if (job.savedContentId) {
+    const [content] = await db
+      .select()
+      .from(savedContentTable)
+      .where(eq(savedContentTable.id, job.savedContentId))
+      .limit(1);
+    savedContent = content;
+  }
+
   if (job.status === "completed" && job.savedContentId) {
     const [r] = await db
       .select()
@@ -98,7 +128,7 @@ const findJobWithRecipe = async (jobId: string) => {
     recipe = r;
   }
 
-  return { job, recipe };
+  return { job, recipe, savedContent };
 };
 
 const findJobsWithRecipes = async (
@@ -107,29 +137,40 @@ const findJobsWithRecipes = async (
 ) => {
   const jobs = await findJobsByUserId(userId, statuses);
 
-  const completedJobs = jobs.filter(
-    (j) => j.status === "completed" && j.savedContentId
-  );
-  const contentIds = completedJobs
-    .map((j) => j.savedContentId!)
-    .filter(Boolean);
+  const contentIds = jobs
+    .map((j) => j.savedContentId)
+    .filter((id): id is string => id != null);
 
   let recipes: (typeof recipeTable.$inferSelect)[] = [];
+  let savedContents: SavedContent[] = [];
   if (contentIds.length > 0) {
-    recipes = await db
-      .select()
-      .from(recipeTable)
-      .where(inArray(recipeTable.savedContentId, contentIds));
+    const uniqueContentIds = [...new Set(contentIds)];
+    [recipes, savedContents] = await Promise.all([
+      db
+        .select()
+        .from(recipeTable)
+        .where(inArray(recipeTable.savedContentId, uniqueContentIds)),
+      db
+        .select()
+        .from(savedContentTable)
+        .where(inArray(savedContentTable.id, uniqueContentIds)),
+    ]);
   }
 
   const recipeByContentId = new Map(
-    recipes.map((r) => [r.savedContentId, r])
+    recipes.map((r) => [r.savedContentId, r] as const)
+  );
+  const savedContentById = new Map(
+    savedContents.map((c) => [c.id, c])
   );
 
   return jobs.map((job) => ({
     job,
     recipe: job.savedContentId
       ? recipeByContentId.get(job.savedContentId)
+      : undefined,
+    savedContent: job.savedContentId
+      ? savedContentById.get(job.savedContentId)
       : undefined,
   }));
 };
@@ -139,6 +180,7 @@ export {
   createContentJob,
   updateJobStatus,
   updateSavedContentStatus,
+  updateSavedContentMetadata,
   findJobsByUserId,
   findJobById,
   findJobWithRecipe,

@@ -1,9 +1,11 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
+import 'app/subscription/data/subscription_repository.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
@@ -11,6 +13,12 @@ Future<void> main() async {
 
   await dotenv.load(fileName: ".env");
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  final repo = SubscriptionRepository(
+    apiKey: 'test_HZPsnVkxuDTJGMjFiKBaxHhNTiu',
+  );
+  final currentUser = FirebaseAuth.instance.currentUser;
+  await repo.configure(appUserId: currentUser?.uid);
 
   runApp(const ProviderScope(child: RechefApp()));
 }

@@ -14,9 +14,8 @@ class GroceryNotifier extends AsyncNotifier<List<GroceryItem>> {
     return repo.fetchAll();
   }
 
-  /// Returns the number of items actually added (after dedup).
   Future<int> addItems({
-    required String recipeId,
+    String? recipeId,
     required List<Map<String, dynamic>> items,
   }) async {
     final repo = ref.read(groceryRepositoryProvider);
@@ -81,7 +80,21 @@ final groceryProvider =
     AsyncNotifierProvider<GroceryNotifier, List<GroceryItem>>(
         GroceryNotifier.new);
 
-/// Groups grocery items by ingredient category, matching the pantry's pattern.
+
+enum GroceryGroupMode { category, recipe }
+
+class _GroceryGroupModeNotifier extends Notifier<GroceryGroupMode> {
+  @override
+  GroceryGroupMode build() => GroceryGroupMode.category;
+
+  void set(GroceryGroupMode mode) => state = mode;
+}
+
+final groceryGroupModeProvider =
+    NotifierProvider<_GroceryGroupModeNotifier, GroceryGroupMode>(
+  _GroceryGroupModeNotifier.new,
+);
+
 final groceryByCategoryProvider =
     Provider<AsyncValue<Map<String, List<GroceryItem>>>>((ref) {
   final groceryAsync = ref.watch(groceryProvider);
@@ -89,6 +102,20 @@ final groceryByCategoryProvider =
     final map = <String, List<GroceryItem>>{};
     for (final item in items) {
       final key = item.category;
+      map.putIfAbsent(key, () => []).add(item);
+    }
+    return map;
+  });
+});
+
+/// Groups grocery items by recipe name.
+final groceryByRecipeProvider =
+    Provider<AsyncValue<Map<String, List<GroceryItem>>>>((ref) {
+  final groceryAsync = ref.watch(groceryProvider);
+  return groceryAsync.whenData((items) {
+    final map = <String, List<GroceryItem>>{};
+    for (final item in items) {
+      final key = item.recipeName ?? 'Other';
       map.putIfAbsent(key, () => []).add(item);
     }
     return map;

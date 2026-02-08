@@ -12,6 +12,8 @@ import '../../app/recipe_import/presentation/camera_screen.dart';
 import '../../app/grocery/presentation/grocery_list_screen.dart';
 import '../../app/instacart/presentation/checkout_screen.dart';
 import '../../app/meal_planning/presentation/meal_plan_screen.dart';
+import '../../app/subscription/presentation/paywall_screen.dart';
+import '../../app/subscription/presentation/subscription_settings_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -121,6 +123,20 @@ final routerProvider = Provider<GoRouter>((ref) {
           final cartId = state.uri.queryParameters['cart_id'];
           return CheckoutScreen(cartId: cartId);
         },
+      ),
+
+      // Subscription Paywall - no bottom bar
+      GoRoute(
+        path: '/paywall',
+        name: 'paywall',
+        builder: (context, state) => const PaywallScreen(),
+      ),
+
+      // Subscription Settings - no bottom bar
+      GoRoute(
+        path: '/subscription',
+        name: 'subscription',
+        builder: (context, state) => const SubscriptionSettingsScreen(),
       ),
     ],
   );

@@ -5,6 +5,7 @@ interface TikTokMetadata {
   title: string;
   description: string;
   thumbnailUrl: string;
+  authorAvatarUrl: string;
   durationSeconds: number;
   authorName: string;
   videoUrl: string;
@@ -16,9 +17,33 @@ interface TikTokContent {
   videoUrl: string;
 }
 
+interface TikTokOEmbed {
+  thumbnail_url?: string;
+  author_name?: string;
+  author_unique_id?: string;
+  title?: string;
+}
+
+
+async function fetchTikTokOEmbed(url: string): Promise<TikTokOEmbed> {
+  try {
+    const response = await fetch(
+      `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`,
+    );
+    if (!response.ok) return {};
+    return (await response.json()) as TikTokOEmbed;
+  } catch (error) {
+    logger.warn("Failed to fetch TikTok oEmbed:", error);
+    return {};
+  }
+}
+
 async function parseTikTokContent(url: string): Promise<TikTokContent> {
   try {
-    const result = await TiktokAPI.Downloader(url, { version: "v3" });
+    const [result, oembed] = await Promise.all([
+      TiktokAPI.Downloader(url, { version: "v3" }),
+      fetchTikTokOEmbed(url),
+    ]);
 
     if (result.status !== "success" || !result.result) {
       throw new Error("Failed to fetch TikTok video data");
@@ -34,9 +59,10 @@ async function parseTikTokContent(url: string): Promise<TikTokContent> {
     const metadata: TikTokMetadata = {
       title: data.desc || "",
       description: data.desc || "",
-      thumbnailUrl: data.author?.avatar || "",
+      thumbnailUrl: oembed.thumbnail_url || "",
+      authorAvatarUrl: data.author?.avatar || "",
       durationSeconds: data.duration || 0,
-      authorName: data.author?.nickname || "",
+      authorName: oembed.author_name || data.author?.nickname || "",
       videoUrl: videoUrl,
     };
 

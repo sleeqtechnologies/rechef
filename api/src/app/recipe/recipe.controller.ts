@@ -23,6 +23,10 @@ const formatRecipe = (recipe: Recipe) => ({
   prepTimeMinutes: recipe.prepTimeMinutes,
   cookTimeMinutes: recipe.cookTimeMinutes,
   imageUrl: recipe.imageUrl,
+  sourceUrl: recipe.sourceUrl ?? undefined,
+  sourceTitle: recipe.sourceTitle ?? undefined,
+  sourceAuthorName: recipe.sourceAuthorName ?? undefined,
+  sourceAuthorAvatarUrl: recipe.sourceAuthorAvatarUrl ?? undefined,
 });
 
 const saveRecipe = async (req: Request, res: Response) => {
@@ -37,6 +41,10 @@ const saveRecipe = async (req: Request, res: Response) => {
       prepTimeMinutes,
       cookTimeMinutes,
       imageUrl,
+      sourceUrl,
+      sourceTitle,
+      sourceAuthorName,
+      sourceAuthorAvatarUrl,
     } = req.body;
 
     if (!name || !ingredients || !instructions) {
@@ -55,6 +63,10 @@ const saveRecipe = async (req: Request, res: Response) => {
       prepTimeMinutes: prepTimeMinutes ?? null,
       cookTimeMinutes: cookTimeMinutes ?? null,
       imageUrl: imageUrl ?? null,
+      sourceUrl: sourceUrl ?? null,
+      sourceTitle: sourceTitle ?? null,
+      sourceAuthorName: sourceAuthorName ?? null,
+      sourceAuthorAvatarUrl: sourceAuthorAvatarUrl ?? null,
     });
 
     return res.status(201).json({ recipe: formatRecipe(recipe) });

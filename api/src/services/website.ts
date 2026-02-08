@@ -19,6 +19,7 @@ interface WebsiteContent {
   description: string;
   mainContent: string;
   images: string[];
+  ogImageUrl?: string;
   recipeSchema?: RecipeSchema;
   url: string;
 }
@@ -249,6 +250,16 @@ async function parseWebsiteContent(url: string): Promise<WebsiteContent> {
       $('meta[name="description"]').attr("content") ||
       "";
 
+    const ogImageRaw = $('meta[property="og:image"]').attr("content");
+    let ogImageUrl: string | undefined;
+    if (ogImageRaw) {
+      try {
+        ogImageUrl = new URL(ogImageRaw, url).href;
+      } catch {
+        ogImageUrl = ogImageRaw;
+      }
+    }
+
     const recipeSchema = extractRecipeSchema(html);
     const mainContent = extractMainContent(html);
     const images = extractImages(html, url);
@@ -258,6 +269,7 @@ async function parseWebsiteContent(url: string): Promise<WebsiteContent> {
       description: cleanText(description),
       mainContent,
       images,
+      ogImageUrl,
       recipeSchema,
       url,
     };

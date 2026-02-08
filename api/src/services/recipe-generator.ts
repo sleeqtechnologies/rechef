@@ -1,6 +1,7 @@
 import { generateObject, type ModelMessage, type UserContent } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
+import { env } from "../../env_config";
 import { logger } from "../../logger";
 import { RecipeSchema } from "./website";
 import { FrameWithFood } from "./food-detection";
@@ -24,6 +25,19 @@ interface Ingredient {
   notes?: string;
 }
 
+function isValidImageUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function isValidDataUrl(s: string): boolean {
+  return /^data:image\/[a-z]+;base64,/.test(s);
+}
+
 interface RecipeGenerationInput {
   transcript?: string;
   foodFrames?: FrameWithFood[];
@@ -32,8 +46,11 @@ interface RecipeGenerationInput {
     recipeSchema?: RecipeSchema;
   };
   imageBase64?: string;
+  /** First frame of video (data URL) — used as recipe image when no sourceImageUrls */
+  firstFrameBase64?: string;
   sourceTitle?: string;
   sourceDescription?: string;
+  sourceImageUrls?: string[];
 }
 
 const ingredientSchema = z.object({
@@ -51,7 +68,7 @@ const generatedRecipeSchema = z.object({
   servings: z.number().nullable().optional(),
   prepTimeMinutes: z.number().nullable().optional(),
   cookTimeMinutes: z.number().nullable().optional(),
-  imageUrl: z.string().url().optional(),
+  imageUrl: z.union([z.string().url(), z.literal("")]).optional(),
 });
 
 async function generateRecipeFromContent(
@@ -147,19 +164,28 @@ Guidelines:
     const description = object.description || "";
     const ingredients = object.ingredients || [];
 
-    const ingredientTerms = ingredients
-      .map((ingredient) => ingredient.name)
-      .filter(Boolean)
-      .slice(0, 3)
-      .join(" ");
-
-    const searchQuery = [name, ingredientTerms].filter(Boolean).join(" ");
-    const candidateUrls = await searchFoodImages(`${searchQuery} food`);
-    const imageUrl = await selectBestImageUrl({
-      recipeName: name,
-      description,
-      candidateUrls,
-    });
+    let imageUrl: string | undefined;
+    const firstSourceUrl = input.sourceImageUrls?.find(isValidImageUrl);
+    if (firstSourceUrl) {
+      imageUrl = firstSourceUrl;
+    } else if (input.firstFrameBase64 && isValidDataUrl(input.firstFrameBase64)) {
+      imageUrl = input.firstFrameBase64;
+    } else if (input.imageBase64 && isValidDataUrl(input.imageBase64)) {
+      imageUrl = input.imageBase64;
+    } else if (env.UNSPLASH_ACCESS_KEY) {
+      const ingredientTerms = ingredients
+        .map((ingredient) => ingredient.name)
+        .filter(Boolean)
+        .slice(0, 3)
+        .join(" ");
+      const searchQuery = [name, ingredientTerms].filter(Boolean).join(" ");
+      const candidateUrls = await searchFoodImages(`${searchQuery} food`);
+      imageUrl = await selectBestImageUrl({
+        recipeName: name,
+        description,
+        candidateUrls,
+      });
+    }
 
     return {
       name,

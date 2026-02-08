@@ -11,6 +11,10 @@ class Recipe {
     this.prepTimeMinutes,
     this.cookTimeMinutes,
     this.imageUrl,
+    this.sourceUrl,
+    this.sourceTitle,
+    this.sourceAuthorName,
+    this.sourceAuthorAvatarUrl,
   });
 
   final String id;
@@ -22,22 +26,30 @@ class Recipe {
   final int? prepTimeMinutes;
   final int? cookTimeMinutes;
   final String? imageUrl;
+  final String? sourceUrl;
+  final String? sourceTitle;
+  final String? sourceAuthorName;
+  final String? sourceAuthorAvatarUrl;
 
   int get totalMinutes => (prepTimeMinutes ?? 0) + (cookTimeMinutes ?? 0);
 
   int get ingredientsInPantry => ingredients.where((i) => i.inPantry).length;
 
   Recipe copyWith({List<Ingredient>? ingredients}) => Recipe(
-    id: id,
-    name: name,
-    description: description,
-    ingredients: ingredients ?? this.ingredients,
-    instructions: instructions,
-    servings: servings,
-    prepTimeMinutes: prepTimeMinutes,
-    cookTimeMinutes: cookTimeMinutes,
-    imageUrl: imageUrl,
-  );
+        id: id,
+        name: name,
+        description: description,
+        ingredients: ingredients ?? this.ingredients,
+        instructions: instructions,
+        servings: servings,
+        prepTimeMinutes: prepTimeMinutes,
+        cookTimeMinutes: cookTimeMinutes,
+        imageUrl: imageUrl,
+        sourceUrl: sourceUrl,
+        sourceTitle: sourceTitle,
+        sourceAuthorName: sourceAuthorName,
+        sourceAuthorAvatarUrl: sourceAuthorAvatarUrl,
+      );
 
   factory Recipe.fromJson(Map<String, dynamic> json) {
     final ingredients =
@@ -64,18 +76,27 @@ class Recipe {
       prepTimeMinutes: json['prepTimeMinutes'] as int?,
       cookTimeMinutes: json['cookTimeMinutes'] as int?,
       imageUrl: json['imageUrl'] as String?,
+      sourceUrl: json['sourceUrl'] as String?,
+      sourceTitle: json['sourceTitle'] as String?,
+      sourceAuthorName: json['sourceAuthorName'] as String?,
+      sourceAuthorAvatarUrl: json['sourceAuthorAvatarUrl'] as String?,
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'description': description,
-    'ingredients': ingredients.map((e) => e.toJson()).toList(),
-    'instructions': instructions,
-    if (servings != null) 'servings': servings,
-    if (prepTimeMinutes != null) 'prepTimeMinutes': prepTimeMinutes,
-    if (cookTimeMinutes != null) 'cookTimeMinutes': cookTimeMinutes,
-    if (imageUrl != null) 'imageUrl': imageUrl,
-  };
+        'id': id,
+        'name': name,
+        'description': description,
+        'ingredients': ingredients.map((e) => e.toJson()).toList(),
+        'instructions': instructions,
+        if (servings != null) 'servings': servings,
+        if (prepTimeMinutes != null) 'prepTimeMinutes': prepTimeMinutes,
+        if (cookTimeMinutes != null) 'cookTimeMinutes': cookTimeMinutes,
+        if (imageUrl != null) 'imageUrl': imageUrl,
+        if (sourceUrl != null) 'sourceUrl': sourceUrl,
+        if (sourceTitle != null) 'sourceTitle': sourceTitle,
+        if (sourceAuthorName != null) 'sourceAuthorName': sourceAuthorName,
+        if (sourceAuthorAvatarUrl != null)
+          'sourceAuthorAvatarUrl': sourceAuthorAvatarUrl,
+      };
 }

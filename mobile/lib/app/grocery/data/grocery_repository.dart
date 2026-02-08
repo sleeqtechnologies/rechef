@@ -23,13 +23,13 @@ class GroceryRepository {
   }
 
   Future<List<GroceryItem>> addItems({
-    required String recipeId,
+    String? recipeId,
     required List<Map<String, dynamic>> items,
   }) async {
     final response = await _apiClient.post(
       ApiEndpoints.grocery,
       body: {
-        'recipeId': recipeId,
+        if (recipeId != null) 'recipeId': recipeId,
         'items': items,
       },
     );
