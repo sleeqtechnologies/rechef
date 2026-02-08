@@ -35,6 +35,10 @@ dependencies:
   flutter_chat_ui: ^2.11.1
   speech_to_text: ^7.3.0
   flutter_markdown_plus: ^1.0.7
+  flutter_local_notifications: ^20.0.0
+  timezone: ^0.10.1
+  flutter_timezone: ^5.0.1
+  simple_icons: ^14.6.1
 
 dev_dependencies:
   flutter_test:

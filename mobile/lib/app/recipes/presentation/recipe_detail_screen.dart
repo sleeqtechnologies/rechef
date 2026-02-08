@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+import 'package:simple_icons/simple_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../domain/recipe.dart';
@@ -505,13 +506,32 @@ class _AuthorInfo {
   final String? avatarUrl;
 }
 
+String? _platformFromUrl(String? url) {
+  if (url == null || url.trim().isEmpty) return null;
+  final lower = url.toLowerCase();
+  if (lower.contains('instagram.com')) return 'instagram';
+  if (lower.contains('tiktok.com')) return 'tiktok';
+  if (lower.contains('youtube.com') || lower.contains('youtu.be')) return 'youtube';
+  return null;
+}
+
 class _AuthorRow extends StatelessWidget {
   const _AuthorRow({required this.author});
 
   final _AuthorInfo author;
 
-  String get _displayName =>
-      author.name.trim().isNotEmpty ? author.name.trim() : '';
+  String get _displayName {
+    if (author.name.trim().isNotEmpty) return author.name.trim();
+    final platform = _platformFromUrl(author.sourceUrl);
+    if (platform != null) {
+      switch (platform) {
+        case 'instagram': return 'Instagram';
+        case 'tiktok': return 'TikTok';
+        case 'youtube': return 'YouTube';
+      }
+    }
+    return '';
+  }
 
   String get _sourceUrlDisplay {
     if (author.sourceUrl == null || author.sourceUrl!.trim().isEmpty) return '';
@@ -530,6 +550,28 @@ class _AuthorRow extends StatelessWidget {
     final uri = Uri.tryParse(author.sourceUrl!.trim());
     if (uri != null) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  IconData? get _platformIcon {
+    final platform = _platformFromUrl(author.sourceUrl);
+    if (platform == null) return null;
+    switch (platform) {
+      case 'instagram': return SimpleIcons.instagram;
+      case 'tiktok': return SimpleIcons.tiktok;
+      case 'youtube': return SimpleIcons.youtube;
+      default: return null;
+    }
+  }
+
+  Color? get _platformIconColor {
+    final platform = _platformFromUrl(author.sourceUrl);
+    if (platform == null) return null;
+    switch (platform) {
+      case 'instagram': return SimpleIconColors.instagram;
+      case 'tiktok': return SimpleIconColors.tiktok;
+      case 'youtube': return SimpleIconColors.youtube;
+      default: return null;
     }
   }
 
@@ -552,7 +594,7 @@ class _AuthorRow extends StatelessWidget {
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => _buildInitialsAvatar(context),
                   )
-                : _buildInitialsAvatar(context),
+                : _buildPlatformOrInitialsAvatar(context),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -589,6 +631,26 @@ class _AuthorRow extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildPlatformOrInitialsAvatar(BuildContext context) {
+    if (author.name.trim().isEmpty && _platformIcon != null) {
+      return Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: _platformIconColor ?? Colors.grey.shade800,
+          shape: BoxShape.circle,
+        ),
+        alignment: Alignment.center,
+        child: Icon(
+          _platformIcon!,
+          size: 22,
+          color: Colors.white,
+        ),
+      );
+    }
+    return _buildInitialsAvatar(context);
   }
 
   Widget _buildInitialsAvatar(BuildContext context) {

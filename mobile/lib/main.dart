@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
 import 'app/subscription/data/subscription_repository.dart';
+import 'core/services/cooking_timer_notifications.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
@@ -13,6 +14,8 @@ Future<void> main() async {
 
   await dotenv.load(fileName: ".env");
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  await CookingTimerNotifications.instance.initialize();
 
   final repo = SubscriptionRepository(
     apiKey: 'test_HZPsnVkxuDTJGMjFiKBaxHhNTiu',

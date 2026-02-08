@@ -7,6 +7,7 @@ import {
 } from "../../services/content-detector";
 import { parseYouTubeContent } from "../../services/youtube";
 import { parseTikTokContent } from "../../services/tiktok";
+import { parseInstagramContent } from "../../services/instagram";
 import { parseWebsiteContent } from "../../services/website";
 import {
   extractFramesFromUrl,
@@ -37,6 +38,7 @@ function contentSourceToType(
   switch (source) {
     case "youtube":
     case "tiktok":
+    case "instagram":
       return "video";
     case "image":
       return "image";
@@ -231,6 +233,56 @@ async function generateRecipe(
         savedContentTitle: tiktokContent.metadata.title || null,
         savedContentThumbnailUrl: tiktokContent.metadata.thumbnailUrl || null,
       };
+    }
+
+    case "instagram": {
+      const instagramContent = await parseInstagramContent(input.url);
+      const sourceTitle =
+        instagramContent.title || instagramContent.authorName || "Instagram";
+
+      try {
+        const frames = await extractFramesFromUrl(instagramContent.mediaUrl, {
+          intervalSeconds: 2,
+          maxFrames: 8,
+        });
+        const foodFrames = await filterFoodFrames(frames);
+        const bestFrames = await selectBestFoodFrames(foodFrames);
+        const recipe = await generateRecipeFromContent({
+          foodFrames: bestFrames,
+          firstFrameBase64: frames[0]?.base64,
+          sourceTitle,
+          sourceDescription: instagramContent.caption,
+          sourceImageUrls: instagramContent.thumbnailUrl
+            ? [instagramContent.thumbnailUrl]
+            : undefined,
+        });
+        return {
+          recipe,
+          sourceUrl: input.url,
+          sourceTitle,
+          sourceAuthorName: instagramContent.authorName ?? null,
+          sourceAuthorAvatarUrl: null,
+          savedContentTitle: sourceTitle,
+          savedContentThumbnailUrl: instagramContent.thumbnailUrl ?? null,
+        };
+      } catch {
+        const recipe = await generateRecipeFromContent({
+          sourceTitle,
+          sourceDescription: instagramContent.caption,
+          sourceImageUrls: instagramContent.thumbnailUrl
+            ? [instagramContent.thumbnailUrl, instagramContent.mediaUrl]
+            : [instagramContent.mediaUrl],
+        });
+        return {
+          recipe,
+          sourceUrl: input.url,
+          sourceTitle,
+          sourceAuthorName: instagramContent.authorName ?? null,
+          sourceAuthorAvatarUrl: null,
+          savedContentTitle: sourceTitle,
+          savedContentThumbnailUrl: instagramContent.thumbnailUrl ?? null,
+        };
+      }
     }
 
     case "website": {

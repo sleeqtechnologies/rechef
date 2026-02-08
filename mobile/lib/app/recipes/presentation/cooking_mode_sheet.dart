@@ -1,9 +1,12 @@
-import 'dart:ui';
+import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
+import '../../../core/services/cooking_timer_notifications.dart';
 import '../domain/recipe.dart';
 import 'cooking_help_sheet.dart';
 
@@ -33,8 +36,14 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
   late final PageController _pageController;
   int _currentStep = 0;
 
+  // Timer state
+  int _timerRemaining = 0;
+  bool _timerRunning = false;
+  bool _timerDone = false;
+  Timer? _timer;
   int get _totalSteps => widget.recipe.instructions.length;
   bool get _isLastStep => _currentStep == _totalSteps - 1;
+  bool get _hasActiveTimer => _timerRunning || _timerDone;
 
   static const _accentColor = Color(0xFFFF4F63);
 
@@ -46,8 +55,66 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
 
   @override
   void dispose() {
+    _timer?.cancel();
+    _cancelScheduledNotification();
     _pageController.dispose();
     super.dispose();
+  }
+
+  void _startTimer(int seconds, String label) {
+    _timer?.cancel();
+    _cancelScheduledNotification();
+    setState(() {
+      _timerRemaining = seconds;
+      _timerRunning = true;
+      _timerDone = false;
+    });
+    _scheduleNotification(seconds, label);
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        _timerRemaining--;
+        if (_timerRemaining <= 0) {
+          _timer?.cancel();
+          _timerRunning = false;
+          _timerDone = true;
+          HapticFeedback.heavyImpact();
+          Future.delayed(const Duration(seconds: 3), () {
+            if (mounted) {
+              setState(() {
+                _timerRemaining = 0;
+                _timerDone = false;
+              });
+            }
+          });
+        }
+      });
+    });
+  }
+
+  void _cancelTimer() {
+    _timer?.cancel();
+    _timer = null;
+    _cancelScheduledNotification();
+    setState(() {
+      _timerRemaining = 0;
+      _timerRunning = false;
+      _timerDone = false;
+    });
+  }
+
+  Future<void> _scheduleNotification(int seconds, String label) async {
+    try {
+      final plugin = CookingTimerNotifications.instance;
+      await plugin.scheduleTimerDone(seconds, label);
+    } catch (_) {}
+  }
+
+  Future<void> _cancelScheduledNotification() async {
+    try {
+      final plugin = CookingTimerNotifications.instance;
+      await plugin.cancelTimerDone();
+    } catch (_) {}
   }
 
   void _goToStep(int step) {
@@ -71,6 +138,40 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
     );
   }
 
+  // ── Parse time text ─────────────────────────────────────────────────
+
+  /// Parses a time string (e.g. "5-10 minutes", "30 seconds") and returns
+  /// total seconds. For ranges, uses the upper bound.
+  static int _parseSeconds(String timeText) {
+    final s = timeText.trim().toLowerCase();
+    // Match range: "5-10 minutes" or "5 – 10 mins"
+    final rangeMatch = RegExp(
+      r'(\d+\.?\d*)\s*[-–]\s*(\d+\.?\d*)\s*(hours?|minutes?|mins?|seconds?|secs?|hrs?)',
+      caseSensitive: false,
+    ).firstMatch(s);
+    if (rangeMatch != null) {
+      final upper = double.tryParse(rangeMatch.group(2) ?? '0') ?? 0;
+      return _applyUnit(upper, rangeMatch.group(3) ?? '');
+    }
+    // Match single: "30 seconds", "2.5 hours"
+    final singleMatch = RegExp(
+      r'(\d+\.?\d*)\s*(hours?|minutes?|mins?|seconds?|secs?|hrs?)',
+      caseSensitive: false,
+    ).firstMatch(s);
+    if (singleMatch != null) {
+      final value = double.tryParse(singleMatch.group(1) ?? '0') ?? 0;
+      return _applyUnit(value, singleMatch.group(2) ?? '');
+    }
+    return 0;
+  }
+
+  static int _applyUnit(double value, String unit) {
+    final u = unit.toLowerCase();
+    if (u.startsWith('hour') || u.startsWith('hr')) return (value * 3600).round();
+    if (u.startsWith('min')) return (value * 60).round();
+    return value.round(); // seconds
+  }
+
   // ── Highlighted text ────────────────────────────────────────────────
 
   /// Builds a TextSpan tree with ingredient names and time patterns
@@ -91,33 +192,53 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
     // Collect all highlight ranges
     final ranges = <_HighlightRange>[];
 
-    // 1. Time patterns
+    // 1. Time patterns (tappable timers)
     final timeRegex = RegExp(
       r'\d+\s*[-–]\s*\d+\s*(?:hours?|minutes?|mins?|seconds?|secs?|hrs?)'
       r'|\d+\.?\d*\s*(?:hours?|minutes?|mins?|seconds?|secs?|hrs?)',
       caseSensitive: false,
     );
     for (final match in timeRegex.allMatches(text)) {
-      ranges.add(_HighlightRange(match.start, match.end));
+      final label = text.substring(match.start, match.end);
+      final seconds = _parseSeconds(label);
+      if (seconds > 0) {
+        ranges.add(_HighlightRange(match.start, match.end,
+            isTimer: true, durationSeconds: seconds, label: label));
+      } else {
+        ranges.add(_HighlightRange(match.start, match.end));
+      }
     }
 
-    // 2. Ingredient names (sorted longest first to avoid partial matches)
-    final ingredientNames = widget.recipe.ingredients
-        .map((i) => i.name.trim())
-        .where((n) => n.length > 2)
-        .toList()
+    // 2. Ingredient names – extract full name + core word(s), handle plurals
+    final searchTerms = <String>{};
+    for (final i in widget.recipe.ingredients) {
+      final name = i.name.trim();
+      if (name.length <= 2) continue;
+      searchTerms.add(name);
+      // Add last word for compound names (e.g. "olive oil" -> "oil")
+      final words = name.split(RegExp(r'\s+'));
+      if (words.length > 1) {
+        final lastWord = words.last.toLowerCase();
+        if (lastWord.length > 2 && lastWord != name.toLowerCase()) {
+          searchTerms.add(words.last);
+        }
+      }
+    }
+    // Sort longest first to avoid partial matches
+    final sortedTerms = searchTerms.toList()
       ..sort((a, b) => b.length.compareTo(a.length));
 
-    for (final name in ingredientNames) {
+    for (final name in sortedTerms) {
       final escaped = RegExp.escape(name);
-      final regex = RegExp(escaped, caseSensitive: false);
+      // Word boundary + optional plural s/es
+      final pattern = r'(?<!\w)' + escaped + r'(?:s|es)?(?!\w)';
+      final regex = RegExp(pattern, caseSensitive: false);
       for (final match in regex.allMatches(text)) {
-        // Only add if not already covered by an existing range
         final overlaps = ranges.any(
           (r) => match.start < r.end && match.end > r.start,
         );
         if (!overlaps) {
-          ranges.add(_HighlightRange(match.start, match.end));
+          ranges.add(_HighlightRange(match.start, match.end, isTimer: false));
         }
       }
     }
@@ -136,9 +257,24 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
       if (range.start > lastEnd) {
         spans.add(TextSpan(text: text.substring(lastEnd, range.start)));
       }
+      final spanText = text.substring(range.start, range.end);
+      final isTimer = range.isTimer && range.durationSeconds != null && range.label != null;
+      final spanStyle = isTimer
+          ? highlightStyle.copyWith(
+              decoration: TextDecoration.underline,
+              decorationColor: _accentColor,
+            )
+          : highlightStyle;
+      final recognizer = isTimer
+          ? (TapGestureRecognizer()
+            ..onTap = () {
+              _startTimer(range.durationSeconds!, range.label!);
+            })
+          : null;
       spans.add(TextSpan(
-        text: text.substring(range.start, range.end),
-        style: highlightStyle,
+        text: spanText,
+        style: spanStyle,
+        recognizer: recognizer,
       ));
       lastEnd = range.end;
     }
@@ -148,8 +284,6 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
 
     return TextSpan(style: baseStyle, children: spans);
   }
-
-  // ── Build ───────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -292,9 +426,14 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
   }
 
   Widget _buildBottomBar(BuildContext context) {
+    final mins = _timerRemaining ~/ 60;
+    final secs = _timerRemaining % 60;
+    final timeStr = '${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           FakeGlass(
             shape: LiquidRoundedSuperellipse(borderRadius: 999),
@@ -321,29 +460,90 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
                 ),
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
+                  minimumSize: const Size(0, 44),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
               ),
             ),
           ),
-          const Spacer(),
-          FilledButton(
-            onPressed: _isLastStep
-                ? _markComplete
-                : () => _goToStep(_currentStep + 1),
-            style: FilledButton.styleFrom(
-              backgroundColor: _accentColor,
-              foregroundColor: Colors.white,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(999),
+          if (_hasActiveTimer) ...[
+            const SizedBox(width: 12),
+            FakeGlass(
+              shape: LiquidRoundedSuperellipse(borderRadius: 999),
+              settings: const LiquidGlassSettings(
+                blur: 10,
+                glassColor: Color(0x18000000),
+              ),
+              child: SizedBox(
+                height: 44,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SvgPicture.asset(
+                        'assets/icons/timer.svg',
+                        width: 20,
+                        height: 20,
+                        colorFilter: ColorFilter.mode(
+                          _timerDone ? Colors.green.shade700 : Colors.black87,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _timerDone ? 'Timer done!' : timeStr,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: _timerDone ? Colors.green.shade800 : _accentColor,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                      if (!_timerDone) ...[
+                        const SizedBox(width: 4),
+                        GestureDetector(
+                          onTap: _cancelTimer,
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: SvgPicture.asset(
+                              'assets/icons/x.svg',
+                              width: 16,
+                              height: 16,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ),
             ),
-            child: Text(
-              _isLastStep ? 'Complete cooking' : 'Next',
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 15,
+          ],
+          const Spacer(),
+          SizedBox(
+            height: 44,
+            child: FilledButton(
+              onPressed: _isLastStep
+                  ? _markComplete
+                  : () => _goToStep(_currentStep + 1),
+              style: FilledButton.styleFrom(
+                backgroundColor: _accentColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                minimumSize: const Size(0, 44),
+                maximumSize: const Size(double.infinity, 44),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              child: Text(
+                _isLastStep ? 'Complete cooking' : 'Next',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
               ),
             ),
           ),
@@ -354,7 +554,11 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
 }
 
 class _HighlightRange {
-  const _HighlightRange(this.start, this.end);
+  const _HighlightRange(this.start, this.end,
+      {this.isTimer = false, this.durationSeconds, this.label});
   final int start;
   final int end;
+  final bool isTimer;
+  final int? durationSeconds;
+  final String? label;
 }

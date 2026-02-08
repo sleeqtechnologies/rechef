@@ -1,4 +1,4 @@
-type ContentSource = "youtube" | "tiktok" | "website" | "image";
+type ContentSource = "youtube" | "tiktok" | "instagram" | "website" | "image";
 
 interface ContentInfo {
   source: ContentSource;
@@ -25,6 +25,20 @@ function detectContentSource(url: string): ContentInfo {
       source: "tiktok",
       url,
       videoId: extractTikTokVideoId(url),
+    };
+  }
+
+  if (
+    (normalizedUrl.includes("instagram.com") ||
+      normalizedUrl.includes("www.instagram.com")) &&
+    (normalizedUrl.includes("/p/") ||
+      normalizedUrl.includes("/reel/") ||
+      normalizedUrl.includes("/reels/") ||
+      normalizedUrl.includes("/tv/"))
+  ) {
+    return {
+      source: "instagram",
+      url,
     };
   }
 
