@@ -79,24 +79,22 @@ async function filterFoodFrames(
 ): Promise<FrameWithFood[]> {
   const results: FrameWithFood[] = [];
 
-  const batchSize = 5;
-  for (let i = 0; i < frames.length; i += batchSize) {
-    const batch = frames.slice(i, i + batchSize);
 
-    const detectionPromises = batch.map(async (frame) => {
-      const detection = await detectFoodInFrame(frame.base64);
-      return {
+  for (const frame of frames) {
+    const detection = await detectFoodInFrame(frame.base64);
+    
+    if (detection.containsFood) {
+      results.push({
         ...frame,
-        containsFood: detection.containsFood,
+        containsFood: true,
         foodDescription: detection.description,
-      };
-    });
-
-    const batchResults = await Promise.all(detectionPromises);
-    results.push(...batchResults);
+      });
+    }
+    
+   
   }
 
-  return results.filter((frame) => frame.containsFood);
+  return results;
 }
 
 async function selectBestFoodFrames(

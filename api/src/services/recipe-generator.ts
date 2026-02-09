@@ -135,7 +135,8 @@ Guidelines:
   userContent.push({ type: "text", text: textPrompt });
 
   if (input.foodFrames && input.foodFrames.length > 0) {
-    const framesToInclude = input.foodFrames.slice(0, 5);
+
+    const framesToInclude = input.foodFrames.slice(0, 3);
     for (const frame of framesToInclude) {
       userContent.push({
         type: "image",

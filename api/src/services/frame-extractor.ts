@@ -156,13 +156,27 @@ async function extractFramesAsBase64(
   options: FrameExtractionOptions = {},
 ): Promise<{ base64: string; timestamp: number }[]> {
   const frames = await extractFramesAtIntervals(videoPath, options);
-
-  const base64Frames = frames.map((frame) => ({
-    base64: frameToBase64(frame.path),
-    timestamp: frame.timestamp,
-  }));
-
   const tempDir = path.dirname(frames[0]?.path || "");
+
+
+  const base64Frames: { base64: string; timestamp: number }[] = [];
+
+  for (const frame of frames) {
+    const base64 = frameToBase64(frame.path);
+    base64Frames.push({
+      base64,
+      timestamp: frame.timestamp,
+    });
+    try {
+      if (fs.existsSync(frame.path)) {
+        fs.unlinkSync(frame.path);
+      }
+    } catch (err) {
+      logger.warn("Failed to delete frame file:", err);
+    }
+  }
+
+  // Clean up the temp directory
   if (tempDir && tempDir.includes("frames-")) {
     cleanupTempDir(tempDir);
   }
@@ -180,6 +194,15 @@ async function extractFramesFromUrl(
   try {
     await downloadVideo(videoUrl, videoPath);
     const frames = await extractFramesAsBase64(videoPath, options);
+ 
+    try {
+      if (fs.existsSync(videoPath)) {
+        fs.unlinkSync(videoPath);
+      }
+    } catch (err) {
+      logger.warn("Failed to delete video file:", err);
+    }
+    
     return frames;
   } finally {
     cleanupTempDir(tempDir);

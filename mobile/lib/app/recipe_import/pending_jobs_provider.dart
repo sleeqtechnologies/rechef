@@ -76,7 +76,13 @@ class PendingJobsNotifier extends Notifier<List<ContentJob>> {
       if (updatedJobs.isEmpty) {
         _stopPolling();
       }
-    } catch (_) {}
+    } catch (_) {
+      // If the server is unreachable or crashes, avoid showing
+      // "generating" forever. Stop polling and clear pending jobs;
+      // the user can resubmit when the backend is healthy again.
+      _stopPolling();
+      state = [];
+    }
   }
 }
 
