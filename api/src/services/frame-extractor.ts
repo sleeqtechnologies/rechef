@@ -101,22 +101,13 @@ async function extractFramesAtIntervals(
       maxFrames,
     );
 
-    const extractPromises: Promise<ExtractedFrame>[] = [];
-
     for (let i = 0; i < frameCount; i++) {
       const timestamp = i * intervalSeconds;
       const outputPath = path.join(tempDir, `frame_${i}.${outputFormat}`);
 
-      extractPromises.push(
-        extractSingleFrame(videoPath, timestamp, outputPath).then(() => ({
-          path: outputPath,
-          timestamp,
-        })),
-      );
+      await extractSingleFrame(videoPath, timestamp, outputPath);
+      frames.push({ path: outputPath, timestamp });
     }
-
-    const extractedFrames = await Promise.all(extractPromises);
-    frames.push(...extractedFrames);
 
     return frames;
   } catch (error) {
@@ -136,7 +127,7 @@ function extractSingleFrame(
     ffmpeg(videoPath)
       .seekInput(timestampSeconds)
       .frames(1)
-      .outputOptions(["-vf", "scale=640:-1"])
+      .outputOptions(["-vf", "scale=512:-1", "-q:v", "5"])
       .output(outputPath)
       .on("end", () => resolve())
       .on("error", (err) => reject(err))
@@ -158,7 +149,6 @@ async function extractFramesAsBase64(
   const frames = await extractFramesAtIntervals(videoPath, options);
   const tempDir = path.dirname(frames[0]?.path || "");
 
-
   const base64Frames: { base64: string; timestamp: number }[] = [];
 
   for (const frame of frames) {
@@ -176,12 +166,39 @@ async function extractFramesAsBase64(
     }
   }
 
-  // Clean up the temp directory
   if (tempDir && tempDir.includes("frames-")) {
     cleanupTempDir(tempDir);
   }
 
   return base64Frames;
+}
+
+async function extractFramesStreaming<T>(
+  videoPath: string,
+  options: FrameExtractionOptions,
+  processor: (frame: { base64: string; timestamp: number }) => Promise<T | null>,
+): Promise<T[]> {
+  const frames = await extractFramesAtIntervals(videoPath, options);
+  const tempDir = path.dirname(frames[0]?.path || "");
+  const results: T[] = [];
+
+  try {
+    for (const frame of frames) {
+      const base64 = frameToBase64(frame.path);
+      try { fs.unlinkSync(frame.path); } catch {}
+
+      const result = await processor({ base64, timestamp: frame.timestamp });
+      if (result !== null) {
+        results.push(result);
+      }
+    }
+  } finally {
+    if (tempDir && tempDir.includes("frames-")) {
+      cleanupTempDir(tempDir);
+    }
+  }
+
+  return results;
 }
 
 async function extractFramesFromUrl(
@@ -241,6 +258,7 @@ export {
   extractFramesAtIntervals,
   extractFramesAsBase64,
   extractFramesFromUrl,
+  extractFramesStreaming,
   extractSingleFrame,
   frameToBase64,
   downloadVideo,

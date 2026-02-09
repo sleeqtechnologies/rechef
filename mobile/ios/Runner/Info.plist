@@ -26,6 +26,10 @@
 		<string>Photos can be shared to and used in this app</string>
 		<key>NSCameraUsageDescription</key>
 		<string>Camera access is needed to take pictures of recipes</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>Microphone access is needed to capture your voice for recipe interactions.</string>
+		<key>NSSpeechRecognitionUsageDescription</key>
+		<string>Speech recognition is used to understand your voice commands while cooking.</string>
 		<key>CFBundleURLTypes</key>
 		<array>
 			<dict>

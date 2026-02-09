@@ -12,11 +12,20 @@ import { parseWebsiteContent } from "../../services/website";
 import {
   extractFramesFromUrl,
   downloadImageAsBase64,
+  downloadVideo,
+  extractFramesStreaming,
+  cleanupTempDir,
+  FrameExtractionOptions,
 } from "../../services/frame-extractor";
 import {
   filterFoodFrames,
   selectBestFoodFrames,
+  detectFoodInFrame,
 } from "../../services/food-detection";
+import type { FrameWithFood } from "../../services/food-detection";
+import * as fs from "fs";
+import * as path from "path";
+import * as os from "os";
 import type { GeneratedRecipe } from "../../services/recipe-generator";
 import { generateRecipeFromContent } from "../../services/recipe-generator";
 import * as contentRepo from "./content.repository";
@@ -150,6 +159,69 @@ async function processContentInBackground(
   }
 }
 
+let processing = false;
+const waitQueue: (() => void)[] = [];
+
+async function acquireProcessingSlot(): Promise<void> {
+  if (!processing) {
+    processing = true;
+    return;
+  }
+  return new Promise<void>((resolve) => {
+    waitQueue.push(resolve);
+  });
+}
+
+function releaseProcessingSlot(): void {
+  const next = waitQueue.shift();
+  if (next) {
+    next();
+  } else {
+    processing = false;
+  }
+}
+
+async function extractAndFilterFrames(
+  videoUrl: string,
+  options: FrameExtractionOptions,
+): Promise<{ foodFrames: FrameWithFood[]; firstFrameBase64: string | undefined }> {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "video-"));
+  const videoPath = path.join(tempDir, "video.mp4");
+
+  try {
+    await downloadVideo(videoUrl, videoPath);
+
+    let firstFrameBase64: string | undefined;
+    const foodFrames = await extractFramesStreaming<FrameWithFood>(
+      videoPath,
+      options,
+      async (frame) => {
+        if (firstFrameBase64 === undefined) {
+          firstFrameBase64 = frame.base64;
+        }
+
+        const detection = await detectFoodInFrame(frame.base64);
+        if (detection.containsFood) {
+          return {
+            base64: frame.base64,
+            timestamp: frame.timestamp,
+            containsFood: true,
+            foodDescription: detection.description,
+          };
+        }
+        return null;
+      },
+    );
+
+    try { fs.unlinkSync(videoPath); } catch {}
+
+    const bestFrames = await selectBestFoodFrames(foodFrames);
+    return { foodFrames: bestFrames, firstFrameBase64 };
+  } finally {
+    cleanupTempDir(tempDir);
+  }
+}
+
 async function generateRecipe(
   input: { url?: string; imageBase64?: string },
   options?: { userName?: string },
@@ -176,31 +248,36 @@ async function generateRecipe(
         throw new Error("Invalid YouTube URL");
       }
       const youtubeContent = await parseYouTubeContent(contentInfo.videoId);
-      const frames = await extractFramesFromUrl(youtubeContent.videoUrl, {
-        intervalSeconds: 3,
-        maxFrames: 10,
-      });
-      const foodFrames = await filterFoodFrames(frames);
-      const bestFrames = await selectBestFoodFrames(foodFrames);
-      const recipe = await generateRecipeFromContent({
-        transcript: youtubeContent.transcript,
-        foodFrames: bestFrames,
-        firstFrameBase64: frames[0]?.base64,
-        sourceTitle: youtubeContent.metadata.title,
-        sourceDescription: youtubeContent.metadata.description,
-        sourceImageUrls: youtubeContent.metadata.thumbnailUrl
-          ? [youtubeContent.metadata.thumbnailUrl]
-          : undefined,
-      });
-      return {
-        recipe,
-        sourceUrl: input.url,
-        sourceTitle: youtubeContent.metadata.title,
-        sourceAuthorName: youtubeContent.metadata.channelName || null,
-        sourceAuthorAvatarUrl: null,
-        savedContentTitle: youtubeContent.metadata.title,
-        savedContentThumbnailUrl: youtubeContent.metadata.thumbnailUrl || null,
-      };
+
+      await acquireProcessingSlot();
+      try {
+        const { foodFrames: bestFrames, firstFrameBase64 } =
+          await extractAndFilterFrames(youtubeContent.videoUrl, {
+            intervalSeconds: 3,
+            maxFrames: 10,
+          });
+        const recipe = await generateRecipeFromContent({
+          transcript: youtubeContent.transcript,
+          foodFrames: bestFrames,
+          firstFrameBase64,
+          sourceTitle: youtubeContent.metadata.title,
+          sourceDescription: youtubeContent.metadata.description,
+          sourceImageUrls: youtubeContent.metadata.thumbnailUrl
+            ? [youtubeContent.metadata.thumbnailUrl]
+            : undefined,
+        });
+        return {
+          recipe,
+          sourceUrl: input.url,
+          sourceTitle: youtubeContent.metadata.title,
+          sourceAuthorName: youtubeContent.metadata.channelName || null,
+          sourceAuthorAvatarUrl: null,
+          savedContentTitle: youtubeContent.metadata.title,
+          savedContentThumbnailUrl: youtubeContent.metadata.thumbnailUrl || null,
+        };
+      } finally {
+        releaseProcessingSlot();
+      }
     }
 
     case "tiktok": {
@@ -208,31 +285,36 @@ async function generateRecipe(
       if (!tiktokContent.videoUrl) {
         throw new Error("Could not extract TikTok video");
       }
-      const frames = await extractFramesFromUrl(tiktokContent.videoUrl, {
-        intervalSeconds: 2,
-        maxFrames: 8,
-      });
-      const foodFrames = await filterFoodFrames(frames);
-      const bestFrames = await selectBestFoodFrames(foodFrames);
-      const recipe = await generateRecipeFromContent({
-        transcript: tiktokContent.transcript,
-        foodFrames: bestFrames,
-        firstFrameBase64: frames[0]?.base64,
-        sourceTitle: tiktokContent.metadata.title,
-        sourceDescription: tiktokContent.metadata.description,
-        sourceImageUrls: tiktokContent.metadata.thumbnailUrl
-          ? [tiktokContent.metadata.thumbnailUrl]
-          : undefined,
-      });
-      return {
-        recipe,
-        sourceUrl: input.url,
-        sourceTitle: tiktokContent.metadata.title || null,
-        sourceAuthorName: tiktokContent.metadata.authorName || null,
-        sourceAuthorAvatarUrl: tiktokContent.metadata.authorAvatarUrl || null,
-        savedContentTitle: tiktokContent.metadata.title || null,
-        savedContentThumbnailUrl: tiktokContent.metadata.thumbnailUrl || null,
-      };
+
+      await acquireProcessingSlot();
+      try {
+        const { foodFrames: bestFrames, firstFrameBase64 } =
+          await extractAndFilterFrames(tiktokContent.videoUrl, {
+            intervalSeconds: 2,
+            maxFrames: 8,
+          });
+        const recipe = await generateRecipeFromContent({
+          transcript: tiktokContent.transcript,
+          foodFrames: bestFrames,
+          firstFrameBase64,
+          sourceTitle: tiktokContent.metadata.title,
+          sourceDescription: tiktokContent.metadata.description,
+          sourceImageUrls: tiktokContent.metadata.thumbnailUrl
+            ? [tiktokContent.metadata.thumbnailUrl]
+            : undefined,
+        });
+        return {
+          recipe,
+          sourceUrl: input.url,
+          sourceTitle: tiktokContent.metadata.title || null,
+          sourceAuthorName: tiktokContent.metadata.authorName || null,
+          sourceAuthorAvatarUrl: tiktokContent.metadata.authorAvatarUrl || null,
+          savedContentTitle: tiktokContent.metadata.title || null,
+          savedContentThumbnailUrl: tiktokContent.metadata.thumbnailUrl || null,
+        };
+      } finally {
+        releaseProcessingSlot();
+      }
     }
 
     case "instagram": {
@@ -241,30 +323,34 @@ async function generateRecipe(
         instagramContent.title || instagramContent.authorName || "Instagram";
 
       try {
-        const frames = await extractFramesFromUrl(instagramContent.mediaUrl, {
-          intervalSeconds: 2,
-          maxFrames: 8,
-        });
-        const foodFrames = await filterFoodFrames(frames);
-        const bestFrames = await selectBestFoodFrames(foodFrames);
-        const recipe = await generateRecipeFromContent({
-          foodFrames: bestFrames,
-          firstFrameBase64: frames[0]?.base64,
-          sourceTitle,
-          sourceDescription: instagramContent.caption,
-          sourceImageUrls: instagramContent.thumbnailUrl
-            ? [instagramContent.thumbnailUrl]
-            : undefined,
-        });
-        return {
-          recipe,
-          sourceUrl: input.url,
-          sourceTitle,
-          sourceAuthorName: instagramContent.authorName ?? null,
-          sourceAuthorAvatarUrl: null,
-          savedContentTitle: sourceTitle,
-          savedContentThumbnailUrl: instagramContent.thumbnailUrl ?? null,
-        };
+        await acquireProcessingSlot();
+        try {
+          const { foodFrames: bestFrames, firstFrameBase64 } =
+            await extractAndFilterFrames(instagramContent.mediaUrl, {
+              intervalSeconds: 2,
+              maxFrames: 8,
+            });
+          const recipe = await generateRecipeFromContent({
+            foodFrames: bestFrames,
+            firstFrameBase64,
+            sourceTitle,
+            sourceDescription: instagramContent.caption,
+            sourceImageUrls: instagramContent.thumbnailUrl
+              ? [instagramContent.thumbnailUrl]
+              : undefined,
+          });
+          return {
+            recipe,
+            sourceUrl: input.url,
+            sourceTitle,
+            sourceAuthorName: instagramContent.authorName ?? null,
+            sourceAuthorAvatarUrl: null,
+            savedContentTitle: sourceTitle,
+            savedContentThumbnailUrl: instagramContent.thumbnailUrl ?? null,
+          };
+        } finally {
+          releaseProcessingSlot();
+        }
       } catch {
         const recipe = await generateRecipeFromContent({
           sourceTitle,
