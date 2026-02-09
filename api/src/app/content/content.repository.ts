@@ -1,4 +1,4 @@
-import { eq, desc, and, inArray } from "drizzle-orm";
+import { eq, desc, and, inArray, lt, or } from "drizzle-orm";
 import db from "../../database";
 import { savedContentTable, contentJobTable } from "./content.table";
 import { recipeTable } from "../recipe/recipe.table";
@@ -175,6 +175,39 @@ const findJobsWithRecipes = async (
   }));
 };
 
+const STALE_JOB_MINUTES = 10;
+
+const failStaleJobs = async (): Promise<number> => {
+  const cutoff = new Date(Date.now() - STALE_JOB_MINUTES * 60 * 1000);
+
+  const staleJobs = await db
+    .update(contentJobTable)
+    .set({ status: "failed", error: "Server restarted during processing" })
+    .where(
+      and(
+        or(
+          eq(contentJobTable.status, "processing"),
+          eq(contentJobTable.status, "pending"),
+        ),
+        lt(contentJobTable.createdAt, cutoff),
+      ),
+    )
+    .returning();
+
+  const staleContentIds = staleJobs
+    .map((j) => j.savedContentId)
+    .filter((id): id is string => id != null);
+
+  if (staleContentIds.length > 0) {
+    await db
+      .update(savedContentTable)
+      .set({ status: "failed" })
+      .where(inArray(savedContentTable.id, staleContentIds));
+  }
+
+  return staleJobs.length;
+};
+
 export {
   createSavedContent,
   createContentJob,
@@ -185,5 +218,6 @@ export {
   findJobById,
   findJobWithRecipe,
   findJobsWithRecipes,
+  failStaleJobs,
 };
 export type { SavedContent, NewSavedContent, ContentJob, NewContentJob };

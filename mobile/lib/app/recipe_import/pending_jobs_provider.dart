@@ -51,6 +51,18 @@ class PendingJobsNotifier extends Notifier<List<ContentJob>> {
     _pollTimer = null;
   }
 
+  static const _staleThreshold = Duration(minutes: 10);
+
+  List<ContentJob> _removeStaleJobs(List<ContentJob> jobs) {
+    final now = DateTime.now();
+    return jobs.where((j) {
+      if (j.createdAt == null) return true;
+      final created = DateTime.tryParse(j.createdAt!);
+      if (created == null) return true;
+      return now.difference(created) < _staleThreshold;
+    }).toList();
+  }
+
   Future<void> _pollJobs() async {
     if (state.isEmpty) {
       _stopPolling();
@@ -59,8 +71,8 @@ class PendingJobsNotifier extends Notifier<List<ContentJob>> {
 
     try {
       final repo = ref.read(importRepositoryProvider);
-      final updatedJobs = await repo.fetchJobs(
-        statuses: ['pending', 'processing'],
+      final updatedJobs = _removeStaleJobs(
+        await repo.fetchJobs(statuses: ['pending', 'processing']),
       );
 
       final previousIds = state.map((j) => j.id).toSet();
@@ -77,9 +89,6 @@ class PendingJobsNotifier extends Notifier<List<ContentJob>> {
         _stopPolling();
       }
     } catch (_) {
-      // If the server is unreachable or crashes, avoid showing
-      // "generating" forever. Stop polling and clear pending jobs;
-      // the user can resubmit when the backend is healthy again.
       _stopPolling();
       state = [];
     }
