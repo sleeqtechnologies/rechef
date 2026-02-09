@@ -25,7 +25,7 @@ const groceryListItemTable = pgTable("grocery_list_items", {
   groceryListId: uuid("grocery_list_id")
     .notNull()
     .references(() => groceryListTable.id),
-  recipeId: uuid("recipe_id").references(() => recipeTable.id),
+  recipeId: uuid("recipe_id").references(() => recipeTable.id, { onDelete: "set null" }),
   name: varchar("name", { length: 255 }).notNull(),
   quantity: varchar("quantity", { length: 50 }),
   unit: varchar("unit", { length: 50 }),
