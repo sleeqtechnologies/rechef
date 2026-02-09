@@ -126,5 +126,12 @@
     // This improves issue grouping in Sentry.
     "sourceRoot": "/"
   },
-  "include": ["./src/**/*", "drizzle.config.ts"]
+  "include": [
+    "./src/**/*",
+    "drizzle.config.ts",
+    "app.ts",
+    "env_config.ts",
+    "logger.ts",
+    "api.routes.ts"
+  ]
 }
