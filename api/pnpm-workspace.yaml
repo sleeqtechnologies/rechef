@@ -1,0 +1,6 @@
+# Single package; allow ffmpeg/ffprobe Linux binaries to run install scripts on Vercel (Linux build).
+packages:
+  - "."
+onlyBuiltDependencies:
+    - "@ffmpeg-installer/linux-x64"
+    - "@ffprobe-installer/linux-x64"

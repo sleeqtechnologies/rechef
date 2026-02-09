@@ -1,13 +1,34 @@
 import ffmpeg from "fluent-ffmpeg";
-import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
-import ffprobeInstaller from "@ffprobe-installer/ffprobe";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { logger } from "../../logger";
 
-ffmpeg.setFfmpegPath(ffmpegInstaller.path);
-ffmpeg.setFfprobePath(ffprobeInstaller.path);
+const NO_FFMPEG_MESSAGE =
+  "Video frame extraction is unavailable (ffmpeg/ffprobe not installed). On Vercel, ensure onlyBuiltDependencies includes @ffmpeg-installer/linux-x64 and @ffprobe-installer/linux-x64 in pnpm-workspace.yaml.";
+
+let ffmpegReady = false;
+let ffmpegInitError: Error | null = null;
+
+function ensureFfmpegReady(): void {
+  if (ffmpegReady) return;
+  if (ffmpegInitError) throw ffmpegInitError;
+  try {
+    const ffmpegInstaller = require("@ffmpeg-installer/ffmpeg");
+    const ffprobeInstaller = require("@ffprobe-installer/ffprobe");
+    ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+    ffmpeg.setFfprobePath(ffprobeInstaller.path);
+    ffmpegReady = true;
+  } catch (err) {
+    ffmpegInitError =
+      err instanceof Error ? err : new Error(String(err));
+    const code = (err as { code?: string }).code;
+    if (code === "MODULE_NOT_FOUND") {
+      ffmpegInitError = new Error(NO_FFMPEG_MESSAGE);
+    }
+    throw ffmpegInitError;
+  }
+}
 
 interface ExtractedFrame {
   path: string;
@@ -36,6 +57,7 @@ async function downloadVideo(
 }
 
 function getVideoDuration(videoPath: string): Promise<number> {
+  ensureFfmpegReady();
   return new Promise((resolve, reject) => {
     ffmpeg.ffprobe(videoPath, (err, metadata) => {
       if (err) {
@@ -51,6 +73,7 @@ async function extractFramesAtIntervals(
   videoPath: string,
   options: FrameExtractionOptions = {},
 ): Promise<ExtractedFrame[]> {
+  ensureFfmpegReady();
   const { intervalSeconds = 3, maxFrames = 20, outputFormat = "jpg" } = options;
 
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "frames-"));
@@ -93,6 +116,7 @@ function extractSingleFrame(
   timestampSeconds: number,
   outputPath: string,
 ): Promise<void> {
+  ensureFfmpegReady();
   return new Promise((resolve, reject) => {
     ffmpeg(videoPath)
       .seekInput(timestampSeconds)
