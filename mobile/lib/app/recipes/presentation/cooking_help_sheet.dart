@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:ui';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_core/flutter_chat_core.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
@@ -294,7 +295,7 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
               _buildHeader(context),
               Expanded(
                 child: _loading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const Center(child: CupertinoActivityIndicator())
                     : Chat(
                         chatController: _chatController,
                         currentUserId: _currentUserId,

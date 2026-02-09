@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -141,43 +142,73 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
             ),
             Expanded(
               child: recipesAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, _) => Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 48,
-                        color: Colors.grey.shade300,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Failed to load recipes',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey.shade600,
+                loading: () => const Center(child: CupertinoActivityIndicator()),
+                error: (error, _) => CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    CupertinoSliverRefreshControl(
+                      onRefresh: () async {
+                        ref.invalidate(recipesProvider);
+                        await ref.read(recipesProvider.future);
+                      },
+                    ),
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              size: 48,
+                              color: Colors.grey.shade300,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Failed to load recipes',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            TextButton(
+                              onPressed: () => ref.invalidate(recipesProvider),
+                              child: const Text('Retry'),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      TextButton(
-                        onPressed: () => ref.invalidate(recipesProvider),
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
                 data: (recipes) {
                   final filtered = _filterRecipes(recipes);
-                  if (filtered.isEmpty && pendingJobs.isEmpty) {
-                    return const _EmptyState();
-                  }
-                  if (filtered.isEmpty && recipes.isNotEmpty) {
-                    return _NoSearchResults(query: _searchQuery);
-                  }
-                  return _RecipeGrid(
-                    recipes: filtered,
-                    pendingJobs:
-                        _searchQuery.trim().isEmpty ? pendingJobs : [],
+                  return CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
+                      CupertinoSliverRefreshControl(
+                        onRefresh: () async {
+                          ref.invalidate(recipesProvider);
+                          await ref.read(recipesProvider.future);
+                        },
+                      ),
+                      if (filtered.isEmpty && pendingJobs.isEmpty)
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: const _EmptyState(),
+                        )
+                      else if (filtered.isEmpty && recipes.isNotEmpty)
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: _NoSearchResults(query: _searchQuery),
+                        )
+                      else
+                        _RecipeGridSliver(
+                          recipes: filtered,
+                          pendingJobs:
+                              _searchQuery.trim().isEmpty ? pendingJobs : [],
+                        ),
+                    ],
                   );
                 },
               ),
@@ -273,8 +304,8 @@ class _NoSearchResults extends StatelessWidget {
   }
 }
 
-class _RecipeGrid extends StatelessWidget {
-  const _RecipeGrid({required this.recipes, required this.pendingJobs});
+class _RecipeGridSliver extends StatelessWidget {
+  const _RecipeGridSliver({required this.recipes, required this.pendingJobs});
 
   final List<Recipe> recipes;
   final List<ContentJob> pendingJobs;
@@ -283,32 +314,36 @@ class _RecipeGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final totalItems = pendingJobs.length + recipes.length;
 
-    return GridView.builder(
+    return SliverPadding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.horizontalMargin,
         8,
         AppSpacing.horizontalMargin,
         140,
       ),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 18,
-        childAspectRatio: 0.78,
+      sliver: SliverGrid(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 18,
+          childAspectRatio: 0.78,
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            if (index < pendingJobs.length) {
+              return const _PendingRecipeCard();
+            }
+            final recipe = recipes[index - pendingJobs.length];
+            return _RecipeCard(
+              id: recipe.id,
+              title: recipe.name,
+              imageUrl: recipe.imageUrl,
+              onTap: () => context.push('/recipes/${recipe.id}'),
+            );
+          },
+          childCount: totalItems,
+        ),
       ),
-      itemCount: totalItems,
-      itemBuilder: (context, index) {
-        if (index < pendingJobs.length) {
-          return const _PendingRecipeCard();
-        }
-        final recipe = recipes[index - pendingJobs.length];
-        return _RecipeCard(
-          id: recipe.id,
-          title: recipe.name,
-          imageUrl: recipe.imageUrl,
-          onTap: () => context.push('/recipes/${recipe.id}'),
-        );
-      },
     );
   }
 }
@@ -370,13 +405,9 @@ class _PendingRecipeCardState extends State<_PendingRecipeCard>
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.grey.shade400,
-                            ),
+                          CupertinoActivityIndicator(
+                            radius: 12,
+                            color: Colors.grey.shade400,
                           ),
                           const SizedBox(height: 10),
                           Text(
@@ -450,13 +481,7 @@ class _RecipeCard extends StatelessWidget {
                               return Container(
                                 color: Colors.grey.shade200,
                                 alignment: Alignment.center,
-                                child: const SizedBox(
-                                  height: 22,
-                                  width: 22,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                ),
+                                child: const CupertinoActivityIndicator(radius: 11),
                               );
                             },
                             errorBuilder: (context, error, stackTrace) {

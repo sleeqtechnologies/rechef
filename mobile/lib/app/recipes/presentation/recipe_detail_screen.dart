@@ -1,3 +1,5 @@
+import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -6,6 +8,7 @@ import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:simple_icons/simple_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/utils/share_utils.dart';
 import '../domain/recipe.dart';
 import '../domain/ingredient.dart';
 import '../recipe_provider.dart';
@@ -67,18 +70,68 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
       try {
         await ref.read(recipesProvider.notifier).updateRecipe(updated);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Recipe updated')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Recipe updated')));
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to save: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Failed to save: $e')));
         }
       }
     }
+  }
+
+  Future<void> _shareRecipe(Recipe recipe) async {
+    final text = StringBuffer(recipe.name);
+    if (recipe.description.trim().isNotEmpty) {
+      text.write('\n\n${recipe.description}');
+    }
+    text.write('\n\n${recipe.totalMinutes} min · ${recipe.servings ?? 0} servings');
+    await ShareUtils.shareText(text.toString(), subject: recipe.name);
+  }
+
+  Future<void> _deleteRecipe(Recipe recipe) async {
+    await AdaptiveAlertDialog.show(
+      context: context,
+      title: 'Delete recipe?',
+      message: '"${recipe.name}" will be permanently removed.',
+      actions: [
+        AlertAction(
+          title: 'Cancel',
+          style: AlertActionStyle.cancel,
+          onPressed: () {
+            // Cancel - do nothing
+          },
+        ),
+        AlertAction(
+          title: 'Delete',
+          style: AlertActionStyle.destructive,
+          onPressed: () async {
+            try {
+              await ref.read(recipesProvider.notifier).deleteRecipe(recipe.id);
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Recipe deleted')),
+              );
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/recipes');
+              }
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Failed to delete: $e')),
+                );
+              }
+            }
+          },
+        ),
+      ],
+    );
   }
 
   @override
@@ -96,7 +149,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
     if (recipeAsync.isLoading) {
       return const Scaffold(
         backgroundColor: Colors.white,
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(child: CupertinoActivityIndicator()),
       );
     }
 
@@ -213,7 +266,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                     padding: const EdgeInsets.all(8.0),
                     child: _AppBarButton(
                       icon: Icons.arrow_back_ios_new,
-                      iconColor: _isCollapsed ? Colors.black : Colors.white,
+                      iconColor: Colors.black,
                       glassColor: _isCollapsed
                           ? const Color(0xCCFFFFFF)
                           : const Color(0x33FFFFFF),
@@ -227,9 +280,9 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                     ),
                   ),
                   actions: [
-                    _AppBarButton(
-                      icon: Icons.edit_outlined,
-                      iconColor: _isCollapsed ? Colors.black : Colors.white,
+                    _AppBarTextButton(
+                      label: 'Edit',
+                      textColor: Colors.black,
                       glassColor: _isCollapsed
                           ? const Color(0xCCFFFFFF)
                           : const Color(0x33FFFFFF),
@@ -237,29 +290,18 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                     ),
                     const SizedBox(width: 4),
                     _AppBarButton(
-                      icon: Icons.bookmark_border,
-                      iconColor: _isCollapsed ? Colors.black : Colors.white,
+                      icon: Icons.share_outlined,
+                      iconColor: Colors.black,
                       glassColor: _isCollapsed
                           ? const Color(0xCCFFFFFF)
                           : const Color(0x33FFFFFF),
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Saved (demo)')),
-                        );
-                      },
+                      onPressed: () => _shareRecipe(recipe),
                     ),
                     const SizedBox(width: 4),
-                    _AppBarButton(
-                      icon: Icons.share_outlined,
-                      iconColor: _isCollapsed ? Colors.black : Colors.white,
-                      glassColor: _isCollapsed
-                          ? const Color(0xCCFFFFFF)
-                          : const Color(0x33FFFFFF),
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Share (demo)')),
-                        );
-                      },
+                    _RecipeMorePopupMenu(
+                      recipe: recipe,
+                      isCollapsed: _isCollapsed,
+                      onDelete: () => _deleteRecipe(recipe),
                     ),
                     const SizedBox(width: 8),
                   ],
@@ -492,6 +534,109 @@ class _AppBarButton extends StatelessWidget {
   }
 }
 
+class _AppBarTextButton extends StatelessWidget {
+  const _AppBarTextButton({
+    required this.label,
+    required this.textColor,
+    required this.glassColor,
+    required this.onPressed,
+  });
+
+  final String label;
+  final Color textColor;
+  final Color glassColor;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return FakeGlass(
+      shape: LiquidRoundedSuperellipse(borderRadius: 999),
+      settings: LiquidGlassSettings(blur: 10, glassColor: glassColor),
+      child: SizedBox(
+        height: 40,
+        child: TextButton(
+          onPressed: onPressed,
+          style: TextButton.styleFrom(
+            foregroundColor: textColor,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: textColor,
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+enum _RecipeMoreAction { delete }
+
+class _RecipeMorePopupMenu extends StatelessWidget {
+  const _RecipeMorePopupMenu({
+    required this.recipe,
+    required this.isCollapsed,
+    required this.onDelete,
+  });
+
+  final Recipe recipe;
+  final bool isCollapsed;
+  final VoidCallback onDelete;
+
+  static const _items = [
+    AdaptivePopupMenuItem<_RecipeMoreAction>(
+      label: 'Delete recipe',
+      icon: Icons.delete_outline,
+      value: _RecipeMoreAction.delete,
+    ),
+    // Add more options here later, e.g.:
+    // AdaptivePopupMenuItem<_RecipeMoreAction>(label: '...', value: _RecipeMoreAction.xxx),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    const iconColor = Colors.black;
+    final glassColor = isCollapsed
+        ? const Color(0xCCFFFFFF)
+        : const Color(0x33FFFFFF);
+
+    return IconTheme(
+      data: const IconThemeData(color: Colors.black, size: 20),
+      child: FakeGlass(
+        shape: LiquidRoundedSuperellipse(borderRadius: 999),
+        settings: LiquidGlassSettings(blur: 10, glassColor: glassColor),
+        child: SizedBox(
+          width: 40,
+          height: 40,
+          child: AdaptivePopupMenuButton.widget<_RecipeMoreAction>(
+            items: _items,
+            tint: iconColor,
+            buttonStyle: PopupButtonStyle.glass,
+            onSelected: (index, entry) {
+              switch (entry.value) {
+                case _RecipeMoreAction.delete:
+                  onDelete();
+                  break;
+                case null:
+                  break;
+              }
+            },
+            child: Center(
+              child: Icon(Icons.more_vert, color: Colors.black, size: 20),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _AuthorInfo {
   const _AuthorInfo({
     required this.name,
@@ -511,7 +656,8 @@ String? _platformFromUrl(String? url) {
   final lower = url.toLowerCase();
   if (lower.contains('instagram.com')) return 'instagram';
   if (lower.contains('tiktok.com')) return 'tiktok';
-  if (lower.contains('youtube.com') || lower.contains('youtu.be')) return 'youtube';
+  if (lower.contains('youtube.com') || lower.contains('youtu.be'))
+    return 'youtube';
   return null;
 }
 
@@ -525,9 +671,12 @@ class _AuthorRow extends StatelessWidget {
     final platform = _platformFromUrl(author.sourceUrl);
     if (platform != null) {
       switch (platform) {
-        case 'instagram': return 'Instagram';
-        case 'tiktok': return 'TikTok';
-        case 'youtube': return 'YouTube';
+        case 'instagram':
+          return 'Instagram';
+        case 'tiktok':
+          return 'TikTok';
+        case 'youtube':
+          return 'YouTube';
       }
     }
     return '';
@@ -557,10 +706,14 @@ class _AuthorRow extends StatelessWidget {
     final platform = _platformFromUrl(author.sourceUrl);
     if (platform == null) return null;
     switch (platform) {
-      case 'instagram': return SimpleIcons.instagram;
-      case 'tiktok': return SimpleIcons.tiktok;
-      case 'youtube': return SimpleIcons.youtube;
-      default: return null;
+      case 'instagram':
+        return SimpleIcons.instagram;
+      case 'tiktok':
+        return SimpleIcons.tiktok;
+      case 'youtube':
+        return SimpleIcons.youtube;
+      default:
+        return null;
     }
   }
 
@@ -568,10 +721,14 @@ class _AuthorRow extends StatelessWidget {
     final platform = _platformFromUrl(author.sourceUrl);
     if (platform == null) return null;
     switch (platform) {
-      case 'instagram': return SimpleIconColors.instagram;
-      case 'tiktok': return SimpleIconColors.tiktok;
-      case 'youtube': return SimpleIconColors.youtube;
-      default: return null;
+      case 'instagram':
+        return SimpleIconColors.instagram;
+      case 'tiktok':
+        return SimpleIconColors.tiktok;
+      case 'youtube':
+        return SimpleIconColors.youtube;
+      default:
+        return null;
     }
   }
 
@@ -643,11 +800,7 @@ class _AuthorRow extends StatelessWidget {
           shape: BoxShape.circle,
         ),
         alignment: Alignment.center,
-        child: Icon(
-          _platformIcon!,
-          size: 22,
-          color: Colors.white,
-        ),
+        child: Icon(_platformIcon!, size: 22, color: Colors.white),
       );
     }
     return _buildInitialsAvatar(context);
@@ -827,14 +980,7 @@ class _IngredientsTab extends StatelessWidget {
             ),
             if (isMatchingPantry) ...[
               const SizedBox(width: 8),
-              SizedBox(
-                width: 14,
-                height: 14,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.grey.shade400,
-                ),
-              ),
+              CupertinoActivityIndicator(radius: 7, color: Colors.grey.shade400),
             ],
           ],
         ),

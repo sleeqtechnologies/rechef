@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -167,14 +168,7 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 20),
                           ),
                           child: _isSubmitting
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
+                              ? const CupertinoActivityIndicator(radius: 10, color: Colors.white)
                               : const Text(
                                   'Import',
                                   style: TextStyle(fontWeight: FontWeight.w600),
@@ -208,13 +202,9 @@ class _SubmittingView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: 32,
-            height: 32,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.5,
-              color: Colors.red.shade400,
-            ),
+          CupertinoActivityIndicator(
+            radius: 16,
+            color: Colors.red.shade400,
           ),
           const SizedBox(height: 20),
           Text(

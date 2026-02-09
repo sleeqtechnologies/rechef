@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:camera/camera.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -169,9 +170,7 @@ class _CameraScreenState extends State<CameraScreen> {
 
   Widget _buildLoadingView() {
     return const Center(
-      child: CircularProgressIndicator(
-        color: Colors.white,
-      ),
+      child: const CupertinoActivityIndicator(color: Colors.white),
     );
   }
 
@@ -340,8 +339,8 @@ class _CameraScreenState extends State<CameraScreen> {
                 child: _isCapturing
                     ? const Padding(
                         padding: EdgeInsets.all(20),
-                        child: CircularProgressIndicator(
-                          strokeWidth: 3,
+                        child: CupertinoActivityIndicator(
+                          radius: 15,
                           color: Colors.white,
                         ),
                       )

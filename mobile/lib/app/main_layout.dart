@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -155,13 +156,9 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
       const SnackBar(
         content: Row(
           children: [
-            SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
+            CupertinoActivityIndicator(
+              radius: 9,
+              color: Colors.white,
             ),
             SizedBox(width: 12),
             Text('Creating your shopping list...'),

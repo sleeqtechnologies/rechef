@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../../core/services/cooking_timer_notifications.dart';
 import '../domain/recipe.dart';
@@ -51,10 +52,12 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
   void initState() {
     super.initState();
     _pageController = PageController();
+    WakelockPlus.enable();
   }
 
   @override
   void dispose() {
+    WakelockPlus.disable();
     _timer?.cancel();
     _cancelScheduledNotification();
     _pageController.dispose();
@@ -167,7 +170,8 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
 
   static int _applyUnit(double value, String unit) {
     final u = unit.toLowerCase();
-    if (u.startsWith('hour') || u.startsWith('hr')) return (value * 3600).round();
+    if (u.startsWith('hour') || u.startsWith('hr'))
+      return (value * 3600).round();
     if (u.startsWith('min')) return (value * 60).round();
     return value.round(); // seconds
   }
@@ -177,11 +181,12 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
   /// Builds a TextSpan tree with ingredient names and time patterns
   /// highlighted in the accent color.
   TextSpan _buildHighlightedText(String text, BuildContext context) {
-    final baseStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
-              fontSize: 20,
-              height: 1.7,
-              color: Colors.black87,
-            ) ??
+    final baseStyle =
+        Theme.of(context).textTheme.bodyLarge?.copyWith(
+          fontSize: 20,
+          height: 1.7,
+          color: Colors.black87,
+        ) ??
         const TextStyle(fontSize: 20, height: 1.7);
 
     final highlightStyle = baseStyle.copyWith(
@@ -202,8 +207,15 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
       final label = text.substring(match.start, match.end);
       final seconds = _parseSeconds(label);
       if (seconds > 0) {
-        ranges.add(_HighlightRange(match.start, match.end,
-            isTimer: true, durationSeconds: seconds, label: label));
+        ranges.add(
+          _HighlightRange(
+            match.start,
+            match.end,
+            isTimer: true,
+            durationSeconds: seconds,
+            label: label,
+          ),
+        );
       } else {
         ranges.add(_HighlightRange(match.start, match.end));
       }
@@ -258,7 +270,8 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
         spans.add(TextSpan(text: text.substring(lastEnd, range.start)));
       }
       final spanText = text.substring(range.start, range.end);
-      final isTimer = range.isTimer && range.durationSeconds != null && range.label != null;
+      final isTimer =
+          range.isTimer && range.durationSeconds != null && range.label != null;
       final spanStyle = isTimer
           ? highlightStyle.copyWith(
               decoration: TextDecoration.underline,
@@ -267,15 +280,13 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
           : highlightStyle;
       final recognizer = isTimer
           ? (TapGestureRecognizer()
-            ..onTap = () {
-              _startTimer(range.durationSeconds!, range.label!);
-            })
+              ..onTap = () {
+                _startTimer(range.durationSeconds!, range.label!);
+              })
           : null;
-      spans.add(TextSpan(
-        text: spanText,
-        style: spanStyle,
-        recognizer: recognizer,
-      ));
+      spans.add(
+        TextSpan(text: spanText, style: spanStyle, recognizer: recognizer),
+      );
       lastEnd = range.end;
     }
     if (lastEnd < text.length) {
@@ -330,9 +341,9 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
             child: Text(
               widget.recipe.name,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    height: 1.2,
-                  ),
+                fontWeight: FontWeight.w700,
+                height: 1.2,
+              ),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
@@ -374,12 +385,28 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
               onTap: () => _goToStep(index),
               child: Container(
                 height: 4,
-                margin: EdgeInsets.only(
-                  right: index < _totalSteps - 1 ? 4 : 0,
-                ),
+                margin: EdgeInsets.only(right: index < _totalSteps - 1 ? 4 : 0),
+                clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
-                  color: isFilled ? _accentColor : Colors.grey.shade200,
+                  color: Colors.grey.shade200,
                   borderRadius: BorderRadius.circular(2),
+                ),
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween<double>(end: isFilled ? 1.0 : 0.0),
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  builder: (context, value, _) {
+                    return FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: value,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: _accentColor,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -407,9 +434,9 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
             child: Text(
               (index + 1).toString().padLeft(2, '0'),
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: Colors.grey.shade700,
-                  ),
+                fontWeight: FontWeight.w700,
+                color: Colors.grey.shade700,
+              ),
             ),
           ),
           const SizedBox(height: 28),
@@ -428,7 +455,8 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
   Widget _buildBottomBar(BuildContext context) {
     final mins = _timerRemaining ~/ 60;
     final secs = _timerRemaining % 60;
-    final timeStr = '${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+    final timeStr =
+        '${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
@@ -496,7 +524,9 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: _timerDone ? Colors.green.shade800 : _accentColor,
+                          color: _timerDone
+                              ? Colors.green.shade800
+                              : _accentColor,
                           fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),
@@ -554,8 +584,13 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
 }
 
 class _HighlightRange {
-  const _HighlightRange(this.start, this.end,
-      {this.isTimer = false, this.durationSeconds, this.label});
+  const _HighlightRange(
+    this.start,
+    this.end, {
+    this.isTimer = false,
+    this.durationSeconds,
+    this.label,
+  });
   final int start;
   final int end;
   final bool isTimer;

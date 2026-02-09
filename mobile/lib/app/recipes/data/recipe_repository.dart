@@ -88,7 +88,12 @@ class RecipeRepository {
     final response = await _apiClient.delete(ApiEndpoints.recipe(id));
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to delete recipe');
+      try {
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? 'Failed to delete recipe');
+      } catch (_) {
+        throw Exception('Failed to delete recipe');
+      }
     }
   }
 

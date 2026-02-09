@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -102,14 +103,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       elevation: 0,
                     ),
                     child: _loadingButton == 'google'
-                        ? const SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: Colors.black54,
-                            ),
-                          )
+                        ? const CupertinoActivityIndicator(radius: 12, color: Colors.black54)
                         : Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -148,14 +142,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       elevation: 0,
                     ),
                     child: _loadingButton == 'apple'
-                        ? const SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: Colors.white70,
-                            ),
-                          )
+                        ? const CupertinoActivityIndicator(radius: 12, color: Colors.white70)
                         : const Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
