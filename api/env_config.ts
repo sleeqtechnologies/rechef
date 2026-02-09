@@ -5,7 +5,7 @@ dotenv.config();
 
 const env = cleanEnv(process.env, {
   PORT: num({ default: 1234 }),
-  NODE_ENV: str({ choices: ["development", "production"] }),
+  NODE_ENV: str({ choices: ["development", "production"], default: "production" }),
   DATABASE_URL: str(),
   OPENAI_API_KEY: str(),
   SERVICE_ACCT_KEY: str(),
