@@ -52,8 +52,23 @@ async function downloadVideo(
     throw new Error(`Failed to download video: ${response.status}`);
   }
 
-  const buffer = await response.arrayBuffer();
-  fs.writeFileSync(outputPath, new Uint8Array(buffer));
+
+  const fileStream = fs.createWriteStream(outputPath);
+
+  const body = response.body;
+  if (!body) {
+    throw new Error("Response body is null while downloading video");
+  }
+
+  for await (const chunk of body as any) {
+    fileStream.write(chunk);
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    fileStream.end();
+    fileStream.on("finish", () => resolve());
+    fileStream.on("error", (err) => reject(err));
+  });
 }
 
 function getVideoDuration(videoPath: string): Promise<number> {
