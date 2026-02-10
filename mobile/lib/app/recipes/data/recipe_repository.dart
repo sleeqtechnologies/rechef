@@ -165,4 +165,27 @@ class RecipeRepository {
     final recipeJson = data['recipe'] as Map<String, dynamic>;
     return Recipe.fromJson(recipeJson);
   }
+
+  Future<void> removeSharedRecipe(String sharedSaveId) async {
+    final response =
+        await _apiClient.delete(ApiEndpoints.removeSharedRecipe(sharedSaveId));
+
+    if (response.statusCode != 200) {
+      final error = jsonDecode(response.body) as Map<String, dynamic>;
+      throw Exception(error['error'] ?? 'Failed to remove shared recipe');
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchShareStats(String recipeId) async {
+    final response = await _apiClient.get(ApiEndpoints.shareStats(recipeId));
+
+    if (response.statusCode != 200) {
+      final error = jsonDecode(response.body) as Map<String, dynamic>;
+      throw Exception(error['error'] ?? 'Failed to fetch share stats');
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final stats = data['stats'] as Map<String, dynamic>?;
+    return stats ?? {};
+  }
 }

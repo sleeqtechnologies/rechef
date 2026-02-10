@@ -10,6 +10,11 @@ import {
 import { userPantryTable } from "../app/pantry/pantry.table";
 import { recipeTable } from "../app/recipe/recipe.table";
 import { recipeNutritionTable } from "../app/recipe/recipe-nutrition.table";
+import {
+  shareEventTable,
+  sharedRecipeSaveTable,
+  sharedRecipeTable,
+} from "../app/share/share.table";
 import { userTable } from "../app/user/user.table";
 
 export default {
@@ -22,4 +27,7 @@ export default {
   groceryListItemTable,
   userPantryTable,
   chatMessageTable,
+  sharedRecipeTable,
+  sharedRecipeSaveTable,
+  shareEventTable,
 };

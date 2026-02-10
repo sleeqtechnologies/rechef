@@ -56,6 +56,14 @@ class RecipesNotifier extends AsyncNotifier<List<Recipe>> {
     state = AsyncData((state.value ?? []).where((r) => r.id != id).toList());
   }
 
+  Future<void> removeSharedRecipe(String sharedSaveId) async {
+    final repo = ref.read(recipeRepositoryProvider);
+    await repo.removeSharedRecipe(sharedSaveId);
+    state = AsyncData(
+      (state.value ?? []).where((r) => r.sharedSaveId != sharedSaveId).toList(),
+    );
+  }
+
   Future<void> matchPantry(String recipeId) async {
     final repo = ref.read(recipeRepositoryProvider);
     final updatedIngredients = await repo.matchPantry(recipeId);

@@ -26,9 +26,7 @@ type PageProps = {
   params: Promise<{ code: string }>;
 };
 
-export async function generateMetadata(
-  props: PageProps,
-): Promise<Metadata> {
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const params = await props.params;
   const code = params.code;
 
@@ -82,7 +80,9 @@ export async function generateMetadata(
   }
 }
 
-async function fetchSharedRecipe(code: string): Promise<SharedRecipeResponse | null> {
+async function fetchSharedRecipe(
+  code: string,
+): Promise<SharedRecipeResponse | null> {
   try {
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://api.rechef.app"}/share/${code}`,
@@ -110,7 +110,8 @@ export default async function SharedRecipePage(props: PageProps) {
         <div className="max-w-md text-center space-y-4">
           <h1 className="text-2xl font-semibold">Recipe not found</h1>
           <p className="text-slate-400">
-            This shared recipe link may have expired or been disabled by the creator.
+            This shared recipe link may have expired or been disabled by the
+            creator.
           </p>
           <Link
             href="https://rechef.app"
@@ -189,8 +190,9 @@ export default async function SharedRecipePage(props: PageProps) {
                   Get Rechef to save this recipe
                 </Link>
                 <p className="text-[11px] leading-relaxed text-slate-400">
-                  Download the Rechef app to keep this recipe, generate grocery lists from
-                  the ingredients, and get live updates if the creator makes changes.
+                  Download the Rechef app to keep this recipe, generate grocery
+                  lists from the ingredients, and get live updates if the
+                  creator makes changes.
                 </p>
               </div>
             </div>
@@ -225,8 +227,8 @@ export default async function SharedRecipePage(props: PageProps) {
               </ol>
             </div>
             <p className="text-[11px] text-slate-500 pt-1">
-              This is a preview. For timers, pantry matching, grocery lists, and AI cooking
-              help, open this recipe in the Rechef mobile app.
+              This is a preview. For timers, pantry matching, grocery lists, and
+              AI cooking help, open this recipe in the Rechef mobile app.
             </p>
           </div>
         </div>
@@ -234,4 +236,3 @@ export default async function SharedRecipePage(props: PageProps) {
     </main>
   );
 }
-

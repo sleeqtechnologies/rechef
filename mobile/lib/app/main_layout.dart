@@ -5,6 +5,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../app/pantry/presentation/add_item_sheet.dart';
 import '../app/pantry/pantry_provider.dart';
 import '../app/grocery/grocery_provider.dart';
+import '../app/recipes/data/share_event_service.dart';
+import '../app/recipes/recipe_provider.dart';
 import '../app/recipe_import/presentation/import_url_sheet.dart';
 import '../app/recipe_import/data/import_repository.dart';
 import '../app/recipe_import/import_provider.dart';
@@ -197,6 +199,29 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      // Fire grocery_purchase for shared recipes that have items in this order
+      final groceryList = ref.read(groceryProvider).value ?? [];
+      final recipes = ref.read(recipesProvider).value ?? [];
+      final sharedRecipeCodes = <String, String>{};
+      for (final r in recipes) {
+        if (r.isShared && r.shareCode != null) {
+          sharedRecipeCodes[r.id] = r.shareCode!;
+        }
+      }
+      final uncheckedRecipeIds = groceryList
+          .where((i) => !i.checked && i.recipeId != null)
+          .map((i) => i.recipeId!)
+          .toSet();
+      for (final recipeId in uncheckedRecipeIds) {
+        final shareCode = sharedRecipeCodes[recipeId];
+        if (shareCode != null) {
+          ShareEventService.recordEvent(
+            shareCode: shareCode,
+            eventType: 'grocery_purchase',
+          );
+        }
+      }
 
       final uri = Uri.parse(url);
       await launchUrl(uri, mode: LaunchMode.externalApplication);

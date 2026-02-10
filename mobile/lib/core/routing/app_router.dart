@@ -8,6 +8,7 @@ import '../../app/pantry/presentation/pantry_screen.dart';
 import '../../app/recipes/presentation/recipe_detail_screen.dart';
 import '../../app/recipes/presentation/recipe_list_screen.dart';
 import '../../app/recipes/presentation/shared_recipe_screen.dart';
+import '../../app/recipes/presentation/share_stats_screen.dart';
 import '../../app/recipe_import/presentation/import_recipe_screen.dart';
 import '../../app/recipe_import/presentation/camera_screen.dart';
 import '../../app/grocery/presentation/grocery_list_screen.dart';
@@ -110,6 +111,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           final id = state.pathParameters['id']!;
           return RecipeDetailScreen(recipeId: id);
         },
+        routes: [
+          GoRoute(
+            path: 'share-stats',
+            name: 'share-stats',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return ShareStatsScreen(recipeId: id);
+            },
+          ),
+        ],
       ),
 
       // Camera Screen (for taking recipe photos) - no bottom bar

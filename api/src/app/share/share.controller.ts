@@ -212,7 +212,7 @@ const getSharedWithMe = async (req: Request, res: Response) => {
     const sharedRecipes = await shareRepository.findSharedWithUser(userId);
 
     const formatted = sharedRecipes.map((row) => ({
-      id: row.shared.id,
+      id: row.save.id,
       recipe: {
         id: row.recipe.id,
         name: row.recipe.name,
@@ -292,7 +292,6 @@ const saveSharedRecipe = async (req: Request, res: Response) => {
   }
 };
 
-// DELETE /api/shared-with-me/:id
 const removeSharedRecipe = async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;

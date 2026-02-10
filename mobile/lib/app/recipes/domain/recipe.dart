@@ -18,6 +18,7 @@ class Recipe {
     this.isShared = false,
     this.shareCode,
     this.sharedBy,
+    this.sharedSaveId,
   });
 
   final String id;
@@ -36,6 +37,8 @@ class Recipe {
   final bool isShared;
   final String? shareCode;
   final String? sharedBy; // Creator user ID
+  /// Subscription id for DELETE /api/shared-with-me/:id
+  final String? sharedSaveId;
 
   int get totalMinutes => (prepTimeMinutes ?? 0) + (cookTimeMinutes ?? 0);
 
@@ -52,6 +55,7 @@ class Recipe {
     bool? isShared,
     String? shareCode,
     String? sharedBy,
+    String? sharedSaveId,
   }) =>
       Recipe(
         id: id,
@@ -70,6 +74,7 @@ class Recipe {
         isShared: isShared ?? this.isShared,
         shareCode: shareCode ?? this.shareCode,
         sharedBy: sharedBy ?? this.sharedBy,
+        sharedSaveId: sharedSaveId ?? this.sharedSaveId,
       );
 
   factory Recipe.fromJson(Map<String, dynamic> json) {
@@ -104,6 +109,7 @@ class Recipe {
       isShared: json['isShared'] as bool? ?? false,
       shareCode: json['shareCode'] as String?,
       sharedBy: json['sharedBy'] as String?,
+      sharedSaveId: json['sharedSaveId'] as String?,
     );
   }
 
@@ -125,5 +131,6 @@ class Recipe {
         'isShared': isShared,
         if (shareCode != null) 'shareCode': shareCode,
         if (sharedBy != null) 'sharedBy': sharedBy,
+        if (sharedSaveId != null) 'sharedSaveId': sharedSaveId,
       };
 }

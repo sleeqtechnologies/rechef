@@ -111,7 +111,8 @@ const getRecipes = async (req: Request, res: Response) => {
       ...formatRecipe(row.recipe),
       isShared: true,
       shareCode: row.shared.shareCode,
-      sharedBy: row.shared.userId, // Creator ID
+      sharedBy: row.shared.userId, 
+      sharedSaveId: row.save.id, 
     }));
 
     return res.status(200).json({

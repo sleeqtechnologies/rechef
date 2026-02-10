@@ -12,9 +12,15 @@ import { recipeTable } from "../recipe/recipe.table";
 type SharedRecipe = typeof sharedRecipeTable.$inferSelect;
 type SharedRecipeSave = typeof sharedRecipeSaveTable.$inferSelect;
 type ShareEvent = typeof shareEventTable.$inferSelect;
+type RecipeRow = typeof recipeTable.$inferSelect;
+
+export type SharedWithUserRow = {
+  save: SharedRecipeSave;
+  shared: SharedRecipe;
+  recipe: RecipeRow;
+};
 
 const generateShareCode = (): string => {
-  // 12-char URL-safe code
   return crypto.randomBytes(9).toString("base64url").slice(0, 12);
 };
 
@@ -131,9 +137,12 @@ const saveSubscription = async ({
   return created;
 };
 
-const findSharedWithUser = async (userId: string) => {
+const findSharedWithUser = async (
+  userId: string,
+): Promise<SharedWithUserRow[]> => {
   const rows = await db
     .select({
+      save: sharedRecipeSaveTable,
       shared: sharedRecipeTable,
       recipe: recipeTable,
     })
@@ -148,7 +157,7 @@ const findSharedWithUser = async (userId: string) => {
     )
     .where(eq(sharedRecipeSaveTable.userId, userId));
 
-  return rows;
+  return rows as SharedWithUserRow[];
 };
 
 const deleteSubscription = async (id: string, userId: string): Promise<void> => {
@@ -190,45 +199,84 @@ const recordEvent = async ({
 };
 
 const getStatsForRecipe = async (sharedRecipeId: string) => {
-  const [row] = await db
-    .select({
-      webViews: count().filter(
-        eq(shareEventTable.eventType, "web_view"),
-      ),
-      appOpens: count().filter(
-        eq(shareEventTable.eventType, "app_open"),
-      ),
-      appInstalls: count().filter(
-        eq(shareEventTable.eventType, "app_install"),
-      ),
-      recipeSaves: count().filter(
-        eq(shareEventTable.eventType, "recipe_save"),
-      ),
-      groceryAdds: count().filter(
-        eq(shareEventTable.eventType, "grocery_add"),
-      ),
-      groceryPurchases: count().filter(
-        eq(shareEventTable.eventType, "grocery_purchase"),
-      ),
-    })
-    .from(shareEventTable)
-    .where(eq(shareEventTable.sharedRecipeId, sharedRecipeId));
+  const baseWhere = eq(shareEventTable.sharedRecipeId, sharedRecipeId);
 
-  const [subs] = await db
-    .select({ value: count() })
-    .from(sharedRecipeSaveTable)
-    .where(eq(sharedRecipeSaveTable.sharedRecipeId, sharedRecipeId));
+  const [webViewsR, appOpensR, appInstallsR, recipeSavesR, groceryAddsR, groceryPurchasesR, subsR] =
+    await Promise.all([
+      db
+        .select({ value: count() })
+        .from(shareEventTable)
+        .where(
+          and(
+            baseWhere,
+            eq(shareEventTable.eventType, "web_view"),
+          ),
+        ),
+      db
+        .select({ value: count() })
+        .from(shareEventTable)
+        .where(
+          and(
+            baseWhere,
+            eq(shareEventTable.eventType, "app_open"),
+          ),
+        ),
+      db
+        .select({ value: count() })
+        .from(shareEventTable)
+        .where(
+          and(
+            baseWhere,
+            eq(shareEventTable.eventType, "app_install"),
+          ),
+        ),
+      db
+        .select({ value: count() })
+        .from(shareEventTable)
+        .where(
+          and(
+            baseWhere,
+            eq(shareEventTable.eventType, "recipe_save"),
+          ),
+        ),
+      db
+        .select({ value: count() })
+        .from(shareEventTable)
+        .where(
+          and(
+            baseWhere,
+            eq(shareEventTable.eventType, "grocery_add"),
+          ),
+        ),
+      db
+        .select({ value: count() })
+        .from(shareEventTable)
+        .where(
+          and(
+            baseWhere,
+            eq(shareEventTable.eventType, "grocery_purchase"),
+          ),
+        ),
+      db
+        .select({ value: count() })
+        .from(sharedRecipeSaveTable)
+        .where(eq(sharedRecipeSaveTable.sharedRecipeId, sharedRecipeId)),
+    ]);
+
+  const num = (r: unknown): number => {
+    const arr = r as { value?: number }[] | undefined;
+    const v = arr?.[0]?.value;
+    return typeof v === "number" ? v : 0;
+  };
 
   return {
-    ...(row ?? {
-      webViews: 0,
-      appOpens: 0,
-      appInstalls: 0,
-      recipeSaves: 0,
-      groceryAdds: 0,
-      groceryPurchases: 0,
-    }),
-    subscriberCount: subs?.value ?? 0,
+    webViews: num(webViewsR as unknown),
+    appOpens: num(appOpensR as unknown),
+    appInstalls: num(appInstallsR as unknown),
+    recipeSaves: num(recipeSavesR as unknown),
+    groceryAdds: num(groceryAddsR as unknown),
+    groceryPurchases: num(groceryPurchasesR as unknown),
+    subscriberCount: num(subsR as unknown),
   };
 };
 

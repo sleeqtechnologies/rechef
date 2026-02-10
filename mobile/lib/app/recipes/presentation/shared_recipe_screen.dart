@@ -3,12 +3,15 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/recipe_repository.dart';
 import '../data/share_event_service.dart';
 import '../domain/recipe.dart';
 import '../recipe_provider.dart';
 import '../../../core/network/api_client.dart';
+
+const _kHasLaunchedBeforeKey = 'share_has_launched_before';
 
 class SharedRecipeScreen extends ConsumerStatefulWidget {
   const SharedRecipeScreen({super.key, required this.shareCode});
@@ -47,6 +50,16 @@ class _SharedRecipeScreenState extends ConsumerState<SharedRecipeScreen> {
         shareCode: widget.shareCode,
         eventType: 'app_open',
       );
+
+      final prefs = await SharedPreferences.getInstance();
+      final hasLaunchedBefore = prefs.getBool(_kHasLaunchedBeforeKey) ?? false;
+      if (!hasLaunchedBefore) {
+        await prefs.setBool(_kHasLaunchedBeforeKey, true);
+        ShareEventService.recordEvent(
+          shareCode: widget.shareCode,
+          eventType: 'app_install',
+        );
+      }
 
       if (!mounted) return;
 

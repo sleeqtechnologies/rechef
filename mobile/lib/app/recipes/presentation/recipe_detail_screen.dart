@@ -15,6 +15,7 @@ import '../../../core/constants/api_endpoints.dart';
 import '../../../core/network/api_client.dart';
 import '../domain/recipe.dart';
 import '../domain/ingredient.dart';
+import '../data/share_event_service.dart';
 import '../recipe_provider.dart';
 import '../domain/nutrition_facts.dart';
 import '../../grocery/grocery_provider.dart';
@@ -65,7 +66,6 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
     final recipeAsync = ref.read(recipeByIdProvider(widget.recipeId));
     await recipeAsync.whenData((recipe) async {
       if (recipe?.isShared == true && mounted) {
-        // Refresh recipes to get latest version
         ref.invalidate(recipesProvider);
         await ref.read(recipesProvider.future);
       }
@@ -76,7 +76,6 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
     try {
       await ref.read(recipesProvider.notifier).matchPantry(widget.recipeId);
     } catch (_) {
-      // Silently ignore matching errors
     } finally {
       if (mounted) setState(() => _isMatchingPantry = false);
     }
@@ -131,6 +130,49 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
         ),
       );
     }
+  }
+
+  Future<void> _removeSharedRecipeFromLibrary(Recipe recipe) async {
+    if (recipe.sharedSaveId == null) return;
+    await AdaptiveAlertDialog.show(
+      context: context,
+      title: 'Remove from library?',
+      message:
+          '"${recipe.name}" will be removed from your recipes. You can save it again later from the share link.',
+      actions: [
+        AlertAction(
+          title: 'Cancel',
+          style: AlertActionStyle.cancel,
+          onPressed: () {},
+        ),
+        AlertAction(
+          title: 'Remove',
+          style: AlertActionStyle.destructive,
+          onPressed: () async {
+            try {
+              await ref
+                  .read(recipesProvider.notifier)
+                  .removeSharedRecipe(recipe.sharedSaveId!);
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Removed from library')),
+              );
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/recipes');
+              }
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Failed to remove: $e')),
+                );
+              }
+            }
+          },
+        ),
+      ],
+    );
   }
 
   Future<void> _deleteRecipe(Recipe recipe) async {
@@ -346,6 +388,17 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                         recipe: recipe,
                         isCollapsed: _isCollapsed,
                         onDelete: () => _deleteRecipe(recipe),
+                        onShareStats: () => context.push(
+                          '/recipes/${recipe.id}/share-stats',
+                        ),
+                      ),
+                    if (recipe.isShared &&
+                        recipe.sharedSaveId != null)
+                      _SharedRecipeMorePopupMenu(
+                        recipe: recipe,
+                        isCollapsed: _isCollapsed,
+                        onRemoveFromLibrary: () =>
+                            _removeSharedRecipeFromLibrary(recipe),
                       ),
                     const SizedBox(width: 8),
                   ],
@@ -500,11 +553,16 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                           return _IngredientsTab(
                             recipe: recipe,
                             isMatchingPantry: _isMatchingPantry,
-                            onToggle: (index) {
-                              ref
-                                  .read(recipesProvider.notifier)
-                                  .toggleIngredient(widget.recipeId, index);
-                            },
+                            onToggle: recipe.isShared
+                                ? (_) {}
+                                : (index) {
+                                    ref
+                                        .read(recipesProvider.notifier)
+                                        .toggleIngredient(
+                                          widget.recipeId,
+                                          index,
+                                        );
+                                  },
                           );
                         } else if (_tabController.index == 1) {
                           return _CookingTab(recipe: recipe);
@@ -565,6 +623,14 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                                   .toList(),
                             );
                         if (context.mounted) {
+                          if (recipe.isShared &&
+                              recipe.shareCode != null &&
+                              added > 0) {
+                            ShareEventService.recordEvent(
+                              shareCode: recipe.shareCode!,
+                              eventType: 'grocery_add',
+                            );
+                          }
                           final msg = added == 0
                               ? 'Items already in grocery list'
                               : 'Added $added item${added == 1 ? '' : 's'} to grocery list';
@@ -668,27 +734,91 @@ class _AppBarTextButton extends StatelessWidget {
   }
 }
 
-enum _RecipeMoreAction { delete }
+enum _SharedRecipeMoreAction { removeFromLibrary }
+
+class _SharedRecipeMorePopupMenu extends StatelessWidget {
+  const _SharedRecipeMorePopupMenu({
+    required this.recipe,
+    required this.isCollapsed,
+    required this.onRemoveFromLibrary,
+  });
+
+  final Recipe recipe;
+  final bool isCollapsed;
+  final VoidCallback onRemoveFromLibrary;
+
+  static const _items = [
+    AdaptivePopupMenuItem<_SharedRecipeMoreAction>(
+      label: 'Remove from library',
+      icon: Icons.remove_circle_outline,
+      value: _SharedRecipeMoreAction.removeFromLibrary,
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    const iconColor = Colors.black;
+    final glassColor = isCollapsed
+        ? const Color(0xCCFFFFFF)
+        : const Color(0x33FFFFFF);
+
+    return IconTheme(
+      data: const IconThemeData(color: Colors.black, size: 20),
+      child: FakeGlass(
+        shape: LiquidRoundedSuperellipse(borderRadius: 999),
+        settings: LiquidGlassSettings(blur: 10, glassColor: glassColor),
+        child: SizedBox(
+          width: 40,
+          height: 40,
+          child: AdaptivePopupMenuButton.widget<_SharedRecipeMoreAction>(
+            items: _items,
+            tint: iconColor,
+            buttonStyle: PopupButtonStyle.glass,
+            onSelected: (index, entry) {
+              switch (entry.value) {
+                case _SharedRecipeMoreAction.removeFromLibrary:
+                  onRemoveFromLibrary();
+                  break;
+                case null:
+                  break;
+              }
+            },
+            child: Center(
+              child: Icon(Icons.more_vert, color: Colors.black, size: 20),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+enum _RecipeMoreAction { shareStats, delete }
 
 class _RecipeMorePopupMenu extends StatelessWidget {
   const _RecipeMorePopupMenu({
     required this.recipe,
     required this.isCollapsed,
     required this.onDelete,
+    required this.onShareStats,
   });
 
   final Recipe recipe;
   final bool isCollapsed;
   final VoidCallback onDelete;
+  final VoidCallback onShareStats;
 
   static const _items = [
+    AdaptivePopupMenuItem<_RecipeMoreAction>(
+      label: 'Share analytics',
+      icon: Icons.bar_chart_outlined,
+      value: _RecipeMoreAction.shareStats,
+    ),
     AdaptivePopupMenuItem<_RecipeMoreAction>(
       label: 'Delete recipe',
       icon: Icons.delete_outline,
       value: _RecipeMoreAction.delete,
     ),
-    // Add more options here later, e.g.:
-    // AdaptivePopupMenuItem<_RecipeMoreAction>(label: '...', value: _RecipeMoreAction.xxx),
   ];
 
   @override
@@ -712,6 +842,9 @@ class _RecipeMorePopupMenu extends StatelessWidget {
             buttonStyle: PopupButtonStyle.glass,
             onSelected: (index, entry) {
               switch (entry.value) {
+                case _RecipeMoreAction.shareStats:
+                  onShareStats();
+                  break;
                 case _RecipeMoreAction.delete:
                   onDelete();
                   break;
