@@ -75,7 +75,14 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: _RecipeQuotaBadge(isPro: isPro, usageAsync: usageAsync),
+            child: _RecipeQuotaBadge(
+              isPro: isPro,
+              usageAsync: usageAsync,
+              onTap: isPro
+                  ? null
+                  : () =>
+                      ref.read(subscriptionProvider.notifier).showPaywall(),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -176,6 +183,10 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
           ),
           data: (recipes) {
             final filtered = _filterRecipes(recipes);
+            final owned = filtered.where((r) => !r.isShared).toList();
+            final shared = filtered.where((r) => r.isShared).toList();
+            final hasAnyRecipes = owned.isNotEmpty || shared.isNotEmpty || pendingJobs.isNotEmpty;
+
             return CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
@@ -193,7 +204,7 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
                     onClear: () => _searchController.clear(),
                   ),
                 ),
-                if (filtered.isEmpty && pendingJobs.isEmpty)
+                if (!hasAnyRecipes && _searchQuery.trim().isEmpty)
                   const SliverFillRemaining(
                     hasScrollBody: false,
                     child: _EmptyState(),
@@ -203,11 +214,20 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
                     hasScrollBody: false,
                     child: _NoSearchResults(query: _searchQuery),
                   )
-                else
-                  _RecipeGridSliver(
-                    recipes: filtered,
-                    pendingJobs: _searchQuery.trim().isEmpty ? pendingJobs : [],
-                  ),
+                else ...[
+                  if (owned.isNotEmpty || (_searchQuery.trim().isEmpty && pendingJobs.isNotEmpty))
+                    _RecipeGridSliver(
+                      recipes: owned,
+                      pendingJobs: _searchQuery.trim().isEmpty ? pendingJobs : [],
+                      title: 'My Recipes',
+                    ),
+                  if (shared.isNotEmpty)
+                    _RecipeGridSliver(
+                      recipes: shared,
+                      pendingJobs: [],
+                      title: 'Shared with Me',
+                    ),
+                ],
               ],
             );
           },
@@ -327,10 +347,15 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _RecipeQuotaBadge extends StatelessWidget {
-  const _RecipeQuotaBadge({required this.isPro, required this.usageAsync});
+  const _RecipeQuotaBadge({
+    required this.isPro,
+    required this.usageAsync,
+    this.onTap,
+  });
 
   final bool isPro;
   final AsyncValue<MonthlyImportUsage> usageAsync;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -362,7 +387,7 @@ class _RecipeQuotaBadge extends StatelessWidget {
       textColor = const Color(0xFF4A4A4A);
     }
 
-    return Container(
+    final badge = Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
         color: backgroundColor,
@@ -389,6 +414,15 @@ class _RecipeQuotaBadge extends StatelessWidget {
         ],
       ),
     );
+
+    if (onTap != null) {
+      return GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: badge,
+      );
+    }
+    return badge;
   }
 }
 
@@ -437,42 +471,71 @@ class _NoSearchResults extends StatelessWidget {
 }
 
 class _RecipeGridSliver extends StatelessWidget {
-  const _RecipeGridSliver({required this.recipes, required this.pendingJobs});
+  const _RecipeGridSliver({
+    required this.recipes,
+    required this.pendingJobs,
+    this.title,
+  });
 
   final List<Recipe> recipes;
   final List<ContentJob> pendingJobs;
+  final String? title;
 
   @override
   Widget build(BuildContext context) {
     final totalItems = pendingJobs.length + recipes.length;
+    final hasTitle = title != null && totalItems > 0;
 
-    return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.horizontalMargin,
-        8,
-        AppSpacing.horizontalMargin,
-        140,
-      ),
-      sliver: SliverGrid(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 18,
-          childAspectRatio: 0.78,
+    return SliverMainAxisGroup(
+      slivers: [
+        if (hasTitle)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.horizontalMargin,
+                8,
+                AppSpacing.horizontalMargin,
+                12,
+              ),
+              child: Text(
+                title!,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade800,
+                    ),
+              ),
+            ),
+          ),
+        SliverPadding(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.horizontalMargin,
+            hasTitle ? 0 : 8,
+            AppSpacing.horizontalMargin,
+            title != null ? 24 : 140,
+          ),
+          sliver: SliverGrid(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 18,
+              childAspectRatio: 0.78,
+            ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              if (index < pendingJobs.length) {
+                return const _PendingRecipeCard();
+              }
+              final recipe = recipes[index - pendingJobs.length];
+              return _RecipeCard(
+                id: recipe.id,
+                title: recipe.name,
+                imageUrl: recipe.imageUrl,
+                isShared: recipe.isShared,
+                onTap: () => context.push('/recipes/${recipe.id}'),
+              );
+            }, childCount: totalItems),
+          ),
         ),
-        delegate: SliverChildBuilderDelegate((context, index) {
-          if (index < pendingJobs.length) {
-            return const _PendingRecipeCard();
-          }
-          final recipe = recipes[index - pendingJobs.length];
-          return _RecipeCard(
-            id: recipe.id,
-            title: recipe.name,
-            imageUrl: recipe.imageUrl,
-            onTap: () => context.push('/recipes/${recipe.id}'),
-          );
-        }, childCount: totalItems),
-      ),
+      ],
     );
   }
 }
@@ -575,12 +638,14 @@ class _RecipeCard extends StatelessWidget {
     required this.id,
     required this.title,
     this.imageUrl,
+    this.isShared = false,
     required this.onTap,
   });
 
   final String id;
   final String title;
   final String? imageUrl;
+  final bool isShared;
   final VoidCallback onTap;
 
   @override
@@ -598,36 +663,77 @@ class _RecipeCard extends StatelessWidget {
                 tag: 'recipe-image-$id',
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(24),
-                  child: SizedBox(
-                    width: imageSize,
-                    height: imageSize,
-                    child: imageUrl != null
-                        ? Image.network(
-                            imageUrl!,
-                            fit: BoxFit.cover,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Container(
-                                color: Colors.grey.shade200,
-                                alignment: Alignment.center,
-                                child: const CupertinoActivityIndicator(
-                                  radius: 11,
-                                ),
-                              );
-                            },
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
+                  child: Stack(
+                    children: [
+                      SizedBox(
+                        width: imageSize,
+                        height: imageSize,
+                        child: imageUrl != null
+                            ? Image.network(
+                                imageUrl!,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Container(
+                                    color: Colors.grey.shade200,
+                                    alignment: Alignment.center,
+                                    child: const CupertinoActivityIndicator(
+                                      radius: 11,
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: Colors.grey.shade200,
+                                    alignment: Alignment.center,
+                                    child: const Icon(Icons.restaurant, size: 28),
+                                  );
+                                },
+                              )
+                            : Container(
                                 color: Colors.grey.shade200,
                                 alignment: Alignment.center,
                                 child: const Icon(Icons.restaurant, size: 28),
-                              );
-                            },
-                          )
-                        : Container(
-                            color: Colors.grey.shade200,
-                            alignment: Alignment.center,
-                            child: const Icon(Icons.restaurant, size: 28),
+                              ),
+                      ),
+                      if (isShared)
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.7),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.share,
+                                  size: 12,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Shared',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelSmall
+                                      ?.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 10,
+                                      ),
+                                ),
+                              ],
+                            ),
                           ),
+                        ),
+                    ],
                   ),
                 ),
               );

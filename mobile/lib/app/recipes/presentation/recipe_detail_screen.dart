@@ -8,8 +8,11 @@ import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:simple_icons/simple_icons.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:convert';
 
 import '../../../core/utils/share_utils.dart';
+import '../../../core/constants/api_endpoints.dart';
+import '../../../core/network/api_client.dart';
 import '../domain/recipe.dart';
 import '../domain/ingredient.dart';
 import '../recipe_provider.dart';
@@ -54,6 +57,19 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
     _tabController = TabController(length: 3, vsync: this);
     _scrollController = ScrollController();
     _runPantryMatch();
+    // For shared recipes, always refresh to get latest version
+    _refreshIfShared();
+  }
+
+  Future<void> _refreshIfShared() async {
+    final recipeAsync = ref.read(recipeByIdProvider(widget.recipeId));
+    await recipeAsync.whenData((recipe) async {
+      if (recipe?.isShared == true && mounted) {
+        // Refresh recipes to get latest version
+        ref.invalidate(recipesProvider);
+        await ref.read(recipesProvider.future);
+      }
+    });
   }
 
   Future<void> _runPantryMatch() async {
@@ -87,12 +103,34 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
   }
 
   Future<void> _shareRecipe(Recipe recipe) async {
-    final text = StringBuffer(recipe.name);
-    if (recipe.description.trim().isNotEmpty) {
-      text.write('\n\n${recipe.description}');
+    try {
+      final client = ApiClient();
+      final response =
+          await client.post(ApiEndpoints.shareRecipe(recipe.id));
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to create share link');
+      }
+
+      final data = response.body.isNotEmpty
+          ? jsonDecode(response.body) as Map<String, dynamic>
+          : <String, dynamic>{};
+
+      final url = (data['url'] as String?) ??
+          'https://rechef.app/recipe/${data['shareCode']}';
+
+      await ShareUtils.shareText(
+        url,
+        subject: recipe.name,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to share recipe: $e'),
+        ),
+      );
     }
-    text.write('\n\n${recipe.totalMinutes} min · ${recipe.servings ?? 0} servings');
-    await ShareUtils.shareText(text.toString(), subject: recipe.name);
   }
 
   Future<void> _deleteRecipe(Recipe recipe) async {
@@ -115,9 +153,9 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
             try {
               await ref.read(recipesProvider.notifier).deleteRecipe(recipe.id);
               if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Recipe deleted')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Recipe deleted')));
               if (context.canPop()) {
                 context.pop();
               } else {
@@ -125,9 +163,9 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
               }
             } catch (e) {
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Failed to delete: $e')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('Failed to delete: $e')));
               }
             }
           },
@@ -282,29 +320,33 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                     ),
                   ),
                   actions: [
-                    _AppBarTextButton(
-                      label: 'Edit',
-                      textColor: Colors.black,
-                      glassColor: _isCollapsed
-                          ? const Color(0xCCFFFFFF)
-                          : const Color(0x33FFFFFF),
-                      onPressed: () => _openEditSheet(recipe),
-                    ),
-                    const SizedBox(width: 4),
-                    _AppBarButton(
-                      icon: Icons.share_outlined,
-                      iconColor: Colors.black,
-                      glassColor: _isCollapsed
-                          ? const Color(0xCCFFFFFF)
-                          : const Color(0x33FFFFFF),
-                      onPressed: () => _shareRecipe(recipe),
-                    ),
-                    const SizedBox(width: 4),
-                    _RecipeMorePopupMenu(
-                      recipe: recipe,
-                      isCollapsed: _isCollapsed,
-                      onDelete: () => _deleteRecipe(recipe),
-                    ),
+                    if (!recipe.isShared) ...[
+                      _AppBarTextButton(
+                        label: 'Edit',
+                        textColor: Colors.black,
+                        glassColor: _isCollapsed
+                            ? const Color(0xCCFFFFFF)
+                            : const Color(0x33FFFFFF),
+                        onPressed: () => _openEditSheet(recipe),
+                      ),
+                      const SizedBox(width: 4),
+                    ],
+                    if (!recipe.isShared)
+                      _AppBarButton(
+                        icon: Icons.share_outlined,
+                        iconColor: Colors.black,
+                        glassColor: _isCollapsed
+                            ? const Color(0xCCFFFFFF)
+                            : const Color(0x33FFFFFF),
+                        onPressed: () => _shareRecipe(recipe),
+                      ),
+                    if (!recipe.isShared) const SizedBox(width: 4),
+                    if (!recipe.isShared)
+                      _RecipeMorePopupMenu(
+                        recipe: recipe,
+                        isCollapsed: _isCollapsed,
+                        onDelete: () => _deleteRecipe(recipe),
+                      ),
                     const SizedBox(width: 8),
                   ],
                   flexibleSpace: FlexibleSpaceBar(
@@ -365,6 +407,46 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                                     height: 1.2,
                                   ),
                             ),
+                            if (recipe.isShared) ...[
+                              const SizedBox(height: 12),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.blue.shade200,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.share,
+                                      size: 14,
+                                      color: Colors.blue.shade700,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Shared recipe',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelMedium
+                                          ?.copyWith(
+                                            color: Colors.blue.shade700,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 12,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
                             if (_hasSourceOrAuthor(recipe)) ...[
                               const SizedBox(height: 16),
                               _AuthorRow(
@@ -414,21 +496,21 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                     child: AnimatedBuilder(
                       animation: _tabController,
                       builder: (context, _) {
-                if (_tabController.index == 0) {
-                  return _IngredientsTab(
-                    recipe: recipe,
-                    isMatchingPantry: _isMatchingPantry,
-                    onToggle: (index) {
-                      ref
-                          .read(recipesProvider.notifier)
-                          .toggleIngredient(widget.recipeId, index);
-                    },
-                  );
-                } else if (_tabController.index == 1) {
-                  return _CookingTab(recipe: recipe);
-                } else {
-                  return _NutritionTab(recipeId: recipe.id);
-                }
+                        if (_tabController.index == 0) {
+                          return _IngredientsTab(
+                            recipe: recipe,
+                            isMatchingPantry: _isMatchingPantry,
+                            onToggle: (index) {
+                              ref
+                                  .read(recipesProvider.notifier)
+                                  .toggleIngredient(widget.recipeId, index);
+                            },
+                          );
+                        } else if (_tabController.index == 1) {
+                          return _CookingTab(recipe: recipe);
+                        } else {
+                          return _NutritionTab(recipeId: recipe.id);
+                        }
                       },
                     ),
                   ),
@@ -991,7 +1073,10 @@ class _IngredientsTab extends StatelessWidget {
             ),
             if (isMatchingPantry) ...[
               const SizedBox(width: 8),
-              CupertinoActivityIndicator(radius: 7, color: Colors.grey.shade400),
+              CupertinoActivityIndicator(
+                radius: 7,
+                color: Colors.grey.shade400,
+              ),
             ],
           ],
         ),
@@ -1135,12 +1220,9 @@ class _NutritionTab extends ConsumerWidget {
     final nutritionAsync = ref.watch(nutritionByRecipeProvider(recipeId));
 
     return nutritionAsync.when(
-      loading: () => const Center(
-        child: CupertinoActivityIndicator(),
-      ),
+      loading: () => const Center(child: CupertinoActivityIndicator()),
       error: (error, _) => _NutritionError(
-        onRetry: () =>
-            ref.invalidate(nutritionByRecipeProvider(recipeId)),
+        onRetry: () => ref.invalidate(nutritionByRecipeProvider(recipeId)),
       ),
       data: (nutrition) => _NutritionContent(nutrition: nutrition),
     );
@@ -1160,10 +1242,9 @@ class _NutritionError extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           'Nutrition',
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.w600),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 20),
         Container(
@@ -1179,15 +1260,12 @@ class _NutritionError extends StatelessWidget {
               Text(
                 'Couldn’t load nutrition right now.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.red.shade700,
-                    ),
+                  fontWeight: FontWeight.w600,
+                  color: Colors.red.shade700,
+                ),
               ),
               const SizedBox(height: 8),
-              TextButton(
-                onPressed: onRetry,
-                child: const Text('Try again'),
-              ),
+              TextButton(onPressed: onRetry, child: const Text('Try again')),
             ],
           ),
         ),
@@ -1196,15 +1274,74 @@ class _NutritionError extends StatelessWidget {
   }
 }
 
-class _NutritionContent extends StatelessWidget {
+class _NutritionContent extends StatefulWidget {
   const _NutritionContent({required this.nutrition});
 
   final NutritionFacts nutrition;
 
   @override
+  State<_NutritionContent> createState() => _NutritionContentState();
+}
+
+class _NutritionContentState extends State<_NutritionContent>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _animController;
+  late final Animation<double> _fadeAnim;
+  bool _chartDataReady = false;
+
+  static const _proteinColor = Color(0xFF5B8DEF);
+  static const _carbsColor = Color(0xFFFBBF54);
+  static const _fatColor = Color(0xFFEF6B6B);
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    );
+    _fadeAnim = CurvedAnimation(
+      parent: _animController,
+      curve: const Interval(0.15, 0.5, curve: Curves.easeOut),
+    );
+    // Feed data after the frame so the chart animates visibly
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() => _chartDataReady = true);
+        _animController.forward();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  List<_MacroData> _buildMacroData(NutritionFacts nutrition) {
+    final items = <_MacroData>[
+      _MacroData(
+        label: 'Protein',
+        grams: nutrition.proteinGrams,
+        color: _proteinColor,
+      ),
+      _MacroData(
+        label: 'Carbs',
+        grams: nutrition.carbsGrams,
+        color: _carbsColor,
+      ),
+      _MacroData(label: 'Fat', grams: nutrition.fatGrams, color: _fatColor),
+    ];
+    return items.where((m) => m.grams > 0).toList();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final nutrition = widget.nutrition;
     final macros = _buildMacroData(nutrition);
+    final totalGrams = macros.fold<double>(0, (s, m) => s + m.grams);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1218,130 +1355,244 @@ class _NutritionContent extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         if (!nutrition.hasAnyMacros)
-          Text(
-            'Nutrition information is not available for this recipe.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.grey.shade600,
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF7F5F0),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              'Nutrition information is not available for this recipe.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: Colors.grey.shade600,
+              ),
+              textAlign: TextAlign.center,
             ),
           )
         else ...[
-          Text(
-            '${nutrition.calories.round()} kcal per serving',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
+          // Chart card
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF7F5F0),
+              borderRadius: BorderRadius.circular(20),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Estimated macronutrients:',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.grey.shade700,
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 220,
-            child: SfCircularChart(
-              title: ChartTitle(text: 'Per-serving macros (g)'),
-              legend: Legend(
-                isVisible: true,
-                position: LegendPosition.bottom,
-              ),
-              series: <DoughnutSeries<_MacroData, String>>[
-                DoughnutSeries<_MacroData, String>(
-                  dataSource: macros,
-                  xValueMapper: (_MacroData data, _) => data.label,
-                  yValueMapper: (_MacroData data, _) => data.grams,
-                  dataLabelSettings:
-                      const DataLabelSettings(isVisible: true),
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 280,
+                  child: SfCircularChart(
+                    margin: EdgeInsets.zero,
+                    annotations: <CircularChartAnnotation>[
+                      CircularChartAnnotation(
+                        widget: FadeTransition(
+                          opacity: _fadeAnim,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '${nutrition.calories.round()}',
+                                style: theme.textTheme.headlineMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.1,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'kcal',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                    series: <DoughnutSeries<_MacroData, String>>[
+                      DoughnutSeries<_MacroData, String>(
+                        dataSource: _chartDataReady ? macros : <_MacroData>[],
+                        xValueMapper: (_MacroData data, _) => data.label,
+                        yValueMapper: (_MacroData data, _) => data.grams,
+                        pointColorMapper: (_MacroData data, _) => data.color,
+                        innerRadius: '68%',
+                        radius: '90%',
+                        cornerStyle: CornerStyle.bothCurve,
+                        animationDuration: 4200,
+                        animationDelay: 0,
+                        dataLabelSettings: const DataLabelSettings(
+                          isVisible: false,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(height: 4),
+                // Legend row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: macros.map((m) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: m.color,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            m.label,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.grey.shade700,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 16),
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          _MacroBreakdownList(nutrition: nutrition),
+          const SizedBox(height: 20),
+          // Macro breakdown cards
+          Text(
+            'Per serving',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade800,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...macros.map((m) {
+            final pct = totalGrams > 0 ? (m.grams / totalGrams * 100) : 0.0;
+            return _MacroBreakdownCard(
+              label: m.label,
+              grams: m.grams,
+              percentage: pct,
+              color: m.color,
+              animation: _animController,
+            );
+          }),
         ],
       ],
     );
   }
-
-  List<_MacroData> _buildMacroData(NutritionFacts nutrition) {
-    final items = <_MacroData>[
-      _MacroData(label: 'Protein', grams: nutrition.proteinGrams),
-      _MacroData(label: 'Carbs', grams: nutrition.carbsGrams),
-      _MacroData(label: 'Fat', grams: nutrition.fatGrams),
-    ];
-
-    return items.where((m) => m.grams > 0).toList();
-  }
 }
 
 class _MacroData {
-  _MacroData({required this.label, required this.grams});
+  _MacroData({required this.label, required this.grams, required this.color});
 
   final String label;
   final double grams;
+  final Color color;
 }
 
-class _MacroBreakdownList extends StatelessWidget {
-  const _MacroBreakdownList({required this.nutrition});
-
-  final NutritionFacts nutrition;
-
-  @override
-  Widget build(BuildContext context) {
-    final textStyle = Theme.of(context).textTheme.bodyMedium;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _MacroRow(
-          label: 'Protein',
-          value: '${nutrition.proteinGrams.toStringAsFixed(1)} g',
-          textStyle: textStyle,
-        ),
-        const SizedBox(height: 4),
-        _MacroRow(
-          label: 'Carbs',
-          value: '${nutrition.carbsGrams.toStringAsFixed(1)} g',
-          textStyle: textStyle,
-        ),
-        const SizedBox(height: 4),
-        _MacroRow(
-          label: 'Fat',
-          value: '${nutrition.fatGrams.toStringAsFixed(1)} g',
-          textStyle: textStyle,
-        ),
-      ],
-    );
-  }
-}
-
-class _MacroRow extends StatelessWidget {
-  const _MacroRow({
+class _MacroBreakdownCard extends StatelessWidget {
+  const _MacroBreakdownCard({
     required this.label,
-    required this.value,
-    required this.textStyle,
+    required this.grams,
+    required this.percentage,
+    required this.color,
+    required this.animation,
   });
 
   final String label;
-  final String value;
-  final TextStyle? textStyle;
+  final double grams;
+  final double percentage;
+  final Color color;
+  final Animation<double> animation;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: textStyle?.copyWith(fontWeight: FontWeight.w500),
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey.shade100),
         ),
-        Text(
-          value,
-          style: textStyle?.copyWith(color: Colors.grey.shade700),
+        child: Row(
+          children: [
+            Container(
+              width: 4,
+              height: 36,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  AnimatedBuilder(
+                    animation: animation,
+                    builder: (context, _) {
+                      final progress = Curves.easeOut.transform(
+                        animation.value.clamp(0.0, 1.0),
+                      );
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: LinearProgressIndicator(
+                          value: (percentage / 100) * progress,
+                          minHeight: 6,
+                          backgroundColor: Colors.grey.shade100,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            color.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 14),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${grams.toStringAsFixed(1)} g',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  '${percentage.round()}%',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.grey.shade500,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

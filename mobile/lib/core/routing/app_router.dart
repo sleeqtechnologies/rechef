@@ -7,6 +7,7 @@ import '../../app/main_layout.dart';
 import '../../app/pantry/presentation/pantry_screen.dart';
 import '../../app/recipes/presentation/recipe_detail_screen.dart';
 import '../../app/recipes/presentation/recipe_list_screen.dart';
+import '../../app/recipes/presentation/shared_recipe_screen.dart';
 import '../../app/recipe_import/presentation/import_recipe_screen.dart';
 import '../../app/recipe_import/presentation/camera_screen.dart';
 import '../../app/grocery/presentation/grocery_list_screen.dart';
@@ -88,6 +89,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             initialUrl: url,
             initialImagePath: imagePath,
           );
+        },
+      ),
+
+      // Shared Recipe (no bottom bar) - must be before /recipes/:id
+      GoRoute(
+        path: '/shared-recipe/:code',
+        name: 'shared-recipe',
+        builder: (context, state) {
+          final code = state.pathParameters['code']!;
+          return SharedRecipeScreen(shareCode: code);
         },
       ),
 

@@ -3,11 +3,13 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --accent: #ff4f63;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-accent: #ff4f63;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -16,7 +18,20 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --accent: #ff4f63;
   }
+}
+
+/* Logo as mask for accent/white fill (light/dark) */
+.logo-mask {
+  mask-image: url("/rechef-logo.svg");
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-image: url("/rechef-logo.svg");
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
 }
 
 body {

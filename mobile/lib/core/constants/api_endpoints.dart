@@ -11,6 +11,7 @@ class ApiEndpoints {
   // Recipe endpoints
   static String get recipes => '/api/recipes';
   static String recipe(String id) => '/api/recipes/$id';
+  static String shareRecipe(String id) => '/api/recipes/$id/share';
   static String matchPantry(String recipeId) =>
       '/api/recipes/$recipeId/match-pantry';
   static String toggleIngredient(String recipeId, int index) =>
@@ -19,6 +20,12 @@ class ApiEndpoints {
       '/api/recipes/$recipeId/nutrition';
   static String recipeChat(String recipeId) =>
       '/api/recipes/$recipeId/chat';
+
+  // Shared recipe endpoints
+  static String get sharedWithMe => '/api/shared-with-me';
+  static String saveSharedRecipe(String code) => '/api/shared-with-me/$code';
+  static String removeSharedRecipe(String id) => '/api/shared-with-me/$id';
+  static String getSharedRecipePublic(String code) => '/share/$code';
 
   // Pantry endpoints
   static String get pantry => '/api/pantry';

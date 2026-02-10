@@ -1,8 +1,12 @@
 import { logger } from "../../../logger";
 import { Request, Response } from "express";
+import { and, eq } from "drizzle-orm";
+import db from "../../database";
 import * as recipeRepository from "./recipe.repository";
 import * as pantryRepository from "../pantry/pantry.repository";
 import * as recipeNutritionRepository from "./recipe-nutrition.repository";
+import * as shareRepository from "../share/share.repository";
+import { sharedRecipeSaveTable } from "../share/share.table";
 import { matchIngredientsWithPantry } from "../../services/pantry-matcher";
 import { generateNutritionForRecipe } from "../../services/nutrition-generator";
 import type { Recipe } from "./recipe.repository";
@@ -96,10 +100,23 @@ const getRecipes = async (req: Request, res: Response) => {
   try {
     const userId = req.user.id;
     const recipes = await recipeRepository.findAllByUserId(userId);
+    const sharedRecipes = await shareRepository.findSharedWithUser(userId);
 
-    return res
-      .status(200)
-      .json({ recipes: recipes.map((r) => formatRecipe(r)) });
+    const formattedOwned = recipes.map((r) => ({
+      ...formatRecipe(r),
+      isShared: false,
+    }));
+
+    const formattedShared = sharedRecipes.map((row) => ({
+      ...formatRecipe(row.recipe),
+      isShared: true,
+      shareCode: row.shared.shareCode,
+      sharedBy: row.shared.userId, // Creator ID
+    }));
+
+    return res.status(200).json({
+      recipes: [...formattedOwned, ...formattedShared],
+    });
   } catch (error) {
     logger.error("Error fetching recipes:", error);
     return res.status(500).json({
@@ -111,17 +128,42 @@ const getRecipes = async (req: Request, res: Response) => {
 const getRecipeById = async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
+    const userId = req.user.id;
     const recipe = await recipeRepository.findById(id);
 
     if (!recipe) {
       return res.status(404).json({ error: "Recipe not found" });
     }
 
-    if (recipe.userId !== req.user.id) {
-      return res.status(403).json({ error: "Forbidden" });
+    // Check if user owns the recipe
+    if (recipe.userId === userId) {
+      return res.status(200).json({ recipe: formatRecipe(recipe) });
     }
 
-    return res.status(200).json({ recipe: formatRecipe(recipe) });
+    // Check if user has access via shared recipe subscription
+    const shared = await shareRepository.findByRecipeId(id);
+    if (shared && shared.isActive) {
+      const [subscription] = await db
+        .select()
+        .from(sharedRecipeSaveTable)
+        .where(
+          and(
+            eq(sharedRecipeSaveTable.sharedRecipeId, shared.id),
+            eq(sharedRecipeSaveTable.userId, userId),
+          ),
+        )
+        .limit(1);
+
+      if (subscription) {
+        return res.status(200).json({
+          recipe: formatRecipe(recipe),
+          isShared: true,
+          shareCode: shared.shareCode,
+        });
+      }
+    }
+
+    return res.status(403).json({ error: "Forbidden" });
   } catch (error) {
     logger.error("Error fetching recipe:", error);
     return res.status(500).json({

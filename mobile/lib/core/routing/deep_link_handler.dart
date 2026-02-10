@@ -20,7 +20,23 @@ class DeepLinkHandler {
 
   /// Handle app deep link
   /// Format: rechef://recipes/import?url=https://...
+  /// Also handles Universal Links: https://rechef.app/recipe/:code
   static bool handleAppDeepLink(BuildContext context, Uri uri) {
+    // Handle Universal Links (https://rechef.app/recipe/:code)
+    if (uri.scheme == 'https' && 
+        (uri.host == 'rechef.app' || uri.host == 'www.rechef.app')) {
+      final path = uri.path;
+      if (path.startsWith('/recipe/')) {
+        final code = path.substring('/recipe/'.length);
+        if (code.isNotEmpty) {
+          context.go('/shared-recipe/$code');
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // Handle custom scheme deep links
     if (uri.scheme == 'rechef' || uri.scheme == 'com.rechef.app') {
       // Remove scheme and host, keep path and query
       final path = uri.path;

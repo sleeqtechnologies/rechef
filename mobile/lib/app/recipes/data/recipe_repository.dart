@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../domain/ingredient.dart';
 import '../domain/recipe.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/constants/api_endpoints.dart';
+import '../../../core/config/env.dart';
 
 class RecipeRepository {
   RecipeRepository({required ApiClient apiClient}) : _apiClient = apiClient;
@@ -131,5 +133,36 @@ class RecipeRepository {
     }
 
     return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  /// Fetch a shared recipe from the public endpoint (no auth required)
+  Future<Recipe> fetchSharedRecipe(String shareCode) async {
+    final url = Uri.parse('$apiBaseUrl${ApiEndpoints.getSharedRecipePublic(shareCode)}');
+    final response = await http.get(url);
+
+    if (response.statusCode != 200) {
+      final error = jsonDecode(response.body) as Map<String, dynamic>;
+      throw Exception(error['error'] ?? 'Failed to fetch shared recipe');
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final recipeJson = data['recipe'] as Map<String, dynamic>;
+    return Recipe.fromJson(recipeJson);
+  }
+
+  /// Save a shared recipe to the user's library
+  Future<Recipe> saveSharedRecipe(String shareCode) async {
+    final response = await _apiClient.post(
+      ApiEndpoints.saveSharedRecipe(shareCode),
+    );
+
+    if (response.statusCode != 201) {
+      final error = jsonDecode(response.body) as Map<String, dynamic>;
+      throw Exception(error['error'] ?? 'Failed to save shared recipe');
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final recipeJson = data['recipe'] as Map<String, dynamic>;
+    return Recipe.fromJson(recipeJson);
   }
 }

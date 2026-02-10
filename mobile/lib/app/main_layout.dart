@@ -262,8 +262,8 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
       backgroundColor: Colors.white,
       extendBody: true,
       body: _isMenuExpanded
-          ? GestureDetector(
-              onTap: () {
+          ? Listener(
+              onPointerDown: (_) {
                 _navBarKey.currentState?.closeMenu();
               },
               behavior: HitTestBehavior.translucent,

@@ -337,6 +337,7 @@ class CustomBottomNavBarState extends State<CustomBottomNavBar>
                         ? fabContent
                         : GestureDetector(
                             onTap: () {
+                              HapticFeedback.selectionClick();
                               if (widget.onPlusPrimaryAction != null) {
                                 widget.onPlusPrimaryAction!();
                               } else if (!hasLabel) {

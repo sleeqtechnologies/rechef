@@ -15,6 +15,9 @@ class Recipe {
     this.sourceTitle,
     this.sourceAuthorName,
     this.sourceAuthorAvatarUrl,
+    this.isShared = false,
+    this.shareCode,
+    this.sharedBy,
   });
 
   final String id;
@@ -30,6 +33,9 @@ class Recipe {
   final String? sourceTitle;
   final String? sourceAuthorName;
   final String? sourceAuthorAvatarUrl;
+  final bool isShared;
+  final String? shareCode;
+  final String? sharedBy; // Creator user ID
 
   int get totalMinutes => (prepTimeMinutes ?? 0) + (cookTimeMinutes ?? 0);
 
@@ -43,6 +49,9 @@ class Recipe {
     int? servings,
     int? prepTimeMinutes,
     int? cookTimeMinutes,
+    bool? isShared,
+    String? shareCode,
+    String? sharedBy,
   }) =>
       Recipe(
         id: id,
@@ -58,6 +67,9 @@ class Recipe {
         sourceTitle: sourceTitle,
         sourceAuthorName: sourceAuthorName,
         sourceAuthorAvatarUrl: sourceAuthorAvatarUrl,
+        isShared: isShared ?? this.isShared,
+        shareCode: shareCode ?? this.shareCode,
+        sharedBy: sharedBy ?? this.sharedBy,
       );
 
   factory Recipe.fromJson(Map<String, dynamic> json) {
@@ -89,6 +101,9 @@ class Recipe {
       sourceTitle: json['sourceTitle'] as String?,
       sourceAuthorName: json['sourceAuthorName'] as String?,
       sourceAuthorAvatarUrl: json['sourceAuthorAvatarUrl'] as String?,
+      isShared: json['isShared'] as bool? ?? false,
+      shareCode: json['shareCode'] as String?,
+      sharedBy: json['sharedBy'] as String?,
     );
   }
 
@@ -107,5 +122,8 @@ class Recipe {
         if (sourceAuthorName != null) 'sourceAuthorName': sourceAuthorName,
         if (sourceAuthorAvatarUrl != null)
           'sourceAuthorAvatarUrl': sourceAuthorAvatarUrl,
+        'isShared': isShared,
+        if (shareCode != null) 'shareCode': shareCode,
+        if (sharedBy != null) 'sharedBy': sharedBy,
       };
 }

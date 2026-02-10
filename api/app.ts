@@ -5,12 +5,18 @@ import { env } from "./env_config";
 import { logger } from "./logger";
 import { verifyUserToken } from "./src/auth";
 import { failStaleJobs } from "./src/app/content/content.repository";
+import { sharePublicRouter } from "./src/app/share/share.route";
 
 const app = express();
 const port = env.PORT;
 
 app.use(cors());
 app.use(express.json());
+
+// Public share endpoints (no auth)
+app.use(sharePublicRouter);
+
+// Authenticated API
 app.use("/api", verifyUserToken, apiRoutes);
 
 app.listen(port, async () => {

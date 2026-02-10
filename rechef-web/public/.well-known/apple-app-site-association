@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "JNNNX5VF2R.com.rechef.app",
+        "paths": [ "/recipe/*" ]
+      }
+    ]
+  }
+}

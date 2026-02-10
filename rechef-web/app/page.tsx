@@ -1,17 +1,13 @@
-import Image from "next/image";
 import Link from "next/link";
 
 export default function Home() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
       <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          src="/rechef-logo.svg"
-          alt="Rechef logo"
-          width={47}
-          height={72}
-          priority
-          className="invert dark:invert-0"
+        <div
+          className="logo-mask h-[70px] w-[70px] bg-accent dark:bg-white"
+          role="img"
+          aria-label="Rechef logo"
         />
         <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
           <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
@@ -24,7 +20,7 @@ export default function Home() {
             cook more.
           </p>
         </div>
-        <div className="flex w-[395px] flex-col gap-4 text-base font-medium sm:flex-row">
+        <div className="flex w-full flex-col gap-4 text-base font-medium sm:flex-row">
           <Link
             className="flex h-12 w-full items-center justify-center rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
             href="/privacy"
@@ -32,13 +28,13 @@ export default function Home() {
             Privacy Policy
           </Link>
           <Link
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
+            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-zinc-300 px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
             href="/terms"
           >
             Terms & Conditions
           </Link>
           <Link
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
+            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-zinc-300 px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
             href="/support"
           >
             Support
