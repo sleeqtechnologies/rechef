@@ -114,7 +114,7 @@ export default async function SharedRecipePage(props: PageProps) {
             creator.
           </p>
           <Link
-            href="https://rechef.app"
+            href="https://rechef-ten.vercel.app"
             className="inline-flex items-center justify-center rounded-full bg-emerald-500 px-4 py-2 text-sm font-medium text-slate-950 hover:bg-emerald-400 transition"
           >
             Learn more about Rechef
@@ -149,7 +149,7 @@ export default async function SharedRecipePage(props: PageProps) {
   const totalMinutes =
     (recipe.prepTimeMinutes ?? 0) + (recipe.cookTimeMinutes ?? 0);
 
-  const storeUrl = "https://rechef.app/download";
+  const websiteUrl = "https://rechef-ten.vercel.app";
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-50 flex items-center justify-center px-4 py-10">
@@ -184,15 +184,15 @@ export default async function SharedRecipePage(props: PageProps) {
               </div>
               <div className="space-y-3">
                 <Link
-                  href={storeUrl}
+                  href={websiteUrl}
                   className="inline-flex w-full items-center justify-center rounded-full bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/40 hover:bg-emerald-400 transition"
                 >
-                  Get Rechef to save this recipe
+                  Visit Rechef
                 </Link>
                 <p className="text-[11px] leading-relaxed text-slate-400">
-                  Download the Rechef app to keep this recipe, generate grocery
-                  lists from the ingredients, and get live updates if the
-                  creator makes changes.
+                  Rechef is a smart recipe and pantry companion. When the app is
+                  available, you’ll be able to save this recipe, build grocery
+                  lists, and get updates if the creator changes it.
                 </p>
               </div>
             </div>
@@ -227,8 +227,8 @@ export default async function SharedRecipePage(props: PageProps) {
               </ol>
             </div>
             <p className="text-[11px] text-slate-500 pt-1">
-              This is a preview. For timers, pantry matching, grocery lists, and
-              AI cooking help, open this recipe in the Rechef mobile app.
+              This is a preview. The Rechef app will add timers, pantry
+              matching, grocery lists, and cooking help—coming soon.
             </p>
           </div>
         </div>

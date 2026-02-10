@@ -14,7 +14,6 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../recipe_provider.dart';
 
-
 class CookingHelpSheet extends ConsumerStatefulWidget {
   const CookingHelpSheet({
     super.key,
@@ -34,10 +33,8 @@ class CookingHelpSheet extends ConsumerStatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => CookingHelpSheet(
-        recipeId: recipeId,
-        currentStep: currentStep,
-      ),
+      builder: (_) =>
+          CookingHelpSheet(recipeId: recipeId, currentStep: currentStep),
     );
   }
 
@@ -123,7 +120,7 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
     if (text.trim().isEmpty && imageBase64 == null) return;
     if (_sending) return;
 
-    setState(() => _sending = true);
+    _sending = true;
 
     final userMsgId = 'local-${DateTime.now().millisecondsSinceEpoch}';
 
@@ -159,6 +156,16 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
           'streaming-${DateTime.now().millisecondsSinceEpoch}';
       final streamingCreatedAt = DateTime.now();
 
+      // Show a thinking indicator while waiting for the first chunk
+      final thinkingMsg = Message.text(
+        id: streamingMsgId,
+        authorId: _assistantId,
+        text: '...',
+        createdAt: streamingCreatedAt,
+      );
+      await _chatController.insertMessage(thinkingMsg);
+      streamingMsg = thinkingMsg;
+
       await for (final event in repo.sendChatMessageStream(
         widget.recipeId,
         message: text.trim(),
@@ -170,35 +177,8 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
         final eventType = event['_event'] as String;
 
         if (eventType == 'userMessage') {
-          // Replace local user message with server one
-          try {
-            final localMsg = _chatController.messages.firstWhere(
-              (m) => m.id == userMsgId,
-            );
-            await _chatController.removeMessage(localMsg);
-            if (event['imageBase64'] != null) {
-              await _chatController.insertMessage(
-                Message.image(
-                  id: event['id'] as String,
-                  authorId: _currentUserId,
-                  source: event['imageBase64'] as String,
-                  text: event['content'] as String?,
-                  createdAt:
-                      DateTime.tryParse(event['createdAt'] as String? ?? ''),
-                ),
-              );
-            } else {
-              await _chatController.insertMessage(
-                Message.text(
-                  id: event['id'] as String,
-                  authorId: _currentUserId,
-                  text: event['content'] as String,
-                  createdAt:
-                      DateTime.tryParse(event['createdAt'] as String? ?? ''),
-                ),
-              );
-            }
-          } catch (_) {}
+          // Server confirmed — content is identical to local,
+          // so skip replace to avoid flicker and scroll jump.
         } else if (eventType == 'chunk') {
           accumulatedText += event['text'] as String;
           final newMsg = Message.text(
@@ -215,14 +195,14 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
           }
           streamingMsg = newMsg;
         } else if (eventType == 'done') {
-          final assistant =
-              event['assistantMessage'] as Map<String, dynamic>;
+          final assistant = event['assistantMessage'] as Map<String, dynamic>;
           final finalMsg = Message.text(
             id: assistant['id'] as String,
             authorId: _assistantId,
             text: assistant['content'] as String,
-            createdAt:
-                DateTime.tryParse(assistant['createdAt'] as String? ?? ''),
+            createdAt: DateTime.tryParse(
+              assistant['createdAt'] as String? ?? '',
+            ),
           );
 
           if (streamingMsg != null) {
@@ -237,12 +217,12 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
     } catch (e) {
       debugPrint('Failed to send message: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to send: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to send: $e')));
       }
     } finally {
-      if (mounted) setState(() => _sending = false);
+      if (mounted) _sending = false;
     }
   }
 
@@ -347,29 +327,27 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
                   ),
                 ),
                 Expanded(
-                      child: _loading
-                          ? const Center(child: CupertinoActivityIndicator())
-                          : Chat(
-                              chatController: _chatController,
-                              currentUserId: _currentUserId,
-                              resolveUser: _resolveUser,
-                              onMessageSend: _onMessageSend,
-                              backgroundColor: Colors.transparent,
-                              theme: ChatTheme.light().copyWith(
-                                colors: ChatColors.light().copyWith(
-                                  primary: _accentColor,
-                                  surface: Colors.transparent,
-                                ),
-                              ),
-                              builders: Builders(
-                                composerBuilder: (_) =>
-                                    const SizedBox.shrink(),
-                                emptyChatListBuilder: _buildEmptyState,
-                                textMessageBuilder:
-                                    _buildMarkdownTextMessage,
-                              ),
+                  child: _loading
+                      ? const Center(child: CupertinoActivityIndicator())
+                      : Chat(
+                          chatController: _chatController,
+                          currentUserId: _currentUserId,
+                          resolveUser: _resolveUser,
+                          onMessageSend: _onMessageSend,
+                          backgroundColor: Colors.transparent,
+                          theme: ChatTheme.light().copyWith(
+                            colors: ChatColors.light().copyWith(
+                              primary: _accentColor,
+                              surface: Colors.transparent,
                             ),
-                    ),
+                          ),
+                          builders: Builders(
+                            composerBuilder: (_) => const SizedBox.shrink(),
+                            emptyChatListBuilder: _buildEmptyState,
+                            textMessageBuilder: _buildMarkdownTextMessage,
+                          ),
+                        ),
+                ),
                 _buildComposer(context),
               ],
             ),
@@ -417,10 +395,7 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
             Text(
               'Try asking:',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade400,
-              ),
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
             ),
             const SizedBox(height: 16),
             Wrap(
@@ -438,10 +413,7 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
                     decoration: BoxDecoration(
                       color: Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.grey.shade200,
-                        width: 1,
-                      ),
+                      border: Border.all(color: Colors.grey.shade200, width: 1),
                     ),
                     child: Text(
                       s,
@@ -474,15 +446,11 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
     required bool isSentByMe,
     MessageGroupStatus? groupStatus,
   }) {
-    final textColor = isSentByMe ? Colors.white : Colors.grey.shade800;
+    final textColor = Colors.grey.shade800;
     final backgroundColor = isSentByMe
-        ? _accentColor
-        : Colors.grey.shade100;
-    final baseStyle = TextStyle(
-      color: textColor,
-      fontSize: 14,
-      height: 1.35,
-    );
+        ? Colors.grey.shade200
+        : Colors.transparent;
+    final baseStyle = TextStyle(color: textColor, fontSize: 14, height: 1.35);
     final styleSheet = MarkdownStyleSheet(
       p: baseStyle,
       listBullet: baseStyle,
@@ -504,31 +472,39 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
       ),
     );
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        decoration: BoxDecoration(color: backgroundColor),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            MarkdownBody(
-              data: message.text,
-              styleSheet: styleSheet,
-              shrinkWrap: true,
-              fitContent: true,
-            ),
-            const SizedBox(height: 4),
-            if (message.resolvedTime != null)
-              Text(
-                _formatMessageTime(message.resolvedTime!),
-                style: TextStyle(
-                  fontSize: 11,
-                  color: textColor.withOpacity(0.7),
+    final maxWidth = MediaQuery.of(context).size.width * 0.80;
+
+    return Align(
+      alignment: isSentByMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            decoration: BoxDecoration(color: backgroundColor),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                MarkdownBody(
+                  data: message.text,
+                  styleSheet: styleSheet,
+                  shrinkWrap: true,
+                  fitContent: true,
                 ),
-              ),
-          ],
+                const SizedBox(height: 4),
+                if (message.resolvedTime != null)
+                  Text(
+                    _formatMessageTime(message.resolvedTime!),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: textColor.withOpacity(0.7),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );

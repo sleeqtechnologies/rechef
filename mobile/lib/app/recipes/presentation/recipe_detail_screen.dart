@@ -8,11 +8,7 @@ import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:simple_icons/simple_icons.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'dart:convert';
 
-import '../../../core/utils/share_utils.dart';
-import '../../../core/constants/api_endpoints.dart';
-import '../../../core/network/api_client.dart';
 import '../domain/recipe.dart';
 import '../domain/ingredient.dart';
 import '../data/share_event_service.dart';
@@ -21,6 +17,7 @@ import '../domain/nutrition_facts.dart';
 import '../../grocery/grocery_provider.dart';
 import 'cooking_mode_sheet.dart';
 import 'edit_recipe_sheet.dart';
+import 'share_recipe_sheet.dart';
 
 bool _hasSourceOrAuthor(Recipe recipe) {
   final hasName =
@@ -101,32 +98,13 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
     }
   }
 
-  Future<void> _shareRecipe(Recipe recipe) async {
-    try {
-      final client = ApiClient();
-      final response =
-          await client.post(ApiEndpoints.shareRecipe(recipe.id));
-
-      if (response.statusCode != 200) {
-        throw Exception('Failed to create share link');
-      }
-
-      final data = response.body.isNotEmpty
-          ? jsonDecode(response.body) as Map<String, dynamic>
-          : <String, dynamic>{};
-
-      final url = (data['url'] as String?) ??
-          'https://rechef.app/recipe/${data['shareCode']}';
-
-      await ShareUtils.shareText(
-        url,
-        subject: recipe.name,
-      );
-    } catch (e) {
-      if (!mounted) return;
+  Future<void> _openShareSheet(Recipe recipe) async {
+    final ok = await ShareRecipeSheet.show(context, recipe: recipe);
+    if (!mounted) return;
+    if (!ok) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to share recipe: $e'),
+        const SnackBar(
+          content: Text('Failed to create share link. Try again.'),
         ),
       );
     }
@@ -164,9 +142,9 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
               }
             } catch (e) {
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Failed to remove: $e')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('Failed to remove: $e')));
               }
             }
           },
@@ -380,7 +358,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                         glassColor: _isCollapsed
                             ? const Color(0xCCFFFFFF)
                             : const Color(0x33FFFFFF),
-                        onPressed: () => _shareRecipe(recipe),
+                        onPressed: () => _openShareSheet(recipe),
                       ),
                     if (!recipe.isShared) const SizedBox(width: 4),
                     if (!recipe.isShared)
@@ -388,12 +366,10 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                         recipe: recipe,
                         isCollapsed: _isCollapsed,
                         onDelete: () => _deleteRecipe(recipe),
-                        onShareStats: () => context.push(
-                          '/recipes/${recipe.id}/share-stats',
-                        ),
+                        onShareStats: () =>
+                            context.push('/recipes/${recipe.id}/share-stats'),
                       ),
-                    if (recipe.isShared &&
-                        recipe.sharedSaveId != null)
+                    if (recipe.isShared && recipe.sharedSaveId != null)
                       _SharedRecipeMorePopupMenu(
                         recipe: recipe,
                         isCollapsed: _isCollapsed,

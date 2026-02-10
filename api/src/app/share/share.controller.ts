@@ -52,7 +52,7 @@ const createOrGetShareLink = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       shareCode: shared.shareCode,
-      url: `https://rechef.app/recipe/${shared.shareCode}`,
+      url: `https://rechef-ten.vercel.app/recipe/${shared.shareCode}`,
     });
   } catch (error) {
     logger.error("Error creating share link:", error);
@@ -83,7 +83,9 @@ const deactivateShareLink = async (req: Request, res: Response) => {
     logger.error("Error deactivating share link:", error);
     return res.status(500).json({
       error:
-        error instanceof Error ? error.message : "Failed to deactivate share link",
+        error instanceof Error
+          ? error.message
+          : "Failed to deactivate share link",
     });
   }
 };
@@ -149,7 +151,9 @@ const getSharedRecipePublic = async (req: Request, res: Response) => {
     logger.error("Error fetching shared recipe:", error);
     return res.status(500).json({
       error:
-        error instanceof Error ? error.message : "Failed to fetch shared recipe",
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch shared recipe",
     });
   }
 };
@@ -183,9 +187,11 @@ const recordShareEventPublic = async (req: Request, res: Response) => {
 
     // Basic IP hash for anonymous dedup; best-effort only
     const ip =
-      (req.headers["x-forwarded-for"] as string | undefined)?.split(
-        ",",
-      )[0]?.trim() ?? req.socket.remoteAddress ?? "";
+      (req.headers["x-forwarded-for"] as string | undefined)
+        ?.split(",")[0]
+        ?.trim() ??
+      req.socket.remoteAddress ??
+      "";
     const ipHash = ip ? Buffer.from(ip).toString("base64url") : undefined;
 
     await shareRepository.recordEvent({
@@ -320,4 +326,3 @@ export {
   saveSharedRecipe,
   removeSharedRecipe,
 };
-

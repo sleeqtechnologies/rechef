@@ -22,9 +22,11 @@ class DeepLinkHandler {
   /// Format: rechef://recipes/import?url=https://...
   /// Also handles Universal Links: https://rechef.app/recipe/:code
   static bool handleAppDeepLink(BuildContext context, Uri uri) {
-    // Handle Universal Links (https://rechef.app/recipe/:code)
-    if (uri.scheme == 'https' && 
-        (uri.host == 'rechef.app' || uri.host == 'www.rechef.app')) {
+    // Handle Universal Links (recipe share URLs)
+    if (uri.scheme == 'https' &&
+        (uri.host == 'rechef.app' ||
+            uri.host == 'www.rechef.app' ||
+            uri.host == 'rechef-ten.vercel.app')) {
       final path = uri.path;
       if (path.startsWith('/recipe/')) {
         final code = path.substring('/recipe/'.length);
@@ -71,11 +73,7 @@ class DeepLinkHandler {
     String? text,
   }) {
     if (url != null || imagePath != null) {
-      NavigationUtils.goToRecipeImport(
-        context,
-        url: url,
-        imagePath: imagePath,
-      );
+      NavigationUtils.goToRecipeImport(context, url: url, imagePath: imagePath);
     } else if (text != null) {
       // Try to extract URL from text
       final uri = Uri.tryParse(text);
