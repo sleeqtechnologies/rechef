@@ -19,7 +19,6 @@ shareApiRouter.get("/shared-with-me", getSharedWithMe);
 shareApiRouter.post("/shared-with-me/:code", saveSharedRecipe);
 shareApiRouter.delete("/shared-with-me/:id", removeSharedRecipe);
 
-// Public routes mounted at root
 const sharePublicRouter = Router();
 
 sharePublicRouter.get("/share/:code", getSharedRecipePublic);

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { RecipeView } from "./recipe-view";
 
 type SharedRecipeResponse = {
   recipe: {
@@ -106,16 +107,32 @@ export default async function SharedRecipePage(props: PageProps) {
 
   if (!data) {
     return (
-      <main className="min-h-screen bg-slate-950 text-slate-50 flex items-center justify-center px-4">
-        <div className="max-w-md text-center space-y-4">
-          <h1 className="text-2xl font-semibold">Recipe not found</h1>
-          <p className="text-slate-400">
+      <main className="min-h-screen bg-white flex items-center justify-center px-5">
+        <div className="max-w-sm text-center space-y-4">
+          <div className="mx-auto h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#9CA3AF"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              <line x1="8" y1="11" x2="14" y2="11" />
+            </svg>
+          </div>
+          <h1 className="text-xl font-bold text-gray-900">Recipe not found</h1>
+          <p className="text-sm text-gray-500 leading-relaxed">
             This shared recipe link may have expired or been disabled by the
             creator.
           </p>
           <Link
             href="https://rechef-ten.vercel.app"
-            className="inline-flex items-center justify-center rounded-full bg-emerald-500 px-4 py-2 text-sm font-medium text-slate-950 hover:bg-emerald-400 transition"
+            className="inline-flex items-center justify-center rounded-full bg-[#FF4F63] px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110"
           >
             Learn more about Rechef
           </Link>
@@ -146,92 +163,10 @@ export default async function SharedRecipePage(props: PageProps) {
     }
   })();
 
-  const totalMinutes =
-    (recipe.prepTimeMinutes ?? 0) + (recipe.cookTimeMinutes ?? 0);
-
-  const websiteUrl = "https://rechef-ten.vercel.app";
-
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-50 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-3xl rounded-3xl border border-slate-800 bg-slate-900/60 shadow-2xl shadow-emerald-600/10 backdrop-blur-xl overflow-hidden">
-        <div className="flex flex-col md:flex-row">
-          <div className="md:w-1/2 relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_#22c55e33,_transparent_60%)]" />
-            <div className="relative p-6 space-y-6">
-              <div className="inline-flex items-center rounded-full bg-slate-900/70 px-3 py-1 text-xs font-medium text-emerald-300 ring-1 ring-emerald-500/40">
-                Shared with you from Rechef
-              </div>
-              <h1 className="text-2xl md:text-3xl font-semibold leading-tight">
-                {recipe.name}
-              </h1>
-              <p className="text-sm text-slate-300 line-clamp-4">
-                {recipe.description ||
-                  "Open this recipe in the Rechef app to save it to your personal cookbook, generate smart grocery lists, and match with your pantry."}
-              </p>
-              <div className="flex flex-wrap gap-3 text-xs text-slate-200">
-                {totalMinutes > 0 && (
-                  <div className="inline-flex items-center gap-1 rounded-full bg-slate-900/70 px-3 py-1 ring-1 ring-slate-700">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                    {totalMinutes} min
-                  </div>
-                )}
-                {recipe.servings && recipe.servings > 0 && (
-                  <div className="inline-flex items-center gap-1 rounded-full bg-slate-900/70 px-3 py-1 ring-1 ring-slate-700">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                    {recipe.servings} servings
-                  </div>
-                )}
-              </div>
-              <div className="space-y-3">
-                <Link
-                  href={websiteUrl}
-                  className="inline-flex w-full items-center justify-center rounded-full bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/40 hover:bg-emerald-400 transition"
-                >
-                  Visit Rechef
-                </Link>
-                <p className="text-[11px] leading-relaxed text-slate-400">
-                  Rechef is a smart recipe and pantry companion. When the app is
-                  available, you’ll be able to save this recipe, build grocery
-                  lists, and get updates if the creator changes it.
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="md:w-1/2 border-t md:border-t-0 md:border-l border-slate-800 bg-slate-950/60 p-6 space-y-5">
-            <div>
-              <h2 className="text-sm font-semibold text-slate-100 mb-2">
-                Ingredients
-              </h2>
-              <ul className="space-y-1.5 max-h-44 overflow-y-auto pr-1 text-xs text-slate-200">
-                {recipe.ingredients.map((ing) => (
-                  <li key={`${ing.name}-${ing.quantity}`}>
-                    <span className="text-slate-300">
-                      {ing.quantity} {ing.unit}
-                    </span>{" "}
-                    <span>{ing.name}</span>
-                    {ing.notes && (
-                      <span className="text-slate-400"> — {ing.notes}</span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold text-slate-100 mb-2">
-                Steps
-              </h2>
-              <ol className="space-y-1.5 max-h-44 overflow-y-auto pr-1 text-xs text-slate-200 list-decimal list-inside">
-                {recipe.instructions.map((step, idx) => (
-                  <li key={idx}>{step}</li>
-                ))}
-              </ol>
-            </div>
-            <p className="text-[11px] text-slate-500 pt-1">
-              This is a preview. The Rechef app will add timers, pantry
-              matching, grocery lists, and cooking help—coming soon.
-            </p>
-          </div>
-        </div>
+    <main className="min-h-screen bg-white flex justify-center">
+      <div className="w-full max-w-lg">
+        <RecipeView recipe={recipe} />
       </div>
     </main>
   );
