@@ -23,8 +23,25 @@ class SubscriptionRepository {
     final configuration = PurchasesConfiguration(apiKey)
       ..appUserID = appUserId;
 
-    await Purchases.configure(configuration);
-    _isConfigured = true;
+    try {
+      await Purchases.configure(configuration);
+      _isConfigured = true;
+    } catch (e) {
+      // Handle configuration errors gracefully
+      // Common issue: Products not configured in RevenueCat dashboard yet
+      if (kDebugMode) {
+        debugPrint('[RevenueCat] Configuration warning: $e');
+        debugPrint('[RevenueCat] This is usually safe to ignore if you\'re still setting up products in the dashboard.');
+      }
+      // Still mark as configured so we don't retry repeatedly
+      _isConfigured = true;
+      // Re-throw only if it's a critical error (not configuration warnings)
+      final errorString = e.toString();
+      if (!errorString.contains('CONFIGURATION_ERROR') && 
+          !errorString.contains('offerings')) {
+        rethrow;
+      }
+    }
   }
 
   /// Log in to RevenueCat with the given user ID (typically Firebase UID).
@@ -57,6 +74,12 @@ class SubscriptionRepository {
     return Purchases.getOfferings();
   }
 
+  /// Fetch a specific offering by identifier.
+  Future<Offering?> getOffering(String offeringId) async {
+    final offerings = await getOfferings();
+    return offerings.all[offeringId];
+  }
+
   /// Purchase a specific package (e.g. monthly or yearly).
   Future<SubscriptionStatus> purchasePackage(Package package) async {
     final result = await Purchases.purchasePackage(package);
@@ -73,6 +96,11 @@ class SubscriptionRepository {
   ///
   /// Returns the paywall result indicating what happened.
   Future<PaywallResult> presentPaywall() async {
+    final offering = await getOffering(SubscriptionConstants.offeringId);
+    if (offering != null) {
+      return RevenueCatUI.presentPaywall(offering: offering);
+    }
+    // Fallback to default offering if "pro" offering not found
     return RevenueCatUI.presentPaywall();
   }
 

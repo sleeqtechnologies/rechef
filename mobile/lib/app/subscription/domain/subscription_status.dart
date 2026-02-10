@@ -7,9 +7,10 @@ class SubscriptionConstants {
   /// The entitlement identifier configured in RevenueCat dashboard.
   static const String entitlementId = 'Rechef Pro';
 
-  /// Product identifiers for subscription tiers.
-  static const String monthlyProductId = 'monthly';
-  static const String yearlyProductId = 'yearly';
+  static const String offeringId = 'pro';
+
+  static const String monthlyProductId = 'pro_monthly';
+  static const String yearlyProductId = 'pro_yearly';
 }
 
 /// Represents the current subscription status of the user.

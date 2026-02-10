@@ -1,12 +1,13 @@
 import 'dart:ui';
 
+import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:go_router/go_router.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../subscription/subscription_provider.dart';
 import '../providers/auth_providers.dart';
 
 class AccountSheet extends ConsumerWidget {
@@ -137,19 +138,8 @@ class AccountSheet extends ConsumerWidget {
                           const SizedBox(height: 28),
                         ],
 
-                        // Account section
-                        _SectionCard(
-                          label: 'Account',
-                          children: [
-                            _SettingsRow(
-                              title: 'Subscription',
-                              onTap: () {
-                                Navigator.of(context).pop();
-                                context.push('/subscription');
-                              },
-                            ),
-                          ],
-                        ),
+                        // Account section – subscription
+                        _SubscriptionSection(),
                         const SizedBox(height: 16),
 
                         // Other section
@@ -241,50 +231,95 @@ class AccountSheet extends ConsumerWidget {
     );
   }
 
-  void _openUrl(String url) async {
+}
+
+class _SubscriptionSection extends ConsumerWidget {
+  const _SubscriptionSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isPro = ref.watch(isProUserProvider);
+
+    return _SectionCard(
+      label: 'Account',
+      children: [
+        if (!isPro)
+          _SettingsRow(
+            title: 'Upgrade to Rechef Pro',
+            onTap: () async {
+              await ref.read(subscriptionProvider.notifier).showPaywall();
+            },
+          ),
+        if (isPro)
+          _SettingsRow(
+            title: 'Manage subscription',
+            onTap: () async {
+              await ref.read(subscriptionProvider.notifier).showCustomerCenter();
+            },
+          ),
+        _SettingsRow(
+          title: 'Restore purchases',
+          onTap: () async {
+            await ref.read(subscriptionProvider.notifier).restorePurchases();
+            if (!context.mounted) return;
+            final restored = ref.read(isProUserProvider);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  restored
+                      ? 'Purchases restored successfully.'
+                      : 'No previous purchases found.',
+                ),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+extension _AccountSheetExtension on AccountSheet {
+  Future<void> _openUrl(String url) async {
     final uri = Uri.tryParse(url);
     if (uri != null) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
 
-  void _confirmDeleteAccount(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
+  Future<void> _confirmDeleteAccount(BuildContext context, WidgetRef ref) async {
+    await AdaptiveAlertDialog.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete account'),
-        content: const Text(
+      title: 'Delete account',
+      message:
           'Are you sure? This will permanently delete your account and all your data. This action cannot be undone.',
+      actions: [
+        AlertAction(
+          title: 'Cancel',
+          style: AlertActionStyle.cancel,
+          onPressed: () {},
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(
-              'Delete',
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ),
-        ],
-      ),
+        AlertAction(
+          title: 'Delete',
+          style: AlertActionStyle.destructive,
+          onPressed: () async {
+            try {
+              await ref.read(authRepositoryProvider).deleteAccount();
+              if (context.mounted) {
+                Navigator.of(context).pop();
+              }
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Failed to delete account: $e')),
+                );
+              }
+            }
+          },
+        ),
+      ],
     );
-    if (confirmed == true) {
-      try {
-        await ref.read(authRepositoryProvider).deleteAccount();
-        if (context.mounted) {
-          Navigator.of(context).pop();
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to delete account: $e')),
-          );
-        }
-      }
-    }
   }
 }
 

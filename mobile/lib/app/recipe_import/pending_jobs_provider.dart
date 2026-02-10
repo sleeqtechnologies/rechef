@@ -26,8 +26,8 @@ class PendingJobsNotifier extends Notifier<List<ContentJob>> {
   Future<void> _fetchPendingJobs() async {
     try {
       final repo = ref.read(importRepositoryProvider);
-      final jobs = await repo.fetchJobs(
-        statuses: ['pending', 'processing'],
+      final jobs = _removeStaleJobs(
+        await repo.fetchJobs(statuses: ['pending', 'processing']),
       );
       state = jobs;
       if (jobs.isNotEmpty) {

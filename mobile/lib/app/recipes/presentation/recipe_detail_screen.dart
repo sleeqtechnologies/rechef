@@ -6,12 +6,14 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:simple_icons/simple_icons.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/utils/share_utils.dart';
 import '../domain/recipe.dart';
 import '../domain/ingredient.dart';
 import '../recipe_provider.dart';
+import '../domain/nutrition_facts.dart';
 import '../../grocery/grocery_provider.dart';
 import 'cooking_mode_sheet.dart';
 import 'edit_recipe_sheet.dart';
@@ -49,7 +51,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _scrollController = ScrollController();
     _runPantryMatch();
   }
@@ -347,10 +349,10 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Title → time/servings on cream background
+                      // Title → time/servings on off‑white background
                       Container(
                         width: double.infinity,
-                        color: const Color(0xFFFCF9F5),
+                        color: const Color(0xFFF7F5F0),
                         padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -412,17 +414,21 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                     child: AnimatedBuilder(
                       animation: _tabController,
                       builder: (context, _) {
-                        return _tabController.index == 0
-                            ? _IngredientsTab(
-                                recipe: recipe,
-                                isMatchingPantry: _isMatchingPantry,
-                                onToggle: (index) {
-                                  ref
-                                      .read(recipesProvider.notifier)
-                                      .toggleIngredient(widget.recipeId, index);
-                                },
-                              )
-                            : _CookingTab(recipe: recipe);
+                if (_tabController.index == 0) {
+                  return _IngredientsTab(
+                    recipe: recipe,
+                    isMatchingPantry: _isMatchingPantry,
+                    onToggle: (index) {
+                      ref
+                          .read(recipesProvider.notifier)
+                          .toggleIngredient(widget.recipeId, index);
+                    },
+                  );
+                } else if (_tabController.index == 1) {
+                  return _CookingTab(recipe: recipe);
+                } else {
+                  return _NutritionTab(recipeId: recipe.id);
+                }
                       },
                     ),
                   ),
@@ -438,6 +444,10 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
             child: AnimatedBuilder(
               animation: _tabController,
               builder: (context, _) {
+                if (_tabController.index == 2) {
+                  // No bottom CTA on Nutrition tab
+                  return const SizedBox.shrink();
+                }
                 return _BottomButton(
                   isIngredientsTab: _tabController.index == 0,
                   onPressed: () async {
@@ -904,7 +914,7 @@ class _TabBarWidget extends StatelessWidget {
 
   final TabController controller;
 
-  static const _cream = Color(0xFFFCF9F5);
+  static const _cream = Color(0xFFF7F5F0);
 
   @override
   Widget build(BuildContext context) {
@@ -944,6 +954,7 @@ class _TabBarWidget extends StatelessWidget {
             tabs: const [
               Tab(text: 'Ingredients'),
               Tab(text: 'Cooking'),
+              Tab(text: 'Nutrition'),
             ],
           ),
         ),
@@ -1108,6 +1119,227 @@ class _CookingTab extends StatelessWidget {
                 Divider(height: 24, thickness: 1, color: Colors.grey.shade200),
             ],
           ],
+        ),
+      ],
+    );
+  }
+}
+
+class _NutritionTab extends ConsumerWidget {
+  const _NutritionTab({required this.recipeId});
+
+  final String recipeId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final nutritionAsync = ref.watch(nutritionByRecipeProvider(recipeId));
+
+    return nutritionAsync.when(
+      loading: () => const Center(
+        child: CupertinoActivityIndicator(),
+      ),
+      error: (error, _) => _NutritionError(
+        onRetry: () =>
+            ref.invalidate(nutritionByRecipeProvider(recipeId)),
+      ),
+      data: (nutrition) => _NutritionContent(nutrition: nutrition),
+    );
+  }
+}
+
+class _NutritionError extends StatelessWidget {
+  const _NutritionError({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        Text(
+          'Nutrition',
+          style: Theme.of(context)
+              .textTheme
+              .titleMedium
+              ?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 20),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.red.shade50,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Couldn’t load nutrition right now.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.red.shade700,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: onRetry,
+                child: const Text('Try again'),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _NutritionContent extends StatelessWidget {
+  const _NutritionContent({required this.nutrition});
+
+  final NutritionFacts nutrition;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final macros = _buildMacroData(nutrition);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        Text(
+          'Nutrition',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 20),
+        if (!nutrition.hasAnyMacros)
+          Text(
+            'Nutrition information is not available for this recipe.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: Colors.grey.shade600,
+            ),
+          )
+        else ...[
+          Text(
+            '${nutrition.calories.round()} kcal per serving',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Estimated macronutrients:',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: Colors.grey.shade700,
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 220,
+            child: SfCircularChart(
+              title: ChartTitle(text: 'Per-serving macros (g)'),
+              legend: Legend(
+                isVisible: true,
+                position: LegendPosition.bottom,
+              ),
+              series: <DoughnutSeries<_MacroData, String>>[
+                DoughnutSeries<_MacroData, String>(
+                  dataSource: macros,
+                  xValueMapper: (_MacroData data, _) => data.label,
+                  yValueMapper: (_MacroData data, _) => data.grams,
+                  dataLabelSettings:
+                      const DataLabelSettings(isVisible: true),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          _MacroBreakdownList(nutrition: nutrition),
+        ],
+      ],
+    );
+  }
+
+  List<_MacroData> _buildMacroData(NutritionFacts nutrition) {
+    final items = <_MacroData>[
+      _MacroData(label: 'Protein', grams: nutrition.proteinGrams),
+      _MacroData(label: 'Carbs', grams: nutrition.carbsGrams),
+      _MacroData(label: 'Fat', grams: nutrition.fatGrams),
+    ];
+
+    return items.where((m) => m.grams > 0).toList();
+  }
+}
+
+class _MacroData {
+  _MacroData({required this.label, required this.grams});
+
+  final String label;
+  final double grams;
+}
+
+class _MacroBreakdownList extends StatelessWidget {
+  const _MacroBreakdownList({required this.nutrition});
+
+  final NutritionFacts nutrition;
+
+  @override
+  Widget build(BuildContext context) {
+    final textStyle = Theme.of(context).textTheme.bodyMedium;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _MacroRow(
+          label: 'Protein',
+          value: '${nutrition.proteinGrams.toStringAsFixed(1)} g',
+          textStyle: textStyle,
+        ),
+        const SizedBox(height: 4),
+        _MacroRow(
+          label: 'Carbs',
+          value: '${nutrition.carbsGrams.toStringAsFixed(1)} g',
+          textStyle: textStyle,
+        ),
+        const SizedBox(height: 4),
+        _MacroRow(
+          label: 'Fat',
+          value: '${nutrition.fatGrams.toStringAsFixed(1)} g',
+          textStyle: textStyle,
+        ),
+      ],
+    );
+  }
+}
+
+class _MacroRow extends StatelessWidget {
+  const _MacroRow({
+    required this.label,
+    required this.value,
+    required this.textStyle,
+  });
+
+  final String label;
+  final String value;
+  final TextStyle? textStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: textStyle?.copyWith(fontWeight: FontWeight.w500),
+        ),
+        Text(
+          value,
+          style: textStyle?.copyWith(color: Colors.grey.shade700),
         ),
       ],
     );

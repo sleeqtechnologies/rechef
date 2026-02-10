@@ -9,6 +9,8 @@ import '../app/recipe_import/presentation/import_url_sheet.dart';
 import '../app/recipe_import/data/import_repository.dart';
 import '../app/recipe_import/import_provider.dart';
 import '../app/recipe_import/pending_jobs_provider.dart';
+import '../app/recipe_import/monthly_import_usage_provider.dart';
+import '../app/subscription/subscription_provider.dart';
 import '../core/routing/app_router.dart';
 import '../core/widgets/custom_bottom_nav_bar.dart';
 
@@ -100,9 +102,28 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
   }
 
   Future<void> _submitRecipeUrl(String url) async {
+    final trimmedUrl = url.trim();
+    if (trimmedUrl.isEmpty) return;
+
+    // Enforce free-tier limit (5 imports per calendar month) using the cached
+    // monthlyImportUsageProvider value when available.
+    final isPro = ref.read(isProUserProvider);
+    if (!isPro) {
+      final usageAsync = ref.read(monthlyImportUsageProvider);
+      final usage = usageAsync.maybeWhen(
+        data: (value) => value,
+        orElse: () => null,
+      );
+
+      if (usage != null && usage.used >= usage.limit) {
+        await ref.read(subscriptionProvider.notifier).showPaywall();
+        return;
+      }
+    }
+
     try {
       final repo = ref.read(importRepositoryProvider);
-      final result = await repo.submitContent(url);
+      final result = await repo.submitContent(trimmedUrl);
 
       ref
           .read(pendingJobsProvider.notifier)
@@ -113,6 +134,9 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
               savedContentId: result.savedContentId,
             ),
           );
+
+      // Refresh monthly usage after a successful import so UI stays in sync.
+      ref.invalidate(monthlyImportUsageProvider);
 
       if (!mounted) return;
 

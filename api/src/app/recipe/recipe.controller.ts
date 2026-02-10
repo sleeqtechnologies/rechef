@@ -2,7 +2,9 @@ import { logger } from "../../../logger";
 import { Request, Response } from "express";
 import * as recipeRepository from "./recipe.repository";
 import * as pantryRepository from "../pantry/pantry.repository";
+import * as recipeNutritionRepository from "./recipe-nutrition.repository";
 import { matchIngredientsWithPantry } from "../../services/pantry-matcher";
+import { generateNutritionForRecipe } from "../../services/nutrition-generator";
 import type { Recipe } from "./recipe.repository";
 
 interface IngredientJson {
@@ -27,6 +29,18 @@ const formatRecipe = (recipe: Recipe) => ({
   sourceTitle: recipe.sourceTitle ?? undefined,
   sourceAuthorName: recipe.sourceAuthorName ?? undefined,
   sourceAuthorAvatarUrl: recipe.sourceAuthorAvatarUrl ?? undefined,
+});
+
+const formatNutrition = (nutrition: {
+  caloriesKcal: number | null;
+  proteinGrams: number | null;
+  carbsGrams: number | null;
+  fatGrams: number | null;
+}) => ({
+  calories: nutrition.caloriesKcal ?? 0,
+  protein_g: nutrition.proteinGrams ?? 0,
+  carbs_g: nutrition.carbsGrams ?? 0,
+  fat_g: nutrition.fatGrams ?? 0,
 });
 
 const saveRecipe = async (req: Request, res: Response) => {
@@ -263,6 +277,60 @@ const deleteRecipe = async (req: Request, res: Response) => {
   }
 };
 
+const getNutrition = async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const recipe = await recipeRepository.findById(id);
+
+    if (!recipe) {
+      return res.status(404).json({ error: "Recipe not found" });
+    }
+
+    if (recipe.userId !== req.user.id) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const existing = await recipeNutritionRepository.findByRecipeId(id);
+
+    if (existing) {
+      return res.status(200).json({ nutrition: formatNutrition(existing) });
+    }
+
+    const ingredients = recipe.ingredients as IngredientJson[];
+
+    const generated = await generateNutritionForRecipe({
+      name: recipe.name,
+      description: recipe.description,
+      servings: recipe.servings ?? null,
+      ingredients: ingredients.map((i) => ({
+        name: i.name,
+        quantity: i.quantity,
+        unit: i.unit,
+      })),
+    });
+
+    const saved = await recipeNutritionRepository.create({
+      recipeId: recipe.id,
+      caloriesKcal: generated.calories,
+      proteinGrams: generated.protein_g,
+      carbsGrams: generated.carbs_g,
+      fatGrams: generated.fat_g,
+      rawJson: generated,
+      generatedBy: "ai",
+    });
+
+    return res
+      .status(200)
+      .json({ nutrition: formatNutrition(saved) });
+  } catch (error) {
+    logger.error("Error getting nutrition:", error);
+    return res.status(500).json({
+      error:
+        error instanceof Error ? error.message : "Failed to get nutrition",
+    });
+  }
+};
+
 export default {
   saveRecipe,
   getRecipes,
@@ -271,4 +339,5 @@ export default {
   matchPantry,
   toggleIngredient,
   deleteRecipe,
+  getNutrition,
 };

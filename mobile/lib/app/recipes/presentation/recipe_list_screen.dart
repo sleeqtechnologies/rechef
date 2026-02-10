@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -8,7 +9,9 @@ import '../../../core/constants/app_spacing.dart';
 import '../../auth/presentation/account_sheet.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../recipe_import/data/import_repository.dart';
+import '../../recipe_import/monthly_import_usage_provider.dart';
 import '../../recipe_import/pending_jobs_provider.dart';
+import '../../subscription/subscription_provider.dart';
 import '../domain/recipe.dart';
 import '../recipe_provider.dart';
 
@@ -63,11 +66,17 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
     final pendingJobs = ref.watch(pendingJobsProvider);
     final user = ref.watch(userModelProvider);
     final initials = user?.initials ?? 'AN';
+    final isPro = ref.watch(isProUserProvider);
+    final usageAsync = ref.watch(monthlyImportUsageProvider);
 
     return Scaffold(
       appBar: CustomAppBar(
         title: 'Recipes',
         actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: _RecipeQuotaBadge(isPro: isPro, usageAsync: usageAsync),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: GestureDetector(
@@ -95,125 +104,182 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
       ),
       body: SafeArea(
         bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.horizontalMargin,
-                8,
-                AppSpacing.horizontalMargin,
-                12,
-              ),
-              child: TextField(
-                controller: _searchController,
-                focusNode: _searchFocusNode,
-                decoration: InputDecoration(
-                  hintText: 'Search recipes…',
-                  prefixIcon: Icon(
-                    Icons.search_rounded,
-                    size: 22,
-                    color: Colors.grey.shade500,
-                  ),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: Icon(
-                            Icons.clear_rounded,
-                            size: 20,
-                            color: Colors.grey.shade600,
-                          ),
-                          onPressed: () {
-                            _searchController.clear();
-                          },
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: Colors.grey.shade100,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                ),
-              ),
-            ),
-            Expanded(
-              child: recipesAsync.when(
-                loading: () => const Center(child: CupertinoActivityIndicator()),
-                error: (error, _) => CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    CupertinoSliverRefreshControl(
-                      onRefresh: () async {
-                        ref.invalidate(recipesProvider);
-                        await ref.read(recipesProvider.future);
-                      },
-                    ),
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.error_outline,
-                              size: 48,
-                              color: Colors.grey.shade300,
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Failed to load recipes',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            TextButton(
-                              onPressed: () => ref.invalidate(recipesProvider),
-                              child: const Text('Retry'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                data: (recipes) {
-                  final filtered = _filterRecipes(recipes);
-                  return CustomScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    slivers: [
-                      CupertinoSliverRefreshControl(
-                        onRefresh: () async {
-                          ref.invalidate(recipesProvider);
-                          await ref.read(recipesProvider.future);
-                        },
-                      ),
-                      if (filtered.isEmpty && pendingJobs.isEmpty)
-                        SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: const _EmptyState(),
-                        )
-                      else if (filtered.isEmpty && recipes.isNotEmpty)
-                        SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: _NoSearchResults(query: _searchQuery),
-                        )
-                      else
-                        _RecipeGridSliver(
-                          recipes: filtered,
-                          pendingJobs:
-                              _searchQuery.trim().isEmpty ? pendingJobs : [],
-                        ),
-                    ],
-                  );
+        child: recipesAsync.when(
+          loading: () => CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              CupertinoSliverRefreshControl(
+                onRefresh: () async {
+                  ref.invalidate(recipesProvider);
+                  await ref.read(recipesProvider.future);
                 },
               ),
+              SliverToBoxAdapter(
+                child: _SearchField(
+                  controller: _searchController,
+                  focusNode: _searchFocusNode,
+                  query: _searchQuery,
+                  onClear: () => _searchController.clear(),
+                ),
+              ),
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(child: CupertinoActivityIndicator()),
+              ),
+            ],
+          ),
+          error: (error, _) => CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              CupertinoSliverRefreshControl(
+                onRefresh: () async {
+                  ref.invalidate(recipesProvider);
+                  await ref.read(recipesProvider.future);
+                },
+              ),
+              SliverToBoxAdapter(
+                child: _SearchField(
+                  controller: _searchController,
+                  focusNode: _searchFocusNode,
+                  query: _searchQuery,
+                  onClear: () => _searchController.clear(),
+                ),
+              ),
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Colors.grey.shade300,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Failed to load recipes',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: () => ref.invalidate(recipesProvider),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          data: (recipes) {
+            final filtered = _filterRecipes(recipes);
+            return CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                CupertinoSliverRefreshControl(
+                  onRefresh: () async {
+                    ref.invalidate(recipesProvider);
+                    await ref.read(recipesProvider.future);
+                  },
+                ),
+                SliverToBoxAdapter(
+                  child: _SearchField(
+                    controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    query: _searchQuery,
+                    onClear: () => _searchController.clear(),
+                  ),
+                ),
+                if (filtered.isEmpty && pendingJobs.isEmpty)
+                  const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _EmptyState(),
+                  )
+                else if (filtered.isEmpty && recipes.isNotEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _NoSearchResults(query: _searchQuery),
+                  )
+                else
+                  _RecipeGridSliver(
+                    recipes: filtered,
+                    pendingJobs: _searchQuery.trim().isEmpty ? pendingJobs : [],
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _SearchField extends StatelessWidget {
+  const _SearchField({
+    required this.controller,
+    required this.focusNode,
+    required this.query,
+    required this.onClear,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String query;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.horizontalMargin,
+        8,
+        AppSpacing.horizontalMargin,
+        12,
+      ),
+      child: TextField(
+        controller: controller,
+        focusNode: focusNode,
+        decoration: InputDecoration(
+          hintText: 'Search recipes…',
+          prefixIcon: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: SvgPicture.asset(
+              'assets/icons/search.svg',
+              width: 18,
+              height: 18,
+              colorFilter: ColorFilter.mode(
+                Colors.grey.shade800,
+                BlendMode.srcIn,
+              ),
             ),
-          ],
+          ),
+          prefixIconConstraints: const BoxConstraints(
+            minWidth: 0,
+            minHeight: 0,
+          ),
+          suffixIcon: query.isNotEmpty
+              ? IconButton(
+                  icon: Icon(
+                    Icons.clear_rounded,
+                    size: 20,
+                    color: Colors.grey.shade600,
+                  ),
+                  onPressed: onClear,
+                )
+              : null,
+          filled: true,
+          fillColor: Colors.grey.shade100,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(999),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 18,
+            vertical: 12,
+          ),
         ),
       ),
     );
@@ -255,6 +321,72 @@ class _EmptyState extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _RecipeQuotaBadge extends StatelessWidget {
+  const _RecipeQuotaBadge({required this.isPro, required this.usageAsync});
+
+  final bool isPro;
+  final AsyncValue<MonthlyImportUsage> usageAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    final String label;
+    if (isPro) {
+      label = 'Pro';
+    } else {
+      final usage = usageAsync.maybeWhen(
+        data: (value) => value,
+        orElse: () => null,
+      );
+      if (usage == null) {
+        label = '–/5';
+      } else {
+        label = '${usage.used}/${usage.limit}';
+      }
+    }
+
+    final Color backgroundColor;
+    final Color textColor;
+    const accentColor = Color(0xFFFF4F63);
+    if (isPro) {
+      backgroundColor = const Color(0xFFE7F8EB);
+      textColor = const Color(0xFF219653);
+    } else {
+      backgroundColor = const Color(0xFFFFF3C4);
+      textColor = const Color(0xFF4A4A4A);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SvgPicture.asset(
+            'assets/icons/bolt.svg',
+            width: 16,
+            height: 16,
+            colorFilter: const ColorFilter.mode(accentColor, BlendMode.srcIn),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: textColor,
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -328,21 +460,18 @@ class _RecipeGridSliver extends StatelessWidget {
           mainAxisSpacing: 18,
           childAspectRatio: 0.78,
         ),
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            if (index < pendingJobs.length) {
-              return const _PendingRecipeCard();
-            }
-            final recipe = recipes[index - pendingJobs.length];
-            return _RecipeCard(
-              id: recipe.id,
-              title: recipe.name,
-              imageUrl: recipe.imageUrl,
-              onTap: () => context.push('/recipes/${recipe.id}'),
-            );
-          },
-          childCount: totalItems,
-        ),
+        delegate: SliverChildBuilderDelegate((context, index) {
+          if (index < pendingJobs.length) {
+            return const _PendingRecipeCard();
+          }
+          final recipe = recipes[index - pendingJobs.length];
+          return _RecipeCard(
+            id: recipe.id,
+            title: recipe.name,
+            imageUrl: recipe.imageUrl,
+            onTap: () => context.push('/recipes/${recipe.id}'),
+          );
+        }, childCount: totalItems),
       ),
     );
   }
@@ -481,7 +610,9 @@ class _RecipeCard extends StatelessWidget {
                               return Container(
                                 color: Colors.grey.shade200,
                                 alignment: Alignment.center,
-                                child: const CupertinoActivityIndicator(radius: 11),
+                                child: const CupertinoActivityIndicator(
+                                  radius: 11,
+                                ),
                               );
                             },
                             errorBuilder: (context, error, stackTrace) {

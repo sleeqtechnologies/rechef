@@ -1,11 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../recipe_import/import_provider.dart';
 import 'data/recipe_repository.dart';
+import 'data/nutrition_repository.dart';
 import 'domain/ingredient.dart';
 import 'domain/recipe.dart';
+import 'domain/nutrition_facts.dart';
 
 final recipeRepositoryProvider = Provider<RecipeRepository>((ref) {
   return RecipeRepository(apiClient: ref.watch(apiClientProvider));
+});
+
+final nutritionRepositoryProvider = Provider<NutritionRepository>((ref) {
+  return NutritionRepository(apiClient: ref.watch(apiClientProvider));
 });
 
 class RecipesNotifier extends AsyncNotifier<List<Recipe>> {
@@ -106,3 +112,10 @@ final recipeByIdProvider = Provider.family<AsyncValue<Recipe?>, String>((
     }
   });
 });
+
+final nutritionByRecipeProvider =
+    FutureProvider.family<NutritionFacts, String>((ref, recipeId) async {
+  final repo = ref.read(nutritionRepositoryProvider);
+  return repo.fetchNutrition(recipeId);
+});
+

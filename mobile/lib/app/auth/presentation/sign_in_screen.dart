@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/constants/app_strings.dart';
 import '../providers/auth_providers.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
@@ -33,6 +34,23 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     }
   }
 
+  Future<void> _continueWithoutAccount() async {
+    setState(() {
+      _loadingButton = 'guest';
+      _error = null;
+    });
+
+    try {
+      await ref.read(authRepositoryProvider).signInAnonymously();
+    } catch (e) {
+      setState(() => _error = 'Could not continue without an account: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _loadingButton = null);
+      }
+    }
+  }
+
   Future<void> _signInWithApple() async {
     setState(() {
       _loadingButton = 'apple';
@@ -42,7 +60,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     try {
       await ref.read(authRepositoryProvider).signInWithApple();
     } catch (e) {
-      setState(() => _error = 'Apple sign-in failed: $e');
+      debugPrint('Apple sign-in error: $e');
+      setState(
+        () => _error =
+            'Apple sign-in isn\'t available right now. Please try again later, use Google, or continue without an account.',
+      );
     } finally {
       if (mounted) {
         setState(() => _loadingButton = null);
@@ -80,10 +102,25 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 ),
                 const Spacer(flex: 3),
                 if (_error != null) ...[
-                  Text(
-                    _error!,
-                    style: const TextStyle(color: Colors.red),
-                    textAlign: TextAlign.center,
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.16),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -103,7 +140,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       elevation: 0,
                     ),
                     child: _loadingButton == 'google'
-                        ? const CupertinoActivityIndicator(radius: 12, color: Colors.black54)
+                        ? const CupertinoActivityIndicator(
+                            radius: 12,
+                            color: Colors.black54,
+                          )
                         : Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -142,7 +182,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       elevation: 0,
                     ),
                     child: _loadingButton == 'apple'
-                        ? const CupertinoActivityIndicator(radius: 12, color: Colors.white70)
+                        ? const CupertinoActivityIndicator(
+                            radius: 12,
+                            color: Colors.white70,
+                          )
                         : const Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -158,6 +201,22 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                             ],
                           ),
                   ),
+                ),
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: _loading ? null : _continueWithoutAccount,
+                  child: _loadingButton == 'guest'
+                      ? const CupertinoActivityIndicator(
+                          radius: 10,
+                          color: Colors.white70,
+                        )
+                      : const Text(
+                          AppStrings.continueWithoutAccount,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
+                        ),
                 ),
                 const SizedBox(height: 16),
               ],

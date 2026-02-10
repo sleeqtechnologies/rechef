@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 
 import '../data/import_repository.dart';
 import '../import_provider.dart';
+import '../monthly_import_usage_provider.dart';
 import '../pending_jobs_provider.dart';
+import '../../subscription/subscription_provider.dart';
 
 class ImportRecipeScreen extends ConsumerStatefulWidget {
   const ImportRecipeScreen({super.key, this.initialUrl, this.initialImagePath});
@@ -41,6 +43,23 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
     final url = _urlController.text.trim();
     if (url.isEmpty) return;
 
+    // Free users are limited to 5 imports per calendar month. We use the
+    // cached monthlyImportUsageProvider value if available; if it's still
+    // loading or failed, we allow the import rather than blocking.
+    final isPro = ref.read(isProUserProvider);
+    if (!isPro) {
+      final usageAsync = ref.read(monthlyImportUsageProvider);
+      final usage = usageAsync.maybeWhen(
+        data: (value) => value,
+        orElse: () => null,
+      );
+
+      if (usage != null && usage.used >= usage.limit) {
+        await ref.read(subscriptionProvider.notifier).showPaywall();
+        return;
+      }
+    }
+
     setState(() {
       _isSubmitting = true;
       _error = null;
@@ -58,6 +77,10 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
           savedContentId: result.savedContentId,
         ),
       );
+
+      // Refresh monthly usage so any UI showing the count (e.g. the recipes
+      // top bar badge) reflects the new import.
+      ref.invalidate(monthlyImportUsageProvider);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

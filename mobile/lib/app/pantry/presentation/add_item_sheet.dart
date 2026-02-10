@@ -29,6 +29,18 @@ class _AddItemSheetState extends State<AddItemSheet> {
   static const double _blurSigma = 12;
 
   @override
+  void initState() {
+    super.initState();
+    // Automatically focus the input when the sheet appears so the keyboard
+    // opens without an extra tap.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     _focusNode.dispose();
@@ -82,6 +94,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                   TextField(
                     controller: _controller,
                     focusNode: _focusNode,
+                    autofocus: true,
                     decoration: InputDecoration(
                       hintText: 'e.g. flour, sugar, salt',
                       hintStyle: TextStyle(

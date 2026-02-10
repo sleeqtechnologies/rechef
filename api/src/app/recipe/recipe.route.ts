@@ -10,6 +10,7 @@ router.get("/:id", recipeController.getRecipeById);
 router.put("/:id", recipeController.updateRecipe);
 router.post("/:id/match-pantry", recipeController.matchPantry);
 router.patch("/:id/ingredients/:index", recipeController.toggleIngredient);
+router.get("/:id/nutrition", recipeController.getNutrition);
 router.delete("/:id", recipeController.deleteRecipe);
 
 // Chat

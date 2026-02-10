@@ -19,6 +19,18 @@ class _ImportUrlSheetState extends State<ImportUrlSheet> {
   static const double _blurSigma = 12;
 
   @override
+  void initState() {
+    super.initState();
+    // Automatically focus the URL field when the sheet opens so the keyboard
+    // appears without requiring an extra tap.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     _focusNode.dispose();
@@ -75,6 +87,7 @@ class _ImportUrlSheetState extends State<ImportUrlSheet> {
                   TextField(
                     controller: _controller,
                     focusNode: _focusNode,
+                    autofocus: true,
                     decoration: InputDecoration(
                       hintText: 'Paste recipe URL here...',
                       hintStyle: TextStyle(

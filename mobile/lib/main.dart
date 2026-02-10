@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
 import 'app/subscription/data/subscription_repository.dart';
+import 'core/config/env.dart';
 import 'core/services/cooking_timer_notifications.dart';
 import 'firebase_options.dart';
 
@@ -18,7 +19,7 @@ Future<void> main() async {
   await CookingTimerNotifications.instance.initialize();
 
   final repo = SubscriptionRepository(
-    apiKey: 'test_HZPsnVkxuDTJGMjFiKBaxHhNTiu',
+    apiKey: revenueCatApiKey,
   );
   final currentUser = FirebaseAuth.instance.currentUser;
   await repo.configure(appUserId: currentUser?.uid);
