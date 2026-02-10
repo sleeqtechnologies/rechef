@@ -1,4 +1,4 @@
-import { generateText } from "ai";
+import { streamText } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { logger } from "../../../logger";
 import { Request, Response } from "express";
@@ -57,6 +57,12 @@ const sendMessage = async (req: Request, res: Response) => {
       return res.status(403).json({ error: "Forbidden" });
     }
 
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+    res.flushHeaders();
+
     const userMsg = await chatRepository.create({
       userId,
       recipeId,
@@ -64,6 +70,10 @@ const sendMessage = async (req: Request, res: Response) => {
       content: message,
       imageBase64: imageBase64 ?? null,
     });
+
+    res.write(
+      `event: userMessage\ndata: ${JSON.stringify(formatMessage(userMsg))}\n\n`,
+    );
 
     const ingredients = recipe.ingredients as IngredientJson[];
     const instructions: string[] = JSON.parse(recipe.instructions);
@@ -80,7 +90,9 @@ const sendMessage = async (req: Request, res: Response) => {
       .join("\n");
 
     const currentStepInfo =
-      typeof currentStep === "number" && currentStep >= 0 && currentStep < instructions.length
+      typeof currentStep === "number" &&
+      currentStep >= 0 &&
+      currentStep < instructions.length
         ? `\n\nThe user is currently on step ${currentStep + 1}: "${instructions[currentStep]}"`
         : "";
 
@@ -104,10 +116,15 @@ Provide concise, practical cooking advice. If the user shares a photo of their c
       20,
     );
 
-    const aiMessages: Array<{ role: "user" | "assistant"; content: string | Array<{ type: string; text?: string; image?: string }> }> = [];
+    const aiMessages: Array<{
+      role: "user" | "assistant";
+      content:
+        | string
+        | Array<{ type: string; text?: string; image?: string }>;
+    }> = [];
 
     for (const msg of recentMessages) {
-      if (msg.id === userMsg.id) continue; 
+      if (msg.id === userMsg.id) continue;
       if (msg.role === "assistant") {
         aiMessages.push({ role: "assistant", content: msg.content });
       } else {
@@ -127,28 +144,48 @@ Provide concise, practical cooking advice. If the user shares a photo of their c
       aiMessages.push({ role: "user", content: message });
     }
 
-    const { text: aiReply } = await generateText({
+    const result = streamText({
       model: openai("gpt-4o-mini"),
       system: systemPrompt,
       messages: aiMessages as any,
     });
 
+    let fullText = "";
+    for await (const chunk of result.textStream) {
+      fullText += chunk;
+      res.write(
+        `event: chunk\ndata: ${JSON.stringify({ text: chunk })}\n\n`,
+      );
+    }
+
     const assistantMsg = await chatRepository.create({
       userId,
       recipeId,
       role: "assistant",
-      content: aiReply,
+      content: fullText,
     });
 
-    return res.status(200).json({
-      userMessage: formatMessage(userMsg),
-      assistantMessage: formatMessage(assistantMsg),
-    });
+    res.write(
+      `event: done\ndata: ${JSON.stringify({ assistantMessage: formatMessage(assistantMsg) })}\n\n`,
+    );
+    res.end();
   } catch (error) {
     logger.error("Error in chat:", error);
-    return res.status(500).json({
-      error: error instanceof Error ? error.message : "Failed to process chat",
-    });
+    if (res.headersSent) {
+      try {
+        res.write(
+          `event: error\ndata: ${JSON.stringify({ error: error instanceof Error ? error.message : "Failed to process chat" })}\n\n`,
+        );
+      } catch (_) {
+        // Connection already closed
+      }
+      res.end();
+    } else {
+      return res.status(500).json({
+        error:
+          error instanceof Error ? error.message : "Failed to process chat",
+      });
+    }
   }
 };
 

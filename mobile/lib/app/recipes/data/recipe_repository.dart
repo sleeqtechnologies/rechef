@@ -112,27 +112,50 @@ class RecipeRepository {
     return list.cast<Map<String, dynamic>>();
   }
 
-  Future<Map<String, dynamic>> sendChatMessage(
+  Stream<Map<String, dynamic>> sendChatMessageStream(
     String recipeId, {
     required String message,
     String? imageBase64,
     int? currentStep,
-  }) async {
+  }) async* {
     final body = <String, dynamic>{'message': message};
     if (imageBase64 != null) body['imageBase64'] = imageBase64;
     if (currentStep != null) body['currentStep'] = currentStep;
 
-    final response = await _apiClient.post(
+    final response = await _apiClient.postStream(
       ApiEndpoints.recipeChat(recipeId),
       body: body,
     );
 
     if (response.statusCode != 200) {
-      final error = jsonDecode(response.body);
+      final bodyStr = await response.stream.bytesToString();
+      final error = jsonDecode(bodyStr) as Map<String, dynamic>;
       throw Exception(error['error'] ?? 'Failed to send message');
     }
 
-    return jsonDecode(response.body) as Map<String, dynamic>;
+    var buffer = '';
+    await for (final bytes in response.stream.transform(utf8.decoder)) {
+      buffer += bytes;
+
+      while (buffer.contains('\n\n')) {
+        final idx = buffer.indexOf('\n\n');
+        final raw = buffer.substring(0, idx);
+        buffer = buffer.substring(idx + 2);
+
+        String? event;
+        String? data;
+        for (final line in raw.split('\n')) {
+          if (line.startsWith('event: ')) event = line.substring(7);
+          if (line.startsWith('data: ')) data = line.substring(6);
+        }
+
+        if (data == null || event == null) continue;
+
+        final parsed = jsonDecode(data) as Map<String, dynamic>;
+        parsed['_event'] = event;
+        yield parsed;
+      }
+    }
   }
 
   /// Fetch a shared recipe from the public endpoint (no auth required)

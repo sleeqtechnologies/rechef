@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' show min;
 import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
@@ -9,7 +10,6 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../recipe_provider.dart';
@@ -127,7 +127,7 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
 
     final userMsgId = 'local-${DateTime.now().millisecondsSinceEpoch}';
 
-    // Optimistically add uer message
+    // Optimistically add user message
     if (imageBase64 != null) {
       await _chatController.insertMessage(
         Message.image(
@@ -153,55 +153,87 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
 
     try {
       final repo = ref.read(recipeRepositoryProvider);
-      final result = await repo.sendChatMessage(
+      String accumulatedText = '';
+      Message? streamingMsg;
+      final streamingMsgId =
+          'streaming-${DateTime.now().millisecondsSinceEpoch}';
+      final streamingCreatedAt = DateTime.now();
+
+      await for (final event in repo.sendChatMessageStream(
         widget.recipeId,
         message: text.trim(),
         imageBase64: imageBase64,
         currentStep: widget.currentStep,
-      );
+      )) {
+        if (!mounted) break;
 
-      final assistant = result['assistantMessage'] as Map<String, dynamic>;
+        final eventType = event['_event'] as String;
 
-      // Replace the local user message with the server one
-      final serverUser = result['userMessage'] as Map<String, dynamic>;
-      try {
-        final localMsg = _chatController.messages.firstWhere(
-          (m) => m.id == userMsgId,
-        );
-        await _chatController.removeMessage(localMsg);
-        if (serverUser['imageBase64'] != null) {
-          await _chatController.insertMessage(
-            Message.image(
-              id: serverUser['id'] as String,
-              authorId: _currentUserId,
-              source: serverUser['imageBase64'] as String,
-              text: serverUser['content'] as String?,
-              createdAt: DateTime.tryParse(serverUser['createdAt'] as String? ?? ''),
-            ),
+        if (eventType == 'userMessage') {
+          // Replace local user message with server one
+          try {
+            final localMsg = _chatController.messages.firstWhere(
+              (m) => m.id == userMsgId,
+            );
+            await _chatController.removeMessage(localMsg);
+            if (event['imageBase64'] != null) {
+              await _chatController.insertMessage(
+                Message.image(
+                  id: event['id'] as String,
+                  authorId: _currentUserId,
+                  source: event['imageBase64'] as String,
+                  text: event['content'] as String?,
+                  createdAt:
+                      DateTime.tryParse(event['createdAt'] as String? ?? ''),
+                ),
+              );
+            } else {
+              await _chatController.insertMessage(
+                Message.text(
+                  id: event['id'] as String,
+                  authorId: _currentUserId,
+                  text: event['content'] as String,
+                  createdAt:
+                      DateTime.tryParse(event['createdAt'] as String? ?? ''),
+                ),
+              );
+            }
+          } catch (_) {}
+        } else if (eventType == 'chunk') {
+          accumulatedText += event['text'] as String;
+          final newMsg = Message.text(
+            id: streamingMsgId,
+            authorId: _assistantId,
+            text: accumulatedText,
+            createdAt: streamingCreatedAt,
           );
-        } else {
-          await _chatController.insertMessage(
-            Message.text(
-              id: serverUser['id'] as String,
-              authorId: _currentUserId,
-              text: serverUser['content'] as String,
-              createdAt: DateTime.tryParse(serverUser['createdAt'] as String? ?? ''),
-            ),
+
+          if (streamingMsg == null) {
+            await _chatController.insertMessage(newMsg);
+          } else {
+            await _chatController.updateMessage(streamingMsg, newMsg);
+          }
+          streamingMsg = newMsg;
+        } else if (eventType == 'done') {
+          final assistant =
+              event['assistantMessage'] as Map<String, dynamic>;
+          final finalMsg = Message.text(
+            id: assistant['id'] as String,
+            authorId: _assistantId,
+            text: assistant['content'] as String,
+            createdAt:
+                DateTime.tryParse(assistant['createdAt'] as String? ?? ''),
           );
+
+          if (streamingMsg != null) {
+            await _chatController.updateMessage(streamingMsg, finalMsg);
+          } else {
+            await _chatController.insertMessage(finalMsg);
+          }
+        } else if (eventType == 'error') {
+          throw Exception(event['error'] as String? ?? 'Unknown error');
         }
-      } catch (_) {
-        // If remove fails, just keep the local message
       }
-
-      // Add assistant reply
-      await _chatController.insertMessage(
-        Message.text(
-          id: assistant['id'] as String,
-          authorId: _assistantId,
-          text: assistant['content'] as String,
-          createdAt: DateTime.tryParse(assistant['createdAt'] as String? ?? ''),
-        ),
-      );
     } catch (e) {
       debugPrint('Failed to send message: $e');
       if (mounted) {
@@ -274,49 +306,73 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: const BorderRadius.only(
-        topLeft: Radius.circular(_sheetRadius),
-        topRight: Radius.circular(_sheetRadius),
-      ),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: _blurSigma, sigmaY: _blurSigma),
-        child: Container(
-          height: MediaQuery.of(context).size.height * 0.85,
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.95),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(_sheetRadius),
-              topRight: Radius.circular(_sheetRadius),
-            ),
-          ),
-          child: Column(
-            children: [
-              _buildHeader(context),
-              Expanded(
-                child: _loading
-                    ? const Center(child: CupertinoActivityIndicator())
-                    : Chat(
-                        chatController: _chatController,
-                        currentUserId: _currentUserId,
-                        resolveUser: _resolveUser,
-                        onMessageSend: _onMessageSend,
-                        backgroundColor: Colors.transparent,
-                        theme: ChatTheme.light().copyWith(
-                          colors: ChatColors.light().copyWith(
-                            primary: _accentColor,
-                            surface: Colors.transparent,
-                          ),
-                        ),
-                        builders: Builders(
-                          composerBuilder: (_) => const SizedBox.shrink(),
-                          emptyChatListBuilder: _buildEmptyState,
-                          textMessageBuilder: _buildMarkdownTextMessage,
-                        ),
-                      ),
+    final mq = MediaQuery.of(context);
+    final keyboardHeight = mq.viewInsets.bottom;
+    final sheetHeight = min(
+      mq.size.height * 0.85,
+      mq.size.height - keyboardHeight - mq.padding.top,
+    );
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: keyboardHeight),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(_sheetRadius),
+          topRight: Radius.circular(_sheetRadius),
+        ),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: _blurSigma, sigmaY: _blurSigma),
+          child: Container(
+            height: sheetHeight,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(_sheetRadius),
+                topRight: Radius.circular(_sheetRadius),
               ),
-              _buildComposer(context),
-            ],
+            ),
+            child: Column(
+              children: [
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 10, bottom: 6),
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                      child: _loading
+                          ? const Center(child: CupertinoActivityIndicator())
+                          : Chat(
+                              chatController: _chatController,
+                              currentUserId: _currentUserId,
+                              resolveUser: _resolveUser,
+                              onMessageSend: _onMessageSend,
+                              backgroundColor: Colors.transparent,
+                              theme: ChatTheme.light().copyWith(
+                                colors: ChatColors.light().copyWith(
+                                  primary: _accentColor,
+                                  surface: Colors.transparent,
+                                ),
+                              ),
+                              builders: Builders(
+                                composerBuilder: (_) =>
+                                    const SizedBox.shrink(),
+                                emptyChatListBuilder: _buildEmptyState,
+                                textMessageBuilder:
+                                    _buildMarkdownTextMessage,
+                              ),
+                            ),
+                    ),
+                _buildComposer(context),
+              ],
+            ),
           ),
         ),
       ),
@@ -478,65 +534,6 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Column(
-      children: [
-        // Drag handle
-        Center(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 12, bottom: 4),
-            child: Container(
-              width: 48,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade400,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 12, 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Cooking Help',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w600),
-                ),
-              ),
-              const SizedBox(width: 12),
-              FakeGlass(
-                shape: LiquidRoundedSuperellipse(borderRadius: 999),
-                settings: const LiquidGlassSettings(
-                  blur: 10,
-                  glassColor: Color(0x18000000),
-                ),
-                child: SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: IconButton(
-                    icon: SvgPicture.asset(
-                      'assets/icons/x.svg',
-                      width: 18,
-                      height: 18,
-                    ),
-                    onPressed: () => Navigator.of(context).pop(),
-                    padding: EdgeInsets.zero,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Divider(height: 1, color: Colors.grey.shade200),
-      ],
-    );
-  }
-
   // ── Chat callbacks ────────────────────────────────────────────────
 
   Future<User> _resolveUser(String userId) async {
@@ -555,14 +552,8 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
   Widget _buildComposer(BuildContext context) {
     return SafeArea(
       top: false,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(
-            top: BorderSide(color: Colors.grey.shade200),
-          ),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
         child: Row(
           children: [
             // Camera button
@@ -591,7 +582,9 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
                 height: 36,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: _isListening ? _accentColor.withOpacity(0.15) : Colors.grey.shade100,
+                  color: _isListening
+                      ? _accentColor.withOpacity(0.15)
+                      : Colors.grey.shade100,
                 ),
                 child: Icon(
                   _isListening ? Icons.mic : Icons.mic_none,

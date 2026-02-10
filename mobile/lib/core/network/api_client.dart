@@ -70,6 +70,18 @@ class ApiClient {
     );
   }
 
+  Future<http.StreamedResponse> postStream(
+    String endpoint, {
+    Map<String, dynamic>? body,
+  }) async {
+    final headers = await _getHeaders();
+    headers['Accept'] = 'text/event-stream';
+    final request = http.Request('POST', Uri.parse('$_baseUrl$endpoint'));
+    request.headers.addAll(headers);
+    if (body != null) request.body = jsonEncode(body);
+    return _client.send(request);
+  }
+
   Future<http.Response> postMultipart(
     String endpoint,
     http.MultipartFile file,
