@@ -199,6 +199,31 @@ class RecipeRepository {
     }
   }
 
+  Future<PantryRecommendationsResponse> fetchPantryRecommendations() async {
+    final response =
+        await _apiClient.get(ApiEndpoints.pantryRecommendations);
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to fetch pantry recommendations');
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final list = data['recipes'] as List<dynamic>;
+    final recipes = list.map((e) {
+      final map = e as Map<String, dynamic>;
+      return RecommendedRecipe(
+        recipe: Recipe.fromJson(map),
+        matchCount: map['matchCount'] as int? ?? 0,
+        totalIngredients: map['totalIngredients'] as int? ?? 0,
+      );
+    }).toList();
+
+    return PantryRecommendationsResponse(
+      recipes: recipes,
+      pantryItemCount: data['pantryItemCount'] as int? ?? 0,
+    );
+  }
+
   Future<Map<String, dynamic>> fetchShareStats(String recipeId) async {
     final response = await _apiClient.get(ApiEndpoints.shareStats(recipeId));
 
@@ -211,4 +236,29 @@ class RecipeRepository {
     final stats = data['stats'] as Map<String, dynamic>?;
     return stats ?? {};
   }
+}
+
+class RecommendedRecipe {
+  const RecommendedRecipe({
+    required this.recipe,
+    required this.matchCount,
+    required this.totalIngredients,
+  });
+
+  final Recipe recipe;
+  final int matchCount;
+  final int totalIngredients;
+
+  double get matchPercentage =>
+      totalIngredients > 0 ? matchCount / totalIngredients : 0;
+}
+
+class PantryRecommendationsResponse {
+  const PantryRecommendationsResponse({
+    required this.recipes,
+    required this.pantryItemCount,
+  });
+
+  final List<RecommendedRecipe> recipes;
+  final int pantryItemCount;
 }

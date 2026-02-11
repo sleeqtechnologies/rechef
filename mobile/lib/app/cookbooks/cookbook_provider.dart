@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../recipe_import/import_provider.dart';
+import '../recipes/data/recipe_repository.dart';
 import '../recipes/domain/recipe.dart';
+import '../recipes/recipe_provider.dart';
 import 'data/cookbook_repository.dart';
 import 'domain/cookbook.dart';
 
@@ -102,16 +104,16 @@ class CookbooksNotifier extends AsyncNotifier<CookbooksState> {
       String cookbookId, List<String> recipeIds) async {
     final repo = ref.read(cookbookRepositoryProvider);
     await repo.addRecipes(cookbookId, recipeIds);
-    // Refresh to get updated counts
     ref.invalidateSelf();
+    ref.invalidate(cookbookRecipesProvider(cookbookId));
   }
 
   Future<void> removeRecipeFromCookbook(
       String cookbookId, String recipeId) async {
     final repo = ref.read(cookbookRepositoryProvider);
     await repo.removeRecipe(cookbookId, recipeId);
-    // Refresh to get updated counts
     ref.invalidateSelf();
+    ref.invalidate(cookbookRecipesProvider(cookbookId));
   }
 }
 
@@ -124,4 +126,10 @@ final cookbookRecipesProvider =
     FutureProvider.family<List<Recipe>, String>((ref, cookbookId) async {
   final repo = ref.read(cookbookRepositoryProvider);
   return repo.fetchRecipes(cookbookId);
+});
+
+final pantryPicksProvider =
+    FutureProvider<PantryRecommendationsResponse>((ref) async {
+  final repo = ref.read(recipeRepositoryProvider);
+  return repo.fetchPantryRecommendations();
 });

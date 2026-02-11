@@ -1,9 +1,12 @@
+import 'dart:ui';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../cookbook_provider.dart';
-import '../domain/cookbook.dart';
+
 
 class AddToCookbookSheet extends ConsumerStatefulWidget {
   const AddToCookbookSheet({
@@ -14,7 +17,6 @@ class AddToCookbookSheet extends ConsumerStatefulWidget {
 
   final String recipeId;
 
-  /// If null, the sheet will fetch them from the API automatically.
   final List<String>? currentCookbookIds;
 
   static Future<void> show(
@@ -25,10 +27,8 @@ class AddToCookbookSheet extends ConsumerStatefulWidget {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       useRootNavigator: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       builder: (_) => AddToCookbookSheet(
         recipeId: recipeId,
         currentCookbookIds: currentCookbookIds,
@@ -85,157 +85,168 @@ class _AddToCookbookSheetState extends ConsumerState<AddToCookbookSheet> {
   Widget build(BuildContext context) {
     final cookbooksAsync = ref.watch(cookbooksProvider);
 
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 12),
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(20),
+        topRight: Radius.circular(20),
+      ),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.80),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: Row(
+          ),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: Text(
-                      'Add to Cookbook',
-                      style:
-                          Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                  // Drag handle
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 10, bottom: 20),
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
                     ),
                   ),
-                  TextButton.icon(
-                    onPressed: () => _showCreateDialog(context),
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('New'),
+                  // Title
+                  Text(
+                    'Add to Cookbook',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Cookbook list
+                  if (_loadingIds)
+                    const Padding(
+                      padding: EdgeInsets.all(32),
+                      child: Center(child: CupertinoActivityIndicator()),
+                    )
+                  else
+                    cookbooksAsync.when(
+                      loading: () => const Padding(
+                        padding: EdgeInsets.all(32),
+                        child: Center(child: CupertinoActivityIndicator()),
+                      ),
+                      error: (_, __) => Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Text(
+                          'Failed to load cookbooks',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey.shade600),
+                        ),
+                      ),
+                      data: (state) {
+                        final cookbooks = state.cookbooks;
+                        if (cookbooks.isEmpty) {
+                          return Padding(
+                            padding: const EdgeInsets.all(32),
+                            child: Column(
+                              children: [
+                                Icon(Icons.menu_book_outlined,
+                                    size: 48, color: Colors.grey.shade300),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'No cookbooks yet',
+                                  style:
+                                      TextStyle(color: Colors.grey.shade600),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Create one to start organizing',
+                                  style: TextStyle(
+                                      color: Colors.grey.shade500,
+                                      fontSize: 13),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        return ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxHeight:
+                                MediaQuery.of(context).size.height * 0.4,
+                          ),
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: cookbooks.length,
+                            separatorBuilder: (_, __) => Divider(
+                              height: 1,
+                              indent: 16,
+                              endIndent: 16,
+                              color: Colors.grey.shade200,
+                            ),
+                            itemBuilder: (context, index) {
+                              final cookbook = cookbooks[index];
+                              final isSelected =
+                                  _selectedIds?.contains(cookbook.id) ??
+                                      false;
+                              return _CookbookCheckRow(
+                                name: cookbook.name,
+                                recipeCount: cookbook.recipeCount,
+                                isSelected: isSelected,
+                                onChanged: (val) {
+                                  setState(() {
+                                    _selectedIds ??= {};
+                                    if (val) {
+                                      _selectedIds!.add(cookbook.id);
+                                    } else {
+                                      _selectedIds!.remove(cookbook.id);
+                                    }
+                                  });
+                                },
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  const SizedBox(height: 16),
+                  // Save button
+                  SizedBox(
+                    height: 50,
+                    child: FilledButton(
+                      onPressed: _saving || _loadingIds ? null : _save,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFFF4F63),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: _saving
+                          ? const CupertinoActivityIndicator(
+                              color: Colors.white)
+                          : const Text(
+                              'Save',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                            ),
+                    ),
                   ),
                 ],
               ),
             ),
-            const Divider(height: 1),
-            if (_loadingIds)
-              const Padding(
-                padding: EdgeInsets.all(32),
-                child: Center(child: CupertinoActivityIndicator()),
-              )
-            else
-              cookbooksAsync.when(
-                loading: () => const Padding(
-                  padding: EdgeInsets.all(32),
-                  child: Center(child: CupertinoActivityIndicator()),
-                ),
-                error: (_, __) => Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Text(
-                    'Failed to load cookbooks',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey.shade600),
-                  ),
-                ),
-                data: (state) {
-                  final cookbooks = state.cookbooks;
-                  if (cookbooks.isEmpty) {
-                    return Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        children: [
-                          Icon(Icons.menu_book_outlined,
-                              size: 48, color: Colors.grey.shade300),
-                          const SizedBox(height: 12),
-                          Text(
-                            'No cookbooks yet',
-                            style: TextStyle(color: Colors.grey.shade600),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Create one to start organizing',
-                            style: TextStyle(
-                                color: Colors.grey.shade500, fontSize: 13),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                  return ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxHeight: MediaQuery.of(context).size.height * 0.4,
-                    ),
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: cookbooks.length,
-                      itemBuilder: (context, index) {
-                        final cookbook = cookbooks[index];
-                        final isSelected =
-                            _selectedIds?.contains(cookbook.id) ?? false;
-                        return CheckboxListTile(
-                          title: Text(cookbook.name),
-                          subtitle: Text(
-                            '${cookbook.recipeCount} ${cookbook.recipeCount == 1 ? 'recipe' : 'recipes'}',
-                            style: TextStyle(
-                                color: Colors.grey.shade500, fontSize: 13),
-                          ),
-                          value: isSelected,
-                          onChanged: (val) {
-                            setState(() {
-                              _selectedIds ??= {};
-                              if (val == true) {
-                                _selectedIds!.add(cookbook.id);
-                              } else {
-                                _selectedIds!.remove(cookbook.id);
-                              }
-                            });
-                          },
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-            const Divider(height: 1),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-              child: FilledButton(
-                onPressed: _saving || _loadingIds ? null : _save,
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF4F63),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  minimumSize: const Size.fromHeight(50),
-                ),
-                child: _saving
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Text(
-                        'Save',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                        ),
-                      ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -271,44 +282,86 @@ class _AddToCookbookSheetState extends ConsumerState<AddToCookbookSheet> {
     }
   }
 
-  void _showCreateDialog(BuildContext context) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('New Cookbook'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(
-            hintText: 'Cookbook name',
-            border: OutlineInputBorder(),
-          ),
+}
+
+// ---------------------------------------------------------------------------
+// Cookbook checkbox row
+// ---------------------------------------------------------------------------
+
+class _CookbookCheckRow extends StatelessWidget {
+  const _CookbookCheckRow({
+    required this.name,
+    required this.recipeCount,
+    required this.isSelected,
+    required this.onChanged,
+  });
+
+  final String name;
+  final int recipeCount;
+  final bool isSelected;
+  final ValueChanged<bool> onChanged;
+
+  static const _accentColor = Color(0xFFFF4F63);
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => onChanged(!isSelected),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
+        child: Row(
+          children: [
+            // Circle checkbox matching grocery list style
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected ? _accentColor : Colors.white,
+                border: Border.all(
+                  color: isSelected
+                      ? Colors.transparent
+                      : Colors.grey.shade300,
+                  width: 1.5,
+                ),
+              ),
+              alignment: Alignment.center,
+              child: isSelected
+                  ? SvgPicture.asset(
+                      'assets/icons/check-mark.svg',
+                      width: 14,
+                      height: 14,
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '$recipeCount ${recipeCount == 1 ? 'recipe' : 'recipes'}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade500,
+                          fontSize: 13,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final name = controller.text.trim();
-              if (name.isEmpty) return;
-              Navigator.pop(ctx);
-              final cookbook = await ref
-                  .read(cookbooksProvider.notifier)
-                  .createCookbook(name: name);
-              if (mounted) {
-                setState(() {
-                  _selectedIds ??= {};
-                  _selectedIds!.add(cookbook.id);
-                });
-              }
-            },
-            child: const Text('Create'),
-          ),
-        ],
       ),
     );
   }

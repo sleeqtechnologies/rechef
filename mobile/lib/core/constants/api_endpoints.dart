@@ -22,6 +22,8 @@ class ApiEndpoints {
       '/api/recipes/$recipeId/nutrition';
   static String recipeChat(String recipeId) =>
       '/api/recipes/$recipeId/chat';
+  static String get pantryRecommendations =>
+      '/api/recipes/pantry-recommendations';
 
   // Shared recipe endpoints
   static String get sharedWithMe => '/api/shared-with-me';

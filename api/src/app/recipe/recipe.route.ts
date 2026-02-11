@@ -6,6 +6,7 @@ const router = Router();
 
 router.post("/", recipeController.saveRecipe);
 router.get("/", recipeController.getRecipes);
+router.get("/pantry-recommendations", recipeController.getPantryRecommendations);
 router.get("/:id", recipeController.getRecipeById);
 router.put("/:id", recipeController.updateRecipe);
 router.post("/:id/match-pantry", recipeController.matchPantry);

@@ -39,7 +39,8 @@ class CookbookListView extends ConsumerWidget {
       ),
       data: (state) {
         // Create button + virtual cookbooks + user cookbooks = total items
-        const fixedCount = 3; // create + "All Recipes" + "Shared with Me"
+        const fixedCount =
+            4; // create + "All Recipes" + "Shared with Me" + "Pantry Picks"
         final userCookbooks = state.cookbooks;
         final totalItems = fixedCount + userCookbooks.length;
 
@@ -89,6 +90,16 @@ class CookbookListView extends ConsumerWidget {
                         coverImages: state.sharedImages,
                         onTap: () =>
                             context.push('/cookbooks/__shared_with_me__'),
+                      );
+                    }
+                    if (index == 3) {
+                      return _CookbookCard(
+                        name: 'Pantry Picks',
+                        recipeCount: null,
+                        coverImages: const [],
+                        icon: Icons.kitchen_outlined,
+                        onTap: () =>
+                            context.push('/cookbooks/__pantry_picks__'),
                       );
                     }
 
@@ -357,13 +368,15 @@ class _CookbookCard extends StatelessWidget {
     required this.name,
     required this.recipeCount,
     this.coverImages = const [],
+    this.icon,
     required this.onTap,
     this.onLongPress,
   });
 
   final String name;
-  final int recipeCount;
+  final int? recipeCount;
   final List<String> coverImages;
+  final IconData? icon;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
 
@@ -398,14 +411,16 @@ class _CookbookCard extends StatelessWidget {
                           height: 1.2,
                         ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '$recipeCount ${recipeCount == 1 ? 'recipe' : 'recipes'}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade600,
-                          fontSize: 13,
-                        ),
-                  ),
+                  if (recipeCount != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      '$recipeCount ${recipeCount == 1 ? 'recipe' : 'recipes'}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.grey.shade600,
+                            fontSize: 13,
+                          ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -421,7 +436,7 @@ class _CookbookCard extends StatelessWidget {
                 bottom: 12,
                 right: 12,
                 child: Icon(
-                  Icons.menu_book_rounded,
+                  icon ?? Icons.menu_book_rounded,
                   size: 32,
                   color: Colors.grey.shade300,
                 ),

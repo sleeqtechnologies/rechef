@@ -1,9 +1,11 @@
+import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_spacing.dart';
+import '../../recipes/data/recipe_repository.dart';
 import '../../recipes/domain/recipe.dart';
 import '../../recipes/recipe_provider.dart';
 import '../cookbook_provider.dart';
@@ -16,9 +18,7 @@ class CookbookDetailScreen extends ConsumerWidget {
 
   static const _allRecipesId = '__all_recipes__';
   static const _sharedWithMeId = '__shared_with_me__';
-
-  bool get _isVirtual =>
-      cookbookId == _allRecipesId || cookbookId == _sharedWithMeId;
+  static const _pantryPicksId = '__pantry_picks__';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -33,6 +33,9 @@ class CookbookDetailScreen extends ConsumerWidget {
         title: 'Shared with me',
         filter: (recipes) => recipes.where((r) => r.isShared).toList(),
       );
+    }
+    if (cookbookId == _pantryPicksId) {
+      return const _PantryPicksScreen();
     }
 
     return _CustomCookbookScreen(cookbookId: cookbookId);
@@ -120,6 +123,107 @@ class _VirtualCookbookScreen extends ConsumerWidget {
               else
                 _RecipeListSliver(
                   recipes: filtered,
+                  onRecipeTap: (recipe) =>
+                      context.push('/recipes/${recipe.id}'),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Pantry Picks screen (AI-powered recommendations)
+// ---------------------------------------------------------------------------
+
+class _PantryPicksScreen extends ConsumerWidget {
+  const _PantryPicksScreen();
+
+  static const _title = 'Pantry Picks';
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final picksAsync = ref.watch(pantryPicksProvider);
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: picksAsync.when(
+        loading: () => CustomScrollView(
+          slivers: [
+            const _DetailAppBar(title: _title),
+            const SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(child: CupertinoActivityIndicator()),
+            ),
+          ],
+        ),
+        error: (error, _) => CustomScrollView(
+          slivers: [
+            const _DetailAppBar(title: _title),
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.error_outline,
+                        size: 48, color: Colors.grey.shade300),
+                    const SizedBox(height: 12),
+                    Text('Failed to load recommendations',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.copyWith(color: Colors.grey.shade600)),
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: () => ref.invalidate(pantryPicksProvider),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        data: (response) {
+          final recommended = response.recipes;
+          final images = recommended
+              .where((r) => r.recipe.imageUrl != null)
+              .take(3)
+              .map((r) => r.recipe.imageUrl!)
+              .toList();
+
+          return CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              CupertinoSliverRefreshControl(
+                onRefresh: () async {
+                  ref.invalidate(pantryPicksProvider);
+                  await ref.read(pantryPicksProvider.future);
+                },
+              ),
+              const _DetailAppBar(title: _title),
+              SliverToBoxAdapter(
+                child: _CookbookHeader(
+                  title: _title,
+                  recipeCount: recommended.length,
+                  images: images,
+                ),
+              ),
+              if (recommended.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _EmptyState(
+                    message: response.pantryItemCount == 0
+                        ? 'Add items to your pantry\nto get recipe recommendations'
+                        : 'No matching recipes found\nfor your pantry items',
+                  ),
+                )
+              else
+                _PantryRecipeListSliver(
+                  recipes: recommended,
                   onRecipeTap: (recipe) =>
                       context.push('/recipes/${recipe.id}'),
                 ),
@@ -396,6 +500,8 @@ class _CustomCookbookScreen extends ConsumerWidget {
 // App bar
 // ---------------------------------------------------------------------------
 
+enum _CookbookMoreAction { rename, delete }
+
 class _DetailAppBar extends StatelessWidget {
   const _DetailAppBar({
     required this.title,
@@ -408,6 +514,19 @@ class _DetailAppBar extends StatelessWidget {
   final bool showMenu;
   final VoidCallback? onRename;
   final VoidCallback? onDelete;
+
+  static const _menuItems = [
+    AdaptivePopupMenuItem<_CookbookMoreAction>(
+      label: 'Rename',
+      icon: Icons.edit_outlined,
+      value: _CookbookMoreAction.rename,
+    ),
+    AdaptivePopupMenuItem<_CookbookMoreAction>(
+      label: 'Delete',
+      icon: Icons.delete_outline,
+      value: _CookbookMoreAction.delete,
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -428,49 +547,27 @@ class _DetailAppBar extends StatelessWidget {
       ),
       actions: [
         if (showMenu)
-          IconButton(
-            icon: const Icon(Icons.more_horiz, size: 22),
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                builder: (ctx) => SafeArea(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const SizedBox(height: 8),
-                      Container(
-                        width: 36,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade300,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      ListTile(
-                        leading: const Icon(Icons.edit_outlined),
-                        title: const Text('Rename'),
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          onRename?.call();
-                        },
-                      ),
-                      ListTile(
-                        leading: Icon(Icons.delete_outline,
-                            color: Colors.red.shade400),
-                        title: Text('Delete',
-                            style: TextStyle(color: Colors.red.shade400)),
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          onDelete?.call();
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                  ),
-                ),
-              );
-            },
+          SizedBox(
+            width: 48,
+            height: 48,
+            child: AdaptivePopupMenuButton.widget<_CookbookMoreAction>(
+              items: _menuItems,
+              onSelected: (index, entry) {
+                switch (entry.value) {
+                  case _CookbookMoreAction.rename:
+                    onRename?.call();
+                    break;
+                  case _CookbookMoreAction.delete:
+                    onDelete?.call();
+                    break;
+                  case null:
+                    break;
+                }
+              },
+              child: const Center(
+                child: Icon(Icons.more_vert, size: 22),
+              ),
+            ),
           ),
       ],
     );
@@ -658,6 +755,48 @@ class _RecipeListSliver extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
+// Pantry recipe list sliver (with match indicator)
+// ---------------------------------------------------------------------------
+
+class _PantryRecipeListSliver extends StatelessWidget {
+  const _PantryRecipeListSliver({
+    required this.recipes,
+    required this.onRecipeTap,
+  });
+
+  final List<RecommendedRecipe> recipes;
+  final void Function(Recipe recipe) onRecipeTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.horizontalMargin,
+        8,
+        AppSpacing.horizontalMargin,
+        140,
+      ),
+      sliver: SliverList.separated(
+        itemCount: recipes.length,
+        separatorBuilder: (_, __) => Divider(
+          height: 1,
+          color: Colors.grey.shade100,
+          indent: 80,
+        ),
+        itemBuilder: (context, index) {
+          final rec = recipes[index];
+          return _RecipeListTile(
+            recipe: rec.recipe,
+            onTap: () => onRecipeTap(rec.recipe),
+            matchLabel: '${rec.matchCount}/${rec.totalIngredients} ingredients',
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Recipe list tile (matching the reference: thumbnail + name + metadata + menu)
 // ---------------------------------------------------------------------------
 
@@ -665,14 +804,14 @@ class _RecipeListTile extends StatelessWidget {
   const _RecipeListTile({
     required this.recipe,
     required this.onTap,
-    this.onRemove,
     this.cookbookId,
+    this.matchLabel,
   });
 
   final Recipe recipe;
   final VoidCallback onTap;
-  final VoidCallback? onRemove;
   final String? cookbookId;
+  final String? matchLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -722,7 +861,10 @@ class _RecipeListTile extends StatelessWidget {
                         ),
                   ),
                   const SizedBox(height: 6),
-                  _RecipeMetaRow(recipe: recipe),
+                  if (matchLabel != null)
+                    _MatchBadge(label: matchLabel!)
+                  else
+                    _RecipeMetaRow(recipe: recipe),
                 ],
               ),
             ),
@@ -739,6 +881,42 @@ class _RecipeListTile extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _MatchBadge extends StatelessWidget {
+  const _MatchBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFF4F63).withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.kitchen_outlined,
+            size: 13,
+            color: const Color(0xFFFF4F63),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: const Color(0xFFFF4F63),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+          ),
+        ],
       ),
     );
   }

@@ -374,6 +374,79 @@ const getNutrition = async (req: Request, res: Response) => {
   }
 };
 
+const getPantryRecommendations = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user.id;
+    const recipes = await recipeRepository.findAllByUserId(userId);
+    const pantryItems = await pantryRepository.findAllByUserId(userId);
+
+    if (pantryItems.length === 0 || recipes.length === 0) {
+      return res.status(200).json({ recipes: [], pantryItemCount: pantryItems.length });
+    }
+
+    const pantryNames = pantryItems.map((p) => p.name as string);
+
+    // Collect all unique ingredient names across all recipes
+    const uniqueNameSet = new Set<string>();
+    for (const recipe of recipes) {
+      const ingredients = recipe.ingredients as IngredientJson[];
+      for (const ing of ingredients) {
+        uniqueNameSet.add(ing.name);
+      }
+    }
+    const uniqueNames = Array.from(uniqueNameSet);
+
+    // Single AI call to match all unique ingredient names against pantry
+    const matchedIndices = await matchIngredientsWithPantry(uniqueNames, pantryNames);
+    const matchedNameSet = new Set<string>();
+    for (const idx of matchedIndices) {
+      matchedNameSet.add(uniqueNames[idx]);
+    }
+
+    // Score each recipe by how many of its ingredients matched
+    const scored = recipes.map((recipe) => {
+      const ingredients = recipe.ingredients as IngredientJson[];
+      const totalIngredients = ingredients.length;
+      let matchCount = 0;
+      for (const ing of ingredients) {
+        if (matchedNameSet.has(ing.name)) {
+          matchCount++;
+        }
+      }
+      return { recipe, matchCount, totalIngredients };
+    });
+
+    // Filter out recipes with 0 matches, sort by percentage desc then count desc
+    const recommended = scored
+      .filter((s) => s.matchCount > 0)
+      .sort((a, b) => {
+        const pctA = a.matchCount / a.totalIngredients;
+        const pctB = b.matchCount / b.totalIngredients;
+        if (pctB !== pctA) return pctB - pctA;
+        return b.matchCount - a.matchCount;
+      });
+
+    const formattedRecipes = recommended.map((s) => ({
+      ...formatRecipe(s.recipe),
+      matchCount: s.matchCount,
+      totalIngredients: s.totalIngredients,
+    }));
+
+    return res.status(200).json({
+      recipes: formattedRecipes,
+      pantryItemCount: pantryItems.length,
+    });
+  } catch (error) {
+    logger.error("Error fetching pantry recommendations:", error);
+    return res.status(500).json({
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch pantry recommendations",
+    });
+  }
+};
+
 export default {
   saveRecipe,
   getRecipes,
@@ -383,4 +456,5 @@ export default {
   toggleIngredient,
   deleteRecipe,
   getNutrition,
+  getPantryRecommendations,
 };
