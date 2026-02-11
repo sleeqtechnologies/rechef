@@ -426,7 +426,7 @@ const getPantryRecommendations = async (req: Request, res: Response) => {
         return b.matchCount - a.matchCount;
       });
 
-    const formattedRecipes = recommended.map((s) => ({
+    const formattedRecipes = recommended.slice(0, 5).map((s) => ({
       ...formatRecipe(s.recipe),
       matchCount: s.matchCount,
       totalIngredients: s.totalIngredients,

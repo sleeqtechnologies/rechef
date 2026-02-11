@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_spacing.dart';
@@ -97,7 +98,7 @@ class CookbookListView extends ConsumerWidget {
                         name: 'Pantry Picks',
                         recipeCount: null,
                         coverImages: const [],
-                        icon: Icons.kitchen_outlined,
+                        svgIcon: 'assets/icons/pantry.svg',
                         onTap: () =>
                             context.push('/cookbooks/__pantry_picks__'),
                       );
@@ -368,7 +369,7 @@ class _CookbookCard extends StatelessWidget {
     required this.name,
     required this.recipeCount,
     this.coverImages = const [],
-    this.icon,
+    this.svgIcon,
     required this.onTap,
     this.onLongPress,
   });
@@ -376,7 +377,7 @@ class _CookbookCard extends StatelessWidget {
   final String name;
   final int? recipeCount;
   final List<String> coverImages;
-  final IconData? icon;
+  final String? svgIcon;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
 
@@ -435,11 +436,21 @@ class _CookbookCard extends StatelessWidget {
               Positioned(
                 bottom: 12,
                 right: 12,
-                child: Icon(
-                  icon ?? Icons.menu_book_rounded,
-                  size: 32,
-                  color: Colors.grey.shade300,
-                ),
+                child: svgIcon != null
+                    ? SvgPicture.asset(
+                        svgIcon!,
+                        width: 32,
+                        height: 32,
+                        colorFilter: ColorFilter.mode(
+                          Colors.grey.shade300,
+                          BlendMode.srcIn,
+                        ),
+                      )
+                    : Icon(
+                        Icons.menu_book_rounded,
+                        size: 32,
+                        color: Colors.grey.shade300,
+                      ),
               ),
           ],
         ),

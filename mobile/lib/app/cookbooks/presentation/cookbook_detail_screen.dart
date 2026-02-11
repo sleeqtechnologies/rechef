@@ -891,27 +891,29 @@ class _MatchBadge extends StatelessWidget {
 
   final String label;
 
+  static const _green = Color(0xFF2E7D32);
+
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: const Color(0xFFFF4F63).withValues(alpha: 0.10),
+        color: _green.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.kitchen_outlined,
+          const Icon(
+            Icons.check_circle_outline,
             size: 13,
-            color: const Color(0xFFFF4F63),
+            color: _green,
           ),
           const SizedBox(width: 4),
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFFFF4F63),
+                  color: _green,
                   fontWeight: FontWeight.w600,
                   fontSize: 12,
                 ),
