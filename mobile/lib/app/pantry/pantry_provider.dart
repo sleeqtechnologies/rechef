@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../cookbooks/cookbook_provider.dart';
 import '../recipe_import/import_provider.dart';
 import 'data/pantry_repository.dart';
 import 'domain/pantry_item.dart';
@@ -18,6 +20,7 @@ class PantryNotifier extends AsyncNotifier<List<PantryItem>> {
     final repo = ref.read(pantryRepositoryProvider);
     final added = await repo.addItems(names);
     state = AsyncData([...state.value ?? [], ...added]);
+    ref.invalidate(pantryPicksProvider);
   }
 
   Future<void> deleteItem(String id) async {
@@ -26,6 +29,7 @@ class PantryNotifier extends AsyncNotifier<List<PantryItem>> {
     state = AsyncData(
       (state.value ?? []).where((item) => item.id != id).toList(),
     );
+    ref.invalidate(pantryPicksProvider);
   }
 }
 
