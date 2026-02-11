@@ -345,6 +345,7 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
                             composerBuilder: (_) => const SizedBox.shrink(),
                             emptyChatListBuilder: _buildEmptyState,
                             textMessageBuilder: _buildMarkdownTextMessage,
+                            imageMessageBuilder: _buildImageMessage,
                           ),
                         ),
                 ),
@@ -510,6 +511,64 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
     );
   }
 
+  Widget _buildImageMessage(
+    BuildContext context,
+    ImageMessage message,
+    int index, {
+    required bool isSentByMe,
+    MessageGroupStatus? groupStatus,
+  }) {
+    final maxWidth = MediaQuery.of(context).size.width * 0.75;
+
+    Widget imageWidget;
+    if (message.source.startsWith('data:')) {
+      final base64Str = message.source.split(',').last;
+      final bytes = base64Decode(base64Str);
+      imageWidget = Image.memory(
+        bytes,
+        fit: BoxFit.cover,
+        width: double.infinity,
+      );
+    } else {
+      imageWidget = Image.network(
+        message.source,
+        fit: BoxFit.cover,
+        width: double.infinity,
+      );
+    }
+
+    return Align(
+      alignment: isSentByMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              imageWidget,
+              if (message.text != null && message.text!.isNotEmpty)
+                Container(
+                  width: double.infinity,
+                  color: Colors.grey.shade200,
+                  padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
+                  child: Text(
+                    message.text!,
+                    style: TextStyle(
+                      color: Colors.grey.shade800,
+                      fontSize: 14,
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   // ── Chat callbacks ────────────────────────────────────────────────
 
   Future<User> _resolveUser(String userId) async {
@@ -558,14 +617,12 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
                 height: 36,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: _isListening
-                      ? _accentColor.withOpacity(0.15)
-                      : Colors.grey.shade100,
+                  color: _isListening ? _accentColor : Colors.grey.shade100,
                 ),
                 child: Icon(
-                  _isListening ? Icons.mic : Icons.mic_none,
+                  _isListening ? Icons.stop_rounded : Icons.mic_none,
                   size: 18,
-                  color: _isListening ? _accentColor : Colors.grey.shade700,
+                  color: _isListening ? Colors.white : Colors.grey.shade700,
                 ),
               ),
             ),

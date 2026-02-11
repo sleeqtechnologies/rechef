@@ -411,8 +411,11 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
                 const SizedBox(width: 4),
                 GestureDetector(
                   onTap: () => _removeIngredient(i),
-                  child: Icon(Icons.remove_circle_outline,
-                      size: 18, color: Colors.red.shade400),
+                  child: Icon(
+                    Icons.remove_circle_outline,
+                    size: 18,
+                    color: Colors.red.shade400,
+                  ),
                 ),
               ],
             ),
@@ -490,8 +493,11 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
                   padding: const EdgeInsets.only(top: 6),
                   child: GestureDetector(
                     onTap: () => _removeInstruction(i),
-                    child: Icon(Icons.remove_circle_outline,
-                        size: 18, color: Colors.red.shade400),
+                    child: Icon(
+                      Icons.remove_circle_outline,
+                      size: 18,
+                      color: Colors.red.shade400,
+                    ),
                   ),
                 ),
               ],

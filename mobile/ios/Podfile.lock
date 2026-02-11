@@ -129,6 +129,9 @@ PODS:
   - share_handler_ios_models (0.0.9)
   - share_plus (0.0.1):
     - Flutter
+  - shared_preferences_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
   - sign_in_with_apple (0.0.1):
     - Flutter
   - speech_to_text (7.2.0):
@@ -158,6 +161,7 @@ DEPENDENCIES:
   - share_handler_ios (from `.symlinks/plugins/share_handler_ios/ios`)
   - share_handler_ios_models (from `.symlinks/plugins/share_handler_ios/ios/Models`)
   - share_plus (from `.symlinks/plugins/share_plus/ios`)
+  - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - sign_in_with_apple (from `.symlinks/plugins/sign_in_with_apple/ios`)
   - speech_to_text (from `.symlinks/plugins/speech_to_text/darwin`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
@@ -222,6 +226,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/share_handler_ios/ios/Models"
   share_plus:
     :path: ".symlinks/plugins/share_plus/ios"
+  shared_preferences_foundation:
+    :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
   sign_in_with_apple:
     :path: ".symlinks/plugins/sign_in_with_apple/ios"
   speech_to_text:
@@ -270,6 +276,7 @@ SPEC CHECKSUMS:
   share_handler_ios: 6dd3a4ac5ca0d955274aec712ba0ecdcaf583e7c
   share_handler_ios_models: fc638c9b4330dc7f082586c92aee9dfa0b87b871
   share_plus: 8b6f8b3447e494cca5317c8c3073de39b3600d1f
+  shared_preferences_foundation: 5086985c1d43c5ba4d5e69a4e8083a389e2909e6
   sign_in_with_apple: f3bf75217ea4c2c8b91823f225d70230119b8440
   speech_to_text: 87bf9298952e8d9073be1b6aade6d5758db5170c
   url_launcher_ios: bb13df5870e8c4234ca12609d04010a21be43dfa

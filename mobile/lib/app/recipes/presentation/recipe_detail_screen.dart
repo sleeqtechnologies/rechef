@@ -366,8 +366,6 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                         recipe: recipe,
                         isCollapsed: _isCollapsed,
                         onDelete: () => _deleteRecipe(recipe),
-                        onShareStats: () =>
-                            context.push('/recipes/${recipe.id}/share-stats'),
                       ),
                     if (recipe.isShared && recipe.sharedSaveId != null)
                       _SharedRecipeMorePopupMenu(
@@ -769,27 +767,20 @@ class _SharedRecipeMorePopupMenu extends StatelessWidget {
   }
 }
 
-enum _RecipeMoreAction { shareStats, delete }
+enum _RecipeMoreAction { delete }
 
 class _RecipeMorePopupMenu extends StatelessWidget {
   const _RecipeMorePopupMenu({
     required this.recipe,
     required this.isCollapsed,
     required this.onDelete,
-    required this.onShareStats,
   });
 
   final Recipe recipe;
   final bool isCollapsed;
   final VoidCallback onDelete;
-  final VoidCallback onShareStats;
 
   static const _items = [
-    AdaptivePopupMenuItem<_RecipeMoreAction>(
-      label: 'Share analytics',
-      icon: Icons.bar_chart_outlined,
-      value: _RecipeMoreAction.shareStats,
-    ),
     AdaptivePopupMenuItem<_RecipeMoreAction>(
       label: 'Delete recipe',
       icon: Icons.delete_outline,
@@ -818,9 +809,6 @@ class _RecipeMorePopupMenu extends StatelessWidget {
             buttonStyle: PopupButtonStyle.glass,
             onSelected: (index, entry) {
               switch (entry.value) {
-                case _RecipeMoreAction.shareStats:
-                  onShareStats();
-                  break;
                 case _RecipeMoreAction.delete:
                   onDelete();
                   break;
