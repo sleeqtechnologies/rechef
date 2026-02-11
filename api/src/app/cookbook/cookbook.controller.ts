@@ -256,6 +256,23 @@ const removeRecipeFromCookbook = async (req: Request, res: Response) => {
   }
 };
 
+const getCookbooksForRecipe = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user.id;
+    const recipeId = req.params.recipeId as string;
+
+    const cookbooks = await cookbookRepository.findCookbooksByRecipeId(recipeId, userId);
+    const cookbookIds = cookbooks.map((c) => (c as any).id as string);
+
+    return res.status(200).json({ cookbookIds });
+  } catch (error) {
+    logger.error("Error fetching cookbooks for recipe:", error);
+    return res.status(500).json({
+      error: error instanceof Error ? error.message : "Failed to fetch cookbooks for recipe",
+    });
+  }
+};
+
 export default {
   getCookbooks,
   createCookbook,
@@ -264,4 +281,5 @@ export default {
   getCookbookRecipes,
   addRecipesToCookbook,
   removeRecipeFromCookbook,
+  getCookbooksForRecipe,
 };

@@ -9,20 +9,23 @@ class AddToCookbookSheet extends ConsumerStatefulWidget {
   const AddToCookbookSheet({
     super.key,
     required this.recipeId,
-    this.currentCookbookIds = const [],
+    this.currentCookbookIds,
   });
 
   final String recipeId;
-  final List<String> currentCookbookIds;
+
+  /// If null, the sheet will fetch them from the API automatically.
+  final List<String>? currentCookbookIds;
 
   static Future<void> show(
     BuildContext context, {
     required String recipeId,
-    List<String> currentCookbookIds = const [],
+    List<String>? currentCookbookIds,
   }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -39,13 +42,43 @@ class AddToCookbookSheet extends ConsumerStatefulWidget {
 }
 
 class _AddToCookbookSheetState extends ConsumerState<AddToCookbookSheet> {
-  late Set<String> _selectedIds;
+  Set<String>? _selectedIds;
+  Set<String> _originalIds = {};
   bool _saving = false;
+  bool _loadingIds = false;
 
   @override
   void initState() {
     super.initState();
-    _selectedIds = Set.from(widget.currentCookbookIds);
+    if (widget.currentCookbookIds != null) {
+      _selectedIds = Set.from(widget.currentCookbookIds!);
+      _originalIds = Set.from(widget.currentCookbookIds!);
+    } else {
+      _loadCurrentCookbookIds();
+    }
+  }
+
+  Future<void> _loadCurrentCookbookIds() async {
+    setState(() => _loadingIds = true);
+    try {
+      final repo = ref.read(cookbookRepositoryProvider);
+      final ids = await repo.fetchCookbookIdsForRecipe(widget.recipeId);
+      if (mounted) {
+        setState(() {
+          _selectedIds = Set.from(ids);
+          _originalIds = Set.from(ids);
+          _loadingIds = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _selectedIds = {};
+          _originalIds = {};
+          _loadingIds = false;
+        });
+      }
+    }
   }
 
   @override
@@ -94,81 +127,96 @@ class _AddToCookbookSheetState extends ConsumerState<AddToCookbookSheet> {
               ),
             ),
             const Divider(height: 1),
-            cookbooksAsync.when(
-              loading: () => const Padding(
+            if (_loadingIds)
+              const Padding(
                 padding: EdgeInsets.all(32),
                 child: Center(child: CupertinoActivityIndicator()),
-              ),
-              error: (_, __) => Padding(
-                padding: const EdgeInsets.all(32),
-                child: Text(
-                  'Failed to load cookbooks',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey.shade600),
+              )
+            else
+              cookbooksAsync.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Center(child: CupertinoActivityIndicator()),
                 ),
-              ),
-              data: (state) {
-                final cookbooks = state.cookbooks;
-                if (cookbooks.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Column(
-                      children: [
-                        Icon(Icons.menu_book_outlined,
-                            size: 48, color: Colors.grey.shade300),
-                        const SizedBox(height: 12),
-                        Text(
-                          'No cookbooks yet',
-                          style: TextStyle(color: Colors.grey.shade600),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Create one to start organizing',
-                          style: TextStyle(
-                              color: Colors.grey.shade500, fontSize: 13),
-                        ),
-                      ],
+                error: (_, __) => Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Text(
+                    'Failed to load cookbooks',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
+                ),
+                data: (state) {
+                  final cookbooks = state.cookbooks;
+                  if (cookbooks.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        children: [
+                          Icon(Icons.menu_book_outlined,
+                              size: 48, color: Colors.grey.shade300),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No cookbooks yet',
+                            style: TextStyle(color: Colors.grey.shade600),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Create one to start organizing',
+                            style: TextStyle(
+                                color: Colors.grey.shade500, fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 0.4,
+                    ),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: cookbooks.length,
+                      itemBuilder: (context, index) {
+                        final cookbook = cookbooks[index];
+                        final isSelected =
+                            _selectedIds?.contains(cookbook.id) ?? false;
+                        return CheckboxListTile(
+                          title: Text(cookbook.name),
+                          subtitle: Text(
+                            '${cookbook.recipeCount} ${cookbook.recipeCount == 1 ? 'recipe' : 'recipes'}',
+                            style: TextStyle(
+                                color: Colors.grey.shade500, fontSize: 13),
+                          ),
+                          value: isSelected,
+                          onChanged: (val) {
+                            setState(() {
+                              _selectedIds ??= {};
+                              if (val == true) {
+                                _selectedIds!.add(cookbook.id);
+                              } else {
+                                _selectedIds!.remove(cookbook.id);
+                              }
+                            });
+                          },
+                        );
+                      },
                     ),
                   );
-                }
-                return ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(context).size.height * 0.4,
-                  ),
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: cookbooks.length,
-                    itemBuilder: (context, index) {
-                      final cookbook = cookbooks[index];
-                      final isSelected = _selectedIds.contains(cookbook.id);
-                      return CheckboxListTile(
-                        title: Text(cookbook.name),
-                        subtitle: Text(
-                          '${cookbook.recipeCount} ${cookbook.recipeCount == 1 ? 'recipe' : 'recipes'}',
-                          style: TextStyle(
-                              color: Colors.grey.shade500, fontSize: 13),
-                        ),
-                        value: isSelected,
-                        onChanged: (val) {
-                          setState(() {
-                            if (val == true) {
-                              _selectedIds.add(cookbook.id);
-                            } else {
-                              _selectedIds.remove(cookbook.id);
-                            }
-                          });
-                        },
-                      );
-                    },
-                  ),
-                );
-              },
-            ),
+                },
+              ),
             const Divider(height: 1),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
               child: FilledButton(
-                onPressed: _saving ? null : _save,
+                onPressed: _saving || _loadingIds ? null : _save,
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF4F63),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  minimumSize: const Size.fromHeight(50),
+                ),
                 child: _saving
                     ? const SizedBox(
                         width: 20,
@@ -178,7 +226,13 @@ class _AddToCookbookSheetState extends ConsumerState<AddToCookbookSheet> {
                           color: Colors.white,
                         ),
                       )
-                    : const Text('Save'),
+                    : const Text(
+                        'Save',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
               ),
             ),
           ],
@@ -188,19 +242,19 @@ class _AddToCookbookSheetState extends ConsumerState<AddToCookbookSheet> {
   }
 
   Future<void> _save() async {
+    if (_selectedIds == null) return;
     setState(() => _saving = true);
     try {
       final notifier = ref.read(cookbooksProvider.notifier);
-      final originalIds = Set.from(widget.currentCookbookIds);
 
       // Add to new cookbooks
-      final toAdd = _selectedIds.difference(originalIds);
+      final toAdd = _selectedIds!.difference(_originalIds);
       for (final cookbookId in toAdd) {
         await notifier.addRecipesToCookbook(cookbookId, [widget.recipeId]);
       }
 
       // Remove from deselected cookbooks
-      final toRemove = originalIds.difference(_selectedIds);
+      final toRemove = _originalIds.difference(_selectedIds!);
       for (final cookbookId in toRemove) {
         await notifier.removeRecipeFromCookbook(cookbookId, widget.recipeId);
       }
@@ -247,7 +301,8 @@ class _AddToCookbookSheetState extends ConsumerState<AddToCookbookSheet> {
                   .createCookbook(name: name);
               if (mounted) {
                 setState(() {
-                  _selectedIds.add(cookbook.id);
+                  _selectedIds ??= {};
+                  _selectedIds!.add(cookbook.id);
                 });
               }
             },

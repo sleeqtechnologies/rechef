@@ -9,6 +9,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool centerTitle;
   final Color? backgroundColor;
   final double? elevation;
+  final PreferredSizeWidget? bottom;
 
   const CustomAppBar({
     super.key,
@@ -18,6 +19,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.centerTitle = false,
     this.backgroundColor,
     this.elevation = 0,
+    this.bottom,
   }) : assert(
          title != null || titleWidget != null,
          'Either title or titleWidget must be provided',
@@ -56,9 +58,12 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               : null),
       titleSpacing: 0,
       actions: actions,
+      bottom: bottom,
     );
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => Size.fromHeight(
+        kToolbarHeight + (bottom?.preferredSize.height ?? 0),
+      );
 }

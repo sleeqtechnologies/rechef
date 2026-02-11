@@ -119,6 +119,19 @@ class CookbookRepository {
     }
   }
 
+  Future<List<String>> fetchCookbookIdsForRecipe(String recipeId) async {
+    final response =
+        await _apiClient.get(ApiEndpoints.cookbooksForRecipe(recipeId));
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to fetch cookbooks for recipe');
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final list = data['cookbookIds'] as List<dynamic>;
+    return list.map((e) => e as String).toList();
+  }
+
   Future<void> removeRecipe(String cookbookId, String recipeId) async {
     final response = await _apiClient.delete(
       ApiEndpoints.cookbookRecipe(cookbookId, recipeId),

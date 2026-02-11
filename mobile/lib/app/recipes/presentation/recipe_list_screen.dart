@@ -1,3 +1,4 @@
+import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -23,19 +24,16 @@ class RecipeListScreen extends ConsumerStatefulWidget {
   ConsumerState<RecipeListScreen> createState() => _RecipeListScreenState();
 }
 
-class _RecipeListScreenState extends ConsumerState<RecipeListScreen>
-    with SingleTickerProviderStateMixin {
+class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
   final _searchController = TextEditingController();
   final _searchFocusNode = FocusNode();
   String _searchQuery = '';
-  late final TabController _tabController;
+  int _selectedSegment = 0;
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
-    _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(() => setState(() {}));
   }
 
   void _onSearchChanged() {
@@ -47,7 +45,6 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen>
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     _searchFocusNode.dispose();
-    _tabController.dispose();
     super.dispose();
   }
 
@@ -84,8 +81,7 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen>
               usageAsync: usageAsync,
               onTap: isPro
                   ? null
-                  : () =>
-                      ref.read(subscriptionProvider.notifier).showPaywall(),
+                  : () => ref.read(subscriptionProvider.notifier).showPaywall(),
             ),
           ),
           Padding(
@@ -112,70 +108,38 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen>
             ),
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.horizontalMargin,
+              0,
+              AppSpacing.horizontalMargin,
+              10,
+            ),
+            child: AdaptiveSegmentedControl(
+              labels: const ['All Recipes', 'Cookbooks'],
+              selectedIndex: _selectedSegment,
+              onValueChanged: (index) {
+                setState(() => _selectedSegment = index);
+              },
+            ),
+          ),
+        ),
       ),
       body: SafeArea(
         bottom: false,
-        child: Column(
+        child: IndexedStack(
+          index: _selectedSegment,
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.horizontalMargin,
-              ),
-              child: Container(
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: TabBar(
-                  controller: _tabController,
-                  indicator: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.06),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  indicatorPadding: const EdgeInsets.all(3),
-                  dividerColor: Colors.transparent,
-                  labelColor: Colors.grey.shade900,
-                  unselectedLabelColor: Colors.grey.shade500,
-                  labelStyle: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  unselectedLabelStyle: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  tabs: const [
-                    Tab(text: 'All Recipes'),
-                    Tab(text: 'Cookbooks'),
-                  ],
-                ),
-              ),
+            _AllRecipesTab(
+              searchController: _searchController,
+              searchFocusNode: _searchFocusNode,
+              searchQuery: _searchQuery,
+              onClearSearch: () => _searchController.clear(),
+              filterRecipes: _filterRecipes,
             ),
-            const SizedBox(height: 4),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _AllRecipesTab(
-                    searchController: _searchController,
-                    searchFocusNode: _searchFocusNode,
-                    searchQuery: _searchQuery,
-                    onClearSearch: () => _searchController.clear(),
-                    filterRecipes: _filterRecipes,
-                  ),
-                  const CookbookListView(),
-                ],
-              ),
-            ),
+            const CookbookListView(),
           ],
         ),
       ),
@@ -275,10 +239,8 @@ class _AllRecipesTab extends ConsumerWidget {
       ),
       data: (recipes) {
         final filtered = filterRecipes(recipes);
-        final owned = filtered.where((r) => !r.isShared).toList();
-        final shared = filtered.where((r) => r.isShared).toList();
         final hasAnyRecipes =
-            owned.isNotEmpty || shared.isNotEmpty || pendingJobs.isNotEmpty;
+            filtered.isNotEmpty || pendingJobs.isNotEmpty;
 
         return CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -307,21 +269,11 @@ class _AllRecipesTab extends ConsumerWidget {
                 hasScrollBody: false,
                 child: _NoSearchResults(query: searchQuery),
               )
-            else ...[
-              if (owned.isNotEmpty ||
-                  (searchQuery.trim().isEmpty && pendingJobs.isNotEmpty))
-                _RecipeGridSliver(
-                  recipes: owned,
-                  pendingJobs: searchQuery.trim().isEmpty ? pendingJobs : [],
-                  title: 'My Recipes',
-                ),
-              if (shared.isNotEmpty)
-                _RecipeGridSliver(
-                  recipes: shared,
-                  pendingJobs: [],
-                  title: 'Shared with Me',
-                ),
-            ],
+            else
+              _RecipeGridSliver(
+                recipes: filtered,
+                pendingJobs: searchQuery.trim().isEmpty ? pendingJobs : [],
+              ),
           ],
         );
       },
@@ -592,9 +544,9 @@ class _RecipeGridSliver extends StatelessWidget {
               child: Text(
                 title!,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade800,
-                    ),
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade800,
+                ),
               ),
             ),
           ),
@@ -768,21 +720,23 @@ class RecipeCard extends StatelessWidget {
                                 fit: BoxFit.cover,
                                 loadingBuilder:
                                     (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return Container(
-                                    color: Colors.grey.shade200,
-                                    alignment: Alignment.center,
-                                    child: const CupertinoActivityIndicator(
-                                      radius: 11,
-                                    ),
-                                  );
-                                },
+                                      if (loadingProgress == null) return child;
+                                      return Container(
+                                        color: Colors.grey.shade200,
+                                        alignment: Alignment.center,
+                                        child: const CupertinoActivityIndicator(
+                                          radius: 11,
+                                        ),
+                                      );
+                                    },
                                 errorBuilder: (context, error, stackTrace) {
                                   return Container(
                                     color: Colors.grey.shade200,
                                     alignment: Alignment.center,
-                                    child:
-                                        const Icon(Icons.restaurant, size: 28),
+                                    child: const Icon(
+                                      Icons.restaurant,
+                                      size: 28,
+                                    ),
                                   );
                                 },
                               )
@@ -816,9 +770,7 @@ class RecipeCard extends StatelessWidget {
                                 const SizedBox(width: 4),
                                 Text(
                                   'Shared',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .labelSmall
+                                  style: Theme.of(context).textTheme.labelSmall
                                       ?.copyWith(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w600,

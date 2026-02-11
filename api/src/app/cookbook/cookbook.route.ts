@@ -5,6 +5,7 @@ const router = Router();
 
 router.get("/", cookbookController.getCookbooks);
 router.post("/", cookbookController.createCookbook);
+router.get("/by-recipe/:recipeId", cookbookController.getCookbooksForRecipe);
 router.put("/:id", cookbookController.updateCookbook);
 router.delete("/:id", cookbookController.deleteCookbook);
 router.get("/:id/recipes", cookbookController.getCookbookRecipes);

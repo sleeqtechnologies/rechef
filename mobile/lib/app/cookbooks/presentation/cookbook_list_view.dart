@@ -38,11 +38,10 @@ class CookbookListView extends ConsumerWidget {
         ),
       ),
       data: (state) {
-        // Virtual cookbooks + user cookbooks + create button = total items
-        const virtualCount = 2; // "All Recipes" and "Shared with Me"
+        // Create button + virtual cookbooks + user cookbooks = total items
+        const fixedCount = 3; // create + "All Recipes" + "Shared with Me"
         final userCookbooks = state.cookbooks;
-        final totalItems =
-            virtualCount + userCookbooks.length + 1; // +1 for create card
+        final totalItems = fixedCount + userCookbooks.length;
 
         return CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -70,6 +69,11 @@ class CookbookListView extends ConsumerWidget {
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     if (index == 0) {
+                      return _CreateCookbookCard(
+                        onTap: () => _showCreateCookbookSheet(context, ref),
+                      );
+                    }
+                    if (index == 1) {
                       return _CookbookCard(
                         name: 'All recipes',
                         recipeCount: state.allRecipesCount,
@@ -78,7 +82,7 @@ class CookbookListView extends ConsumerWidget {
                             context.push('/cookbooks/__all_recipes__'),
                       );
                     }
-                    if (index == 1) {
+                    if (index == 2) {
                       return _CookbookCard(
                         name: 'Shared with me',
                         recipeCount: state.sharedWithMeCount,
@@ -87,13 +91,8 @@ class CookbookListView extends ConsumerWidget {
                             context.push('/cookbooks/__shared_with_me__'),
                       );
                     }
-                    if (index == totalItems - 1) {
-                      return _CreateCookbookCard(
-                        onTap: () => _showCreateCookbookSheet(context, ref),
-                      );
-                    }
 
-                    final cookbook = userCookbooks[index - virtualCount];
+                    final cookbook = userCookbooks[index - fixedCount];
                     return _CookbookCard(
                       name: cookbook.name,
                       recipeCount: cookbook.recipeCount,
@@ -118,6 +117,7 @@ class CookbookListView extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      useRootNavigator: true,
       builder: (ctx) => _CreateCookbookSheet(
         onSave: (name) async {
           Navigator.pop(ctx);

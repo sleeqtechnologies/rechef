@@ -7,6 +7,7 @@ import '../../../core/constants/app_spacing.dart';
 import '../../recipes/domain/recipe.dart';
 import '../../recipes/recipe_provider.dart';
 import '../cookbook_provider.dart';
+import 'add_to_cookbook_sheet.dart';
 
 class CookbookDetailScreen extends ConsumerWidget {
   const CookbookDetailScreen({super.key, required this.cookbookId});
@@ -259,8 +260,6 @@ class _CustomCookbookScreen extends ConsumerWidget {
                   cookbookId: cookbookId,
                   onRecipeTap: (recipe) =>
                       context.push('/recipes/${recipe.id}'),
-                  onRemoveRecipe: (recipe) =>
-                      _removeRecipe(context, ref, recipe),
                 ),
             ],
           );
@@ -391,37 +390,6 @@ class _CustomCookbookScreen extends ConsumerWidget {
     );
   }
 
-  void _removeRecipe(BuildContext context, WidgetRef ref, Recipe recipe) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Remove from Cookbook?'),
-        content: Text(
-          'Remove "${recipe.name}" from this cookbook? '
-          'The recipe itself will not be deleted.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red.shade400,
-            ),
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await ref
-                  .read(cookbooksProvider.notifier)
-                  .removeRecipeFromCookbook(cookbookId, recipe.id);
-              ref.invalidate(cookbookRecipesProvider(cookbookId));
-            },
-            child: const Text('Remove'),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -449,29 +417,19 @@ class _DetailAppBar extends StatelessWidget {
       elevation: 0,
       scrolledUnderElevation: 0.5,
       leading: IconButton(
-        icon: Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: Colors.grey.shade200.withValues(alpha: 0.8),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(Icons.arrow_back, size: 20),
-        ),
-        onPressed: () => context.pop(),
+        icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+        onPressed: () {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go('/recipes');
+          }
+        },
       ),
       actions: [
         if (showMenu)
           IconButton(
-            icon: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200.withValues(alpha: 0.8),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.more_horiz, size: 20),
-            ),
+            icon: const Icon(Icons.more_horiz, size: 22),
             onPressed: () {
               showModalBottomSheet(
                 context: context,
@@ -664,13 +622,11 @@ class _RecipeListSliver extends StatelessWidget {
     required this.recipes,
     this.cookbookId,
     required this.onRecipeTap,
-    this.onRemoveRecipe,
   });
 
   final List<Recipe> recipes;
   final String? cookbookId;
   final void Function(Recipe recipe) onRecipeTap;
-  final void Function(Recipe recipe)? onRemoveRecipe;
 
   @override
   Widget build(BuildContext context) {
@@ -693,9 +649,7 @@ class _RecipeListSliver extends StatelessWidget {
           return _RecipeListTile(
             recipe: recipe,
             onTap: () => onRecipeTap(recipe),
-            onRemove: onRemoveRecipe != null
-                ? () => onRemoveRecipe!(recipe)
-                : null,
+            cookbookId: cookbookId,
           );
         },
       ),
@@ -712,11 +666,13 @@ class _RecipeListTile extends StatelessWidget {
     required this.recipe,
     required this.onTap,
     this.onRemove,
+    this.cookbookId,
   });
 
   final Recipe recipe;
   final VoidCallback onTap;
   final VoidCallback? onRemove;
+  final String? cookbookId;
 
   @override
   Widget build(BuildContext context) {
@@ -770,49 +726,17 @@ class _RecipeListTile extends StatelessWidget {
                 ],
               ),
             ),
-            // Three-dot menu
-            if (onRemove != null)
-              IconButton(
-                icon: Icon(Icons.more_vert,
-                    color: Colors.grey.shade500, size: 22),
-                onPressed: () {
-                  showModalBottomSheet(
-                    context: context,
-                    builder: (ctx) => SafeArea(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const SizedBox(height: 8),
-                          Container(
-                            width: 36,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade300,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          ListTile(
-                            leading: Icon(Icons.remove_circle_outline,
-                                color: Colors.red.shade400),
-                            title: Text('Remove from cookbook',
-                                style:
-                                    TextStyle(color: Colors.red.shade400)),
-                            onTap: () {
-                              Navigator.pop(ctx);
-                              onRemove!();
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              )
-            else
-              Icon(Icons.more_vert,
-                  color: Colors.grey.shade400, size: 22),
+            // Three-dot menu -> opens cookbook picker
+            IconButton(
+              icon: Icon(Icons.more_vert,
+                  color: Colors.grey.shade500, size: 22),
+              onPressed: () {
+                AddToCookbookSheet.show(
+                  context,
+                  recipeId: recipe.id,
+                );
+              },
+            ),
           ],
         ),
       ),

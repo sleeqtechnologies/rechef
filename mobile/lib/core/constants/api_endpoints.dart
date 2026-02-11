@@ -35,6 +35,8 @@ class ApiEndpoints {
   static String cookbookRecipes(String id) => '/api/cookbooks/$id/recipes';
   static String cookbookRecipe(String cookbookId, String recipeId) =>
       '/api/cookbooks/$cookbookId/recipes/$recipeId';
+  static String cookbooksForRecipe(String recipeId) =>
+      '/api/cookbooks/by-recipe/$recipeId';
 
   // Pantry endpoints
   static String get pantry => '/api/pantry';
