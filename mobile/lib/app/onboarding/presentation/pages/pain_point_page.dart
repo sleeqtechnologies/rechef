@@ -13,8 +13,6 @@ class PainPointPage extends ConsumerWidget {
 
     return OnboardingPageWrapper(
       title: "We've been there too",
-      showBackButton: true,
-      onBack: () => notifier.previousPage(),
       bottomAction: SizedBox(
         width: double.infinity,
         height: 56,
@@ -38,29 +36,24 @@ class PainPointPage extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 16),
-          // Illustration area
+          // Clutter image
           Center(
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF4F63).withOpacity(0.08),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.sentiment_dissatisfied_rounded,
-                size: 80,
-                color: Color(0xFFFF4F63),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.asset(
+                'assets/clutter-image.jpeg',
+                width: double.infinity,
+                fit: BoxFit.cover,
               ),
             ),
           ),
           const SizedBox(height: 40),
-          Text(
+          const Text(
             'Recipes scattered across screenshots, bookmarks, and apps.',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onSurface,
+              color: Colors.black,
               height: 1.4,
             ),
           ),
@@ -73,10 +66,7 @@ class PainPointPage extends ConsumerWidget {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w400,
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withOpacity(0.7),
+              color: Colors.grey.shade600,
               height: 1.5,
             ),
           ),

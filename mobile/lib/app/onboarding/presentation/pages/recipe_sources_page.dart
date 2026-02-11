@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:simple_icons/simple_icons.dart';
 
 import '../../domain/onboarding_data.dart';
 import '../../providers/onboarding_provider.dart';
@@ -10,10 +11,10 @@ class RecipeSourcesPage extends ConsumerWidget {
   const RecipeSourcesPage({super.key});
 
   static const _sourceIcons = <String, IconData>{
-    RecipeSources.tiktok: Icons.music_note_rounded,
-    RecipeSources.instagram: Icons.camera_alt_rounded,
-    RecipeSources.youtube: Icons.play_circle_rounded,
-    RecipeSources.pinterest: Icons.push_pin_rounded,
+    RecipeSources.tiktok: SimpleIcons.tiktok,
+    RecipeSources.instagram: SimpleIcons.instagram,
+    RecipeSources.youtube: SimpleIcons.youtube,
+    RecipeSources.pinterest: SimpleIcons.pinterest,
     RecipeSources.foodBlogs: Icons.language_rounded,
     RecipeSources.cookbooks: Icons.menu_book_rounded,
     RecipeSources.friendsFamily: Icons.people_rounded,
@@ -28,8 +29,6 @@ class RecipeSourcesPage extends ConsumerWidget {
     return OnboardingPageWrapper(
       title: 'Where do you find recipes?',
       subtitle: 'Select all that apply',
-      showBackButton: true,
-      onBack: () => notifier.previousPage(),
       bottomAction: SizedBox(
         width: double.infinity,
         height: 56,
@@ -54,6 +53,7 @@ class RecipeSourcesPage extends ConsumerWidget {
       child: Wrap(
         spacing: 10,
         runSpacing: 10,
+        alignment: WrapAlignment.center,
         children: RecipeSources.labels.entries.map((entry) {
           final isSelected = state.data.recipeSources.contains(entry.key);
           return SelectableChip(
@@ -63,9 +63,7 @@ class RecipeSourcesPage extends ConsumerWidget {
             icon: Icon(
               _sourceIcons[entry.key] ?? Icons.circle,
               size: 18,
-              color: isSelected
-                  ? const Color(0xFFFF4F63)
-                  : Colors.grey.shade600,
+              color: Colors.black87,
             ),
           );
         }).toList(),

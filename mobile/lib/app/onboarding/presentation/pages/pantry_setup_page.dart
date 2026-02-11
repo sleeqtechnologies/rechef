@@ -17,8 +17,6 @@ class PantrySetupPage extends ConsumerWidget {
     return OnboardingPageWrapper(
       title: "What's in your pantry?",
       subtitle: 'Select items you usually have on hand',
-      showBackButton: true,
-      onBack: () => notifier.previousPage(),
       scrollable: false,
       bottomAction: Column(
         mainAxisSize: MainAxisSize.min,
@@ -63,8 +61,7 @@ class PantrySetupPage extends ConsumerWidget {
         padding: EdgeInsets.zero,
         itemCount: PantryConstants.categories.length,
         itemBuilder: (context, index) {
-          final category =
-              PantryConstants.categories.keys.elementAt(index);
+          final category = PantryConstants.categories.keys.elementAt(index);
           final items = PantryConstants.categories[category]!;
 
           return Padding(
@@ -142,18 +139,16 @@ class _PantryItemChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const accentColor = Color(0xFFFF4F63);
-
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? accentColor.withOpacity(0.1) : Colors.grey.shade50,
+          color: isSelected ? Colors.grey.shade100 : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? accentColor : Colors.grey.shade200,
+            color: isSelected ? Colors.black : Colors.grey.shade300,
             width: isSelected ? 1.5 : 1,
           ),
         ),
@@ -162,9 +157,7 @@ class _PantryItemChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-            color: isSelected
-                ? accentColor
-                : Theme.of(context).colorScheme.onSurface,
+            color: Colors.black87,
           ),
         ),
       ),

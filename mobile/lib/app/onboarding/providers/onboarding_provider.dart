@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/onboarding_data.dart';
 
 /// Total number of pages in the onboarding flow.
-const int onboardingPageCount = 13;
+const int onboardingPageCount = 11;
 
 /// State for the onboarding flow.
 class OnboardingState {
@@ -54,10 +54,6 @@ class OnboardingState {
       case 9: // Share feature
         return true;
       case 10: // Better cook
-        return true;
-      case 11: // Pro plan
-        return true;
-      case 12: // Create account
         return true;
       default:
         return true;

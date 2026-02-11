@@ -20,7 +20,6 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
   bool get _loading => _loadingButton != null;
 
   Future<void> _completeOnboarding() async {
-    final onboardingNotifier = ref.read(onboardingProvider.notifier);
     final repo = ref.read(onboardingRepositoryProvider);
     final data = ref.read(onboardingProvider).data;
 
@@ -102,7 +101,8 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
     } catch (e) {
       if (mounted) {
         setState(
-          () => _error = 'Could not continue without an account. Please try again.',
+          () => _error =
+              'Could not continue without an account. Please try again.',
         );
       }
     } finally {
@@ -114,7 +114,6 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
 
   @override
   Widget build(BuildContext context) {
-    final notifier = ref.read(onboardingProvider.notifier);
     final state = ref.watch(onboardingProvider);
     final pantryCount = state.data.pantryItems.length;
 
@@ -123,17 +122,8 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(
           children: [
-            // Back button
-            Align(
-              alignment: Alignment.topLeft,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: IconButton(
-                  onPressed: () => notifier.previousPage(),
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-                ),
-              ),
-            ),
+            // Space for the overlay header (back button + progress bar)
+            const SizedBox(height: 52),
 
             const Spacer(flex: 1),
 
@@ -326,8 +316,9 @@ class _ReadySummary extends StatelessWidget {
       margin: const EdgeInsets.only(top: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
       ),
       child: Column(
         children: [
@@ -340,7 +331,8 @@ class _ReadySummary extends StatelessWidget {
             if (goalCount > 0) const SizedBox(height: 8),
             _SummaryItem(
               icon: Icons.kitchen_rounded,
-              text: '$pantryCount pantry item${pantryCount == 1 ? '' : 's'} ready',
+              text:
+                  '$pantryCount pantry item${pantryCount == 1 ? '' : 's'} ready',
             ),
           ],
           if (hasProPlan) ...[
@@ -358,11 +350,7 @@ class _ReadySummary extends StatelessWidget {
 }
 
 class _SummaryItem extends StatelessWidget {
-  const _SummaryItem({
-    required this.icon,
-    required this.text,
-    this.color,
-  });
+  const _SummaryItem({required this.icon, required this.text, this.color});
 
   final IconData icon;
   final String text;
@@ -370,7 +358,7 @@ class _SummaryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final itemColor = color ?? const Color(0xFFFF4F63);
+    final itemColor = color ?? Colors.black87;
 
     return Row(
       children: [
@@ -378,10 +366,10 @@ class _SummaryItem extends StatelessWidget {
         const SizedBox(width: 10),
         Text(
           text,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Theme.of(context).colorScheme.onSurface,
+            color: Colors.black87,
           ),
         ),
         const Spacer(),

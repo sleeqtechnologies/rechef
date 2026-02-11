@@ -118,6 +118,7 @@ class _RechefAppState extends ConsumerState<RechefApp>
       ),
       child: MaterialApp.router(
         title: 'Rechef',
+        debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
         routerConfig: router,

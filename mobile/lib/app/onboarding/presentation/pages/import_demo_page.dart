@@ -33,8 +33,6 @@ class ImportDemoPage extends ConsumerWidget {
     return OnboardingPageWrapper(
       title: 'Import recipes from anywhere',
       subtitle: 'Import from $sourceText and more',
-      showBackButton: true,
-      onBack: () => notifier.previousPage(),
       bottomAction: SizedBox(
         width: double.infinity,
         height: 56,
@@ -62,20 +60,11 @@ class ImportDemoPage extends ConsumerWidget {
           const SizedBox(height: 32),
           Row(
             children: [
-              _StepItem(
-                number: '1',
-                text: 'Find a recipe you love',
-              ),
+              _StepItem(number: '1', text: 'Find a recipe you love'),
               const SizedBox(width: 12),
-              _StepItem(
-                number: '2',
-                text: 'Share the link to Rechef',
-              ),
+              _StepItem(number: '2', text: 'Share the link to Rechef'),
               const SizedBox(width: 12),
-              _StepItem(
-                number: '3',
-                text: 'Recipe saved and organized',
-              ),
+              _StepItem(number: '3', text: 'Recipe saved and organized'),
             ],
           ),
           const SizedBox(height: 24),
@@ -83,10 +72,7 @@ class ImportDemoPage extends ConsumerWidget {
             'Just share a link or snap a photo of a recipe -- we handle the rest.',
             style: TextStyle(
               fontSize: 15,
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withOpacity(0.6),
+              color: Colors.grey.shade600,
               height: 1.4,
             ),
             textAlign: TextAlign.center,
@@ -117,16 +103,16 @@ class _VideoPlaceholder extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 64,
-                height: 64,
+                width: 60,
+                height: 60,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFF4F63).withOpacity(0.1),
+                  color: Colors.grey.shade200,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.play_arrow_rounded,
-                  size: 36,
-                  color: Color(0xFFFF4F63),
+                  size: 32,
+                  color: Colors.grey.shade600,
                 ),
               ),
               const SizedBox(height: 12),
@@ -160,8 +146,8 @@ class _StepItem extends StatelessWidget {
           Container(
             width: 32,
             height: 32,
-            decoration: const BoxDecoration(
-              color: Color(0xFFFF4F63),
+            decoration: BoxDecoration(
+              color: Colors.black,
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -181,7 +167,7 @@ class _StepItem extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              color: Colors.grey.shade600,
             ),
             textAlign: TextAlign.center,
           ),

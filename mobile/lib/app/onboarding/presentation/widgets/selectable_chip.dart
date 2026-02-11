@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
-/// A selectable chip widget used in the onboarding flow for multi-select
-/// options like goals and recipe sources.
+/// A pill-shaped selectable chip used in the onboarding flow.
+/// Has a leading circle indicator: empty outline when unselected,
+/// filled with a check mark when selected. Size never changes.
 class SelectableChip extends StatelessWidget {
   const SelectableChip({
     super.key,
@@ -18,8 +20,6 @@ class SelectableChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = const Color(0xFFFF4F63);
-
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -27,34 +27,53 @@ class SelectableChip extends StatelessWidget {
         curve: Curves.easeInOut,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? accentColor.withOpacity(0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(24),
+          color: isSelected ? Colors.grey.shade100 : Colors.white,
+          borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: isSelected ? accentColor : Colors.grey.shade300,
-            width: isSelected ? 2 : 1,
+            color: isSelected ? Colors.black : Colors.grey.shade300,
+            width: isSelected ? 1.5 : 1,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (icon != null) ...[
-              icon!,
-              const SizedBox(width: 8),
-            ],
+            // Circle indicator – always present, same size
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected ? Colors.black : Colors.transparent,
+                border: Border.all(
+                  color: isSelected ? Colors.black : Colors.grey.shade400,
+                  width: 1.5,
+                ),
+              ),
+              child: isSelected
+                  ? Center(
+                      child: SvgPicture.asset(
+                        'assets/icons/check-mark.svg',
+                        width: 12,
+                        height: 12,
+                        colorFilter: const ColorFilter.mode(
+                          Colors.white,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 10),
+            if (icon != null) ...[icon!, const SizedBox(width: 8)],
             Text(
               label,
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                color: isSelected
-                    ? accentColor
-                    : Theme.of(context).colorScheme.onSurface,
+                color: Colors.black87,
               ),
             ),
-            if (isSelected) ...[
-              const SizedBox(width: 6),
-              Icon(Icons.check_rounded, size: 18, color: accentColor),
-            ],
           ],
         ),
       ),

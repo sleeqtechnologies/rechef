@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_strings.dart';
+import '../../onboarding/data/onboarding_repository.dart';
 import '../providers/auth_providers.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
@@ -18,6 +19,23 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
   bool get _loading => _loadingButton != null;
 
+  /// After authentication, sync any locally saved onboarding data to the backend.
+  Future<void> _syncOnboardingData() async {
+    try {
+      final repo = ref.read(onboardingRepositoryProvider);
+      final data = await repo.loadOnboardingDataLocally();
+      if (data != null) {
+        await repo.syncOnboardingData(data);
+        if (data.pantryItems.isNotEmpty) {
+          await repo.syncPantryItems(data.pantryItems);
+        }
+      }
+    } catch (e) {
+      debugPrint('[SignInScreen] Error syncing onboarding data: $e');
+      // Non-blocking -- user can still proceed
+    }
+  }
+
   Future<void> _signInWithGoogle() async {
     setState(() {
       _loadingButton = 'google';
@@ -25,6 +43,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     });
     try {
       await ref.read(authRepositoryProvider).signInWithGoogle();
+      await _syncOnboardingData();
     } catch (e) {
       setState(() => _error = 'Google sign-in failed: $e');
     } finally {
@@ -42,6 +61,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
     try {
       await ref.read(authRepositoryProvider).signInAnonymously();
+      await _syncOnboardingData();
     } catch (e) {
       setState(() => _error = 'Could not continue without an account: $e');
     } finally {
@@ -59,6 +79,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
     try {
       await ref.read(authRepositoryProvider).signInWithApple();
+      await _syncOnboardingData();
     } catch (e) {
       debugPrint('Apple sign-in error: $e');
       setState(

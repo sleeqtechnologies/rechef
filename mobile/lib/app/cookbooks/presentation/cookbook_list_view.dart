@@ -567,10 +567,12 @@ class _CreateCookbookCard extends StatelessWidget {
                   color: Colors.grey.shade200,
                   shape: BoxShape.circle,
                 ),
-                child: SvgPicture.asset(
-                  'assets/icons/plus.svg',
-                  width: 24,
-                  height: 24,
+                child: Center(
+                  child: SvgPicture.asset(
+                    'assets/icons/plus.svg',
+                    width: 26,
+                    height: 26,
+                  ),
                 ),
               ),
               const SizedBox(height: 10),

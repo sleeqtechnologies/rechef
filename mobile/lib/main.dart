@@ -20,9 +20,7 @@ Future<void> main() async {
 
   await CookingTimerNotifications.instance.initialize();
 
-  final repo = SubscriptionRepository(
-    apiKey: revenueCatApiKey,
-  );
+  final repo = SubscriptionRepository(apiKey: revenueCatApiKey);
   final currentUser = FirebaseAuth.instance.currentUser;
   await repo.configure(appUserId: currentUser?.uid);
 

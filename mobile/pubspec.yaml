@@ -2,7 +2,7 @@ name: rechef
 description: "AI-powered recipe discovery and cooking assistant"
 publish_to: "none"
 
-version: 1.0.0+4
+version: 1.0.0+6
 
 environment:
   sdk: ^3.9.2
@@ -86,6 +86,10 @@ flutter:
     - .env
     - assets/splash_background.png
     - assets/rechef-logo.png
+    - assets/cookbook.png
+    - assets/grocery.png
+    - assets/share.png
+    - assets/clutter-image.jpeg
     - assets/icons/
 
 flutter_native_splash:

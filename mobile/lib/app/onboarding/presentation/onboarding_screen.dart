@@ -13,8 +13,6 @@ import 'pages/pantry_setup_page.dart';
 import 'pages/grocery_feature_page.dart';
 import 'pages/share_feature_page.dart';
 import 'pages/better_cook_page.dart';
-import 'pages/pro_plan_page.dart';
-import 'pages/create_account_page.dart';
 
 class OnboardingScreen extends ConsumerWidget {
   const OnboardingScreen({super.key});
@@ -23,63 +21,125 @@ class OnboardingScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(onboardingProvider);
     final notifier = ref.read(onboardingProvider.notifier);
+    final isWelcomePage = state.currentPage == 0;
 
     return Scaffold(
-      body: Column(
+      body: Stack(
         children: [
-          // Progress bar
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
-              child: _ProgressBar(progress: state.progress),
-            ),
+          // Page content (full screen)
+          PageView(
+            controller: notifier.pageController,
+            physics: const NeverScrollableScrollPhysics(),
+            onPageChanged: notifier.setPage,
+            children: const [
+              WelcomePage(),           // 0
+              GoalsPage(),             // 1
+              PainPointPage(),         // 2
+              RecipeSourcesPage(),     // 3
+              ImportDemoPage(),        // 4
+              OrganizationPage(),      // 5
+              CookbookFeaturePage(),   // 6
+              PantrySetupPage(),       // 7
+              GroceryFeaturePage(),    // 8
+              ShareFeaturePage(),      // 9
+              BetterCookPage(),        // 10
+            ],
           ),
 
-          // Page content
-          Expanded(
-            child: PageView(
-              controller: notifier.pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              onPageChanged: notifier.setPage,
-              children: const [
-                WelcomePage(),           // 0
-                GoalsPage(),             // 1
-                PainPointPage(),         // 2
-                RecipeSourcesPage(),     // 3
-                ImportDemoPage(),        // 4
-                OrganizationPage(),      // 5
-                CookbookFeaturePage(),   // 6
-                PantrySetupPage(),       // 7
-                GroceryFeaturePage(),    // 8
-                ShareFeaturePage(),      // 9
-                BetterCookPage(),        // 10
-                ProPlanPage(),           // 11
-                CreateAccountPage(),     // 12
-              ],
+          // Back button + segmented progress bar (hidden on welcome page)
+          if (!isWelcomePage)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 8, 24, 0),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 40,
+                        height: 40,
+                        child: IconButton(
+                          onPressed: () => notifier.previousPage(),
+                          icon: const Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            size: 18,
+                          ),
+                          padding: EdgeInsets.zero,
+                          style: IconButton.styleFrom(
+                            foregroundColor: Colors.black87,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: _SegmentedProgressBar(
+                          currentStep: state.currentPage,
+                          // Skip counting the welcome page in the bar
+                          totalSteps: onboardingPageCount - 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ),
         ],
       ),
     );
   }
 }
 
-class _ProgressBar extends StatelessWidget {
-  const _ProgressBar({required this.progress});
+/// Segmented progress bar inspired by the cooking mode progress bar.
+/// Each segment fills with accent color as you progress.
+class _SegmentedProgressBar extends StatelessWidget {
+  const _SegmentedProgressBar({
+    required this.currentStep,
+    required this.totalSteps,
+  });
 
-  final double progress;
+  final int currentStep;
+  final int totalSteps;
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(2),
-      child: LinearProgressIndicator(
-        value: progress,
-        minHeight: 4,
-        backgroundColor: Colors.grey.shade200,
-        valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFF4F63)),
-      ),
+    // currentStep is 1-indexed here (page 1 = first segment)
+    final activeIndex = currentStep - 1;
+
+    return Row(
+      children: List.generate(totalSteps, (index) {
+        final isFilled = index <= activeIndex;
+        return Expanded(
+          child: Container(
+            height: 4,
+            margin: EdgeInsets.only(right: index < totalSteps - 1 ? 3 : 0),
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(2),
+            ),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(end: isFilled ? 1.0 : 0.0),
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              builder: (context, value, _) {
+                return FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: value,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF4F63),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      }),
     );
   }
 }

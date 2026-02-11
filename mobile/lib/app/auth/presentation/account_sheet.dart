@@ -149,11 +149,13 @@ class AccountSheet extends ConsumerWidget {
                           children: [
                             _SettingsRow(
                               title: 'Privacy Notice',
-                              onTap: () => _openUrl('https://rechef.app/privacy'),
+                              onTap: () =>
+                                  _openUrl('https://rechef-ten.vercel.app/privacy'),
                             ),
                             _SettingsRow(
                               title: 'Terms of Service',
-                              onTap: () => _openUrl('https://rechef.app/terms'),
+                              onTap: () =>
+                                  _openUrl('https://rechef-ten.vercel.app/terms'),
                             ),
                             _SettingsRow(
                               title: 'App version',

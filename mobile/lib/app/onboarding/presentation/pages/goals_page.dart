@@ -15,10 +15,8 @@ class GoalsPage extends ConsumerWidget {
     final notifier = ref.read(onboardingProvider.notifier);
 
     return OnboardingPageWrapper(
-      title: 'What do you want to achieve?',
+      title: 'Choose your goals',
       subtitle: 'Select all that apply',
-      showBackButton: true,
-      onBack: () => notifier.previousPage(),
       bottomAction: SizedBox(
         width: double.infinity,
         height: 56,
@@ -43,6 +41,7 @@ class GoalsPage extends ConsumerWidget {
       child: Wrap(
         spacing: 10,
         runSpacing: 10,
+        alignment: WrapAlignment.center,
         children: OnboardingGoals.labels.entries.map((entry) {
           final isSelected = state.data.goals.contains(entry.key);
           return SelectableChip(

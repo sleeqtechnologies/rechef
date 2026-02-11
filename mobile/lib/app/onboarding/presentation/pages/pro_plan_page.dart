@@ -31,8 +31,7 @@ class _ProPlanPageState extends ConsumerState<ProPlanPage> {
   Future<void> _loadOffering() async {
     try {
       final repo = ref.read(subscriptionRepositoryProvider);
-      final offering =
-          await repo.getOffering(SubscriptionConstants.offeringId);
+      final offering = await repo.getOffering(SubscriptionConstants.offeringId);
       if (mounted) {
         setState(() {
           _offering = offering;
@@ -56,11 +55,12 @@ class _ProPlanPageState extends ConsumerState<ProPlanPage> {
     return SafeArea(
       child: Column(
         children: [
-          // Skip / Maybe later button
+          // Space for header overlay + skip button
+          const SizedBox(height: 52),
           Align(
             alignment: Alignment.topRight,
             child: Padding(
-              padding: const EdgeInsets.only(right: 16, top: 8),
+              padding: const EdgeInsets.only(right: 16),
               child: TextButton(
                 onPressed: () => notifier.nextPage(),
                 child: Text(
@@ -80,24 +80,23 @@ class _ProPlanPageState extends ConsumerState<ProPlanPage> {
             child: _isLoading
                 ? const Center(child: CupertinoActivityIndicator())
                 : _loadFailed || _offering == null
-                    ? _FallbackProContent(
-                        onSkip: () => notifier.nextPage(),
-                      )
-                    : PaywallView(
-                        offering: _offering!,
-                        onDismiss: () => notifier.nextPage(),
-                        onRestoreCompleted: (CustomerInfo customerInfo) {
-                          notifier.setProSubscription(true);
-                          notifier.nextPage();
-                        },
-                        onPurchaseCompleted: (
+                ? _FallbackProContent(onSkip: () => notifier.nextPage())
+                : PaywallView(
+                    offering: _offering!,
+                    onDismiss: () => notifier.nextPage(),
+                    onRestoreCompleted: (CustomerInfo customerInfo) {
+                      notifier.setProSubscription(true);
+                      notifier.nextPage();
+                    },
+                    onPurchaseCompleted:
+                        (
                           CustomerInfo customerInfo,
                           StoreTransaction storeTransaction,
                         ) {
                           notifier.setProSubscription(true);
                           notifier.nextPage();
                         },
-                      ),
+                  ),
           ),
         ],
       ),
@@ -122,22 +121,19 @@ class _FallbackProContent extends StatelessWidget {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: const Color(0xFFFF4F63).withOpacity(0.1),
+              color: Colors.grey.shade100,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.star_rounded,
               size: 40,
-              color: Color(0xFFFF4F63),
+              color: Colors.grey.shade600,
             ),
           ),
           const SizedBox(height: 24),
           const Text(
             'Unlock the full experience',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-            ),
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),

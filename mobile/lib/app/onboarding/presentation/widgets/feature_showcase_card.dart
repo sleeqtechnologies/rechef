@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// A card widget that showcases a feature during onboarding with an icon,
-/// title, and description text.
+/// title, and description text. Uses neutral grey tones.
 class FeatureShowcaseCard extends StatelessWidget {
   const FeatureShowcaseCard({
     super.key,
@@ -18,27 +18,25 @@ class FeatureShowcaseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = iconColor ?? Colors.black87;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: (iconColor ?? const Color(0xFFFF4F63)).withOpacity(0.12),
-              borderRadius: BorderRadius.circular(14),
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              icon,
-              size: 24,
-              color: iconColor ?? const Color(0xFFFF4F63),
-            ),
+            child: Icon(icon, size: 22, color: color),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -57,10 +55,7 @@ class FeatureShowcaseCard extends StatelessWidget {
                   description,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withOpacity(0.6),
+                    color: Colors.grey.shade600,
                     height: 1.4,
                   ),
                 ),
