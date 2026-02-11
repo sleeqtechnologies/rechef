@@ -293,36 +293,41 @@ class CustomBottomNavBarState extends State<CustomBottomNavBar>
                         // Expanded menu content (scrollable so it doesn't overflow during animation)
                         if (_expandAnimation.value > 0)
                           Positioned.fill(
-                            child: Opacity(
-                              opacity: _fadeAnimation.value,
-                              child: SingleChildScrollView(
-                                physics: const NeverScrollableScrollPhysics(),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 16,
-                                  horizontal: 20,
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    _buildMenuOption(
-                                      title: 'Social Media / Blog',
-                                      subtitle: 'Enter URL Of Recipe',
-                                      iconPath: 'assets/icons/keyboard.svg',
-                                      onTap: () => _handleOptionTap(
-                                        widget.onSocialMediaTap,
+                            child: OverflowBox(
+                              alignment: Alignment.topLeft,
+                              minWidth: _expandedWidth,
+                              maxWidth: _expandedWidth,
+                              child: Opacity(
+                                opacity: _fadeAnimation.value,
+                                child: SingleChildScrollView(
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                    horizontal: 20,
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      _buildMenuOption(
+                                        title: 'Social Media / Blog',
+                                        subtitle: 'Enter URL Of Recipe',
+                                        iconPath: 'assets/icons/keyboard.svg',
+                                        onTap: () => _handleOptionTap(
+                                          widget.onSocialMediaTap,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    _buildMenuOption(
-                                      title: 'Camera',
-                                      subtitle: 'Take Picture Of Recipe',
-                                      iconPath: 'assets/icons/camera.svg',
-                                      onTap: () =>
-                                          _handleOptionTap(widget.onCameraTap),
-                                    ),
-                                  ],
+                                      const SizedBox(height: 12),
+                                      _buildMenuOption(
+                                        title: 'Camera',
+                                        subtitle: 'Take Picture Of Recipe',
+                                        iconPath: 'assets/icons/camera.svg',
+                                        onTap: () =>
+                                            _handleOptionTap(widget.onCameraTap),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
