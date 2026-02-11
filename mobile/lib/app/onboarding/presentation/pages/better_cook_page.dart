@@ -53,37 +53,37 @@ class _BetterCookPageState extends ConsumerState<BetterCookPage>
       parent: _entranceController,
       curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
     );
-    _chartSlide = Tween<Offset>(
-      begin: const Offset(0, 0.06),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _entranceController,
-      curve: const Interval(0.0, 0.45, curve: Curves.easeOutCubic),
-    ));
+    _chartSlide = Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _entranceController,
+            curve: const Interval(0.0, 0.45, curve: Curves.easeOutCubic),
+          ),
+        );
 
     _descFade = CurvedAnimation(
       parent: _entranceController,
       curve: const Interval(0.25, 0.6, curve: Curves.easeOut),
     );
-    _descSlide = Tween<Offset>(
-      begin: const Offset(0, 0.15),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _entranceController,
-      curve: const Interval(0.25, 0.65, curve: Curves.easeOutCubic),
-    ));
+    _descSlide = Tween<Offset>(begin: const Offset(0, 0.15), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _entranceController,
+            curve: const Interval(0.25, 0.65, curve: Curves.easeOutCubic),
+          ),
+        );
 
     _buttonFade = CurvedAnimation(
       parent: _entranceController,
       curve: const Interval(0.45, 0.8, curve: Curves.easeOut),
     );
-    _buttonSlide = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _entranceController,
-      curve: const Interval(0.45, 0.85, curve: Curves.easeOutCubic),
-    ));
+    _buttonSlide = Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _entranceController,
+            curve: const Interval(0.45, 0.85, curve: Curves.easeOutCubic),
+          ),
+        );
 
     _chartProgress = CurvedAnimation(
       parent: _chartDrawController,
@@ -126,8 +126,7 @@ class _BetterCookPageState extends ConsumerState<BetterCookPage>
   Future<void> _tryPro() async {
     try {
       final repo = ref.read(subscriptionRepositoryProvider);
-      final offering =
-          await repo.getOffering(SubscriptionConstants.offeringId);
+      final offering = await repo.getOffering(SubscriptionConstants.offeringId);
 
       if (!mounted || offering == null) {
         await _finishOnboarding();
@@ -159,10 +158,7 @@ class _BetterCookPageState extends ConsumerState<BetterCookPage>
       title: 'Become a better cook with Rechef',
       bottomAction: FadeTransition(
         opacity: _buttonFade,
-        child: SlideTransition(
-          position: _buttonSlide,
-          child: _buildButtons(),
-        ),
+        child: SlideTransition(position: _buttonSlide, child: _buildButtons()),
       ),
       child: Column(
         children: [
@@ -176,7 +172,8 @@ class _BetterCookPageState extends ConsumerState<BetterCookPage>
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final width = constraints.maxWidth == double.infinity
-                      ? MediaQuery.of(context).size.width - 48 // 24 * 2 padding
+                      ? MediaQuery.of(context).size.width -
+                            48 // 24 * 2 padding
                       : constraints.maxWidth;
                   const height = 220.0;
 
@@ -536,11 +533,7 @@ class _ChartPainter extends CustomPainter {
       5.5,
       Paint()..color = Colors.white.withOpacity(opacity),
     );
-    canvas.drawCircle(
-      center,
-      4.5,
-      Paint()..color = color.withOpacity(opacity),
-    );
+    canvas.drawCircle(center, 4.5, Paint()..color = color.withOpacity(opacity));
   }
 
   void _drawDashedVerticalLine(
@@ -631,6 +624,5 @@ class _ChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _ChartPainter old) =>
-      progress != old.progress;
+  bool shouldRepaint(covariant _ChartPainter old) => progress != old.progress;
 }

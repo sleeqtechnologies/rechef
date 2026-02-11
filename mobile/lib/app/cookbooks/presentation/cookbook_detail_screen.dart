@@ -153,9 +153,24 @@ class _PantryPicksScreen extends ConsumerWidget {
         loading: () => CustomScrollView(
           slivers: [
             const _DetailAppBar(title: _title),
-            const SliverFillRemaining(
+            SliverFillRemaining(
               hasScrollBody: false,
-              child: Center(child: CupertinoActivityIndicator()),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CupertinoActivityIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Recommending recipes...',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey.shade600,
+                            fontSize: 15,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
