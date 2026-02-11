@@ -141,8 +141,8 @@ class _BetterCookPageState extends ConsumerState<BetterCookPage>
         if (result == PaywallResult.purchased ||
             result == PaywallResult.restored) {
           ref.read(onboardingProvider.notifier).setProSubscription(true);
+          await _finishOnboarding();
         }
-        await _finishOnboarding();
       }
     } catch (e) {
       debugPrint('[BetterCookPage] Error showing paywall: $e');

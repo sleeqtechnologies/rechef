@@ -21,9 +21,5 @@ Future<void> main() async {
   final currentUser = FirebaseAuth.instance.currentUser;
   await repo.configure(appUserId: currentUser?.uid);
 
-  runApp(
-    const ProviderScope(
-      child: RechefApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: RechefApp()));
 }

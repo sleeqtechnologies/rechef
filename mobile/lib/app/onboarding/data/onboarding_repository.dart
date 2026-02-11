@@ -46,11 +46,14 @@ class OnboardingRepository {
 
   Future<void> syncOnboardingData(OnboardingData data) async {
     try {
-      await apiClient.post('/api/users/onboarding', body: {
-        'goals': data.goals,
-        'recipeSources': data.recipeSources,
-        'organizationMethod': data.organizationMethod,
-      });
+      await apiClient.post(
+        '/api/users/onboarding',
+        body: {
+          'goals': data.goals,
+          'recipeSources': data.recipeSources,
+          'organizationMethod': data.organizationMethod,
+        },
+      );
     } catch (e) {
       debugPrint('[OnboardingRepository] Failed to sync onboarding data: $e');
     }
@@ -59,9 +62,7 @@ class OnboardingRepository {
   Future<void> syncPantryItems(List<String> items) async {
     if (items.isEmpty) return;
     try {
-      await apiClient.post('/api/pantry', body: {
-        'items': items,
-      });
+      await apiClient.post('/api/pantry', body: {'items': items});
     } catch (e) {
       debugPrint('[OnboardingRepository] Failed to sync pantry items: $e');
     }
