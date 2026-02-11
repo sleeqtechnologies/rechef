@@ -15,6 +15,7 @@ import '../../app/instacart/presentation/checkout_screen.dart';
 import '../../app/meal_planning/presentation/meal_plan_screen.dart';
 import '../../app/subscription/presentation/paywall_screen.dart';
 import '../../app/subscription/presentation/subscription_settings_screen.dart';
+import '../../app/cookbooks/presentation/cookbook_detail_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -111,6 +112,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           return RecipeDetailScreen(recipeId: id);
         },
         routes: [],
+      ),
+
+      // Cookbook Detail (no bottom bar)
+      GoRoute(
+        path: '/cookbooks/:id',
+        name: 'cookbook-detail',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return CookbookDetailScreen(cookbookId: id);
+        },
       ),
 
       // Camera Screen (for taking recipe photos) - no bottom bar

@@ -29,6 +29,13 @@ class ApiEndpoints {
   static String removeSharedRecipe(String id) => '/api/shared-with-me/$id';
   static String getSharedRecipePublic(String code) => '/share/$code';
 
+  // Cookbook endpoints
+  static String get cookbooks => '/api/cookbooks';
+  static String cookbook(String id) => '/api/cookbooks/$id';
+  static String cookbookRecipes(String id) => '/api/cookbooks/$id/recipes';
+  static String cookbookRecipe(String cookbookId, String recipeId) =>
+      '/api/cookbooks/$cookbookId/recipes/$recipeId';
+
   // Pantry endpoints
   static String get pantry => '/api/pantry';
   static String pantryItem(String id) => '/api/pantry/$id';

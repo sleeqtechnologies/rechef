@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/services/recipe_ready_notifications.dart';
 import '../recipes/recipe_provider.dart';
 import 'data/import_repository.dart';
 import 'import_provider.dart';
@@ -81,6 +83,11 @@ class PendingJobsNotifier extends Notifier<List<ContentJob>> {
 
       if (completedIds.isNotEmpty) {
         ref.invalidate(recipesProvider);
+        // Show local notification when app is not in foreground.
+        if (WidgetsBinding.instance.lifecycleState !=
+            AppLifecycleState.resumed) {
+          RecipeReadyNotifications.instance.show();
+        }
       }
 
       state = updatedJobs;

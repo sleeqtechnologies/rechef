@@ -18,6 +18,7 @@ import '../../grocery/grocery_provider.dart';
 import 'cooking_mode_sheet.dart';
 import 'edit_recipe_sheet.dart';
 import 'share_recipe_sheet.dart';
+import '../../cookbooks/presentation/add_to_cookbook_sheet.dart';
 
 bool _hasSourceOrAuthor(Recipe recipe) {
   final hasName =
@@ -366,6 +367,10 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                         recipe: recipe,
                         isCollapsed: _isCollapsed,
                         onDelete: () => _deleteRecipe(recipe),
+                        onAddToCookbook: () => AddToCookbookSheet.show(
+                          context,
+                          recipeId: recipe.id,
+                        ),
                       ),
                     if (recipe.isShared && recipe.sharedSaveId != null)
                       _SharedRecipeMorePopupMenu(
@@ -767,20 +772,27 @@ class _SharedRecipeMorePopupMenu extends StatelessWidget {
   }
 }
 
-enum _RecipeMoreAction { delete }
+enum _RecipeMoreAction { addToCookbook, delete }
 
 class _RecipeMorePopupMenu extends StatelessWidget {
   const _RecipeMorePopupMenu({
     required this.recipe,
     required this.isCollapsed,
     required this.onDelete,
+    required this.onAddToCookbook,
   });
 
   final Recipe recipe;
   final bool isCollapsed;
   final VoidCallback onDelete;
+  final VoidCallback onAddToCookbook;
 
   static const _items = [
+    AdaptivePopupMenuItem<_RecipeMoreAction>(
+      label: 'Add to Cookbook',
+      icon: Icons.menu_book_outlined,
+      value: _RecipeMoreAction.addToCookbook,
+    ),
     AdaptivePopupMenuItem<_RecipeMoreAction>(
       label: 'Delete recipe',
       icon: Icons.delete_outline,
@@ -809,6 +821,9 @@ class _RecipeMorePopupMenu extends StatelessWidget {
             buttonStyle: PopupButtonStyle.glass,
             onSelected: (index, entry) {
               switch (entry.value) {
+                case _RecipeMoreAction.addToCookbook:
+                  onAddToCookbook();
+                  break;
                 case _RecipeMoreAction.delete:
                   onDelete();
                   break;

@@ -29,6 +29,13 @@
       "when": 1770580829653,
       "tag": "0003_add-chat-messages",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1770776639721,
+      "tag": "0004_add-cookbook-tables",
+      "breakpoints": true
     }
   ]
 }

@@ -12,6 +12,7 @@ import '../../recipe_import/data/import_repository.dart';
 import '../../recipe_import/monthly_import_usage_provider.dart';
 import '../../recipe_import/pending_jobs_provider.dart';
 import '../../subscription/subscription_provider.dart';
+import '../../cookbooks/presentation/cookbook_list_view.dart';
 import '../domain/recipe.dart';
 import '../recipe_provider.dart';
 
@@ -22,15 +23,19 @@ class RecipeListScreen extends ConsumerStatefulWidget {
   ConsumerState<RecipeListScreen> createState() => _RecipeListScreenState();
 }
 
-class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
+class _RecipeListScreenState extends ConsumerState<RecipeListScreen>
+    with SingleTickerProviderStateMixin {
   final _searchController = TextEditingController();
   final _searchFocusNode = FocusNode();
   String _searchQuery = '';
+  late final TabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() => setState(() {}));
   }
 
   void _onSearchChanged() {
@@ -42,6 +47,7 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     _searchFocusNode.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -62,8 +68,6 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final recipesAsync = ref.watch(recipesProvider);
-    final pendingJobs = ref.watch(pendingJobsProvider);
     final user = ref.watch(userModelProvider);
     final initials = user?.initials ?? 'AN';
     final isPro = ref.watch(isProUserProvider);
@@ -111,128 +115,216 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
       ),
       body: SafeArea(
         bottom: false,
-        child: recipesAsync.when(
-          loading: () => CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              CupertinoSliverRefreshControl(
-                onRefresh: () async {
-                  ref.invalidate(recipesProvider);
-                  await ref.read(recipesProvider.future);
-                },
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.horizontalMargin,
               ),
-              SliverToBoxAdapter(
-                child: _SearchField(
-                  controller: _searchController,
-                  focusNode: _searchFocusNode,
-                  query: _searchQuery,
-                  onClear: () => _searchController.clear(),
+              child: Container(
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-              ),
-              const SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(child: CupertinoActivityIndicator()),
-              ),
-            ],
-          ),
-          error: (error, _) => CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              CupertinoSliverRefreshControl(
-                onRefresh: () async {
-                  ref.invalidate(recipesProvider);
-                  await ref.read(recipesProvider.future);
-                },
-              ),
-              SliverToBoxAdapter(
-                child: _SearchField(
-                  controller: _searchController,
-                  focusNode: _searchFocusNode,
-                  query: _searchQuery,
-                  onClear: () => _searchController.clear(),
-                ),
-              ),
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 48,
-                        color: Colors.grey.shade300,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Failed to load recipes',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextButton(
-                        onPressed: () => ref.invalidate(recipesProvider),
-                        child: const Text('Retry'),
+                child: TabBar(
+                  controller: _tabController,
+                  indicator: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.06),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
                       ),
                     ],
                   ),
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  indicatorPadding: const EdgeInsets.all(3),
+                  dividerColor: Colors.transparent,
+                  labelColor: Colors.grey.shade900,
+                  unselectedLabelColor: Colors.grey.shade500,
+                  labelStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  tabs: const [
+                    Tab(text: 'All Recipes'),
+                    Tab(text: 'Cookbooks'),
+                  ],
                 ),
               ),
-            ],
-          ),
-          data: (recipes) {
-            final filtered = _filterRecipes(recipes);
-            final owned = filtered.where((r) => !r.isShared).toList();
-            final shared = filtered.where((r) => r.isShared).toList();
-            final hasAnyRecipes = owned.isNotEmpty || shared.isNotEmpty || pendingJobs.isNotEmpty;
-
-            return CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                CupertinoSliverRefreshControl(
-                  onRefresh: () async {
-                    ref.invalidate(recipesProvider);
-                    await ref.read(recipesProvider.future);
-                  },
-                ),
-                SliverToBoxAdapter(
-                  child: _SearchField(
-                    controller: _searchController,
-                    focusNode: _searchFocusNode,
-                    query: _searchQuery,
-                    onClear: () => _searchController.clear(),
+            ),
+            const SizedBox(height: 4),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _AllRecipesTab(
+                    searchController: _searchController,
+                    searchFocusNode: _searchFocusNode,
+                    searchQuery: _searchQuery,
+                    onClearSearch: () => _searchController.clear(),
+                    filterRecipes: _filterRecipes,
                   ),
-                ),
-                if (!hasAnyRecipes && _searchQuery.trim().isEmpty)
-                  const SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: _EmptyState(),
-                  )
-                else if (filtered.isEmpty && recipes.isNotEmpty)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: _NoSearchResults(query: _searchQuery),
-                  )
-                else ...[
-                  if (owned.isNotEmpty || (_searchQuery.trim().isEmpty && pendingJobs.isNotEmpty))
-                    _RecipeGridSliver(
-                      recipes: owned,
-                      pendingJobs: _searchQuery.trim().isEmpty ? pendingJobs : [],
-                      title: 'My Recipes',
-                    ),
-                  if (shared.isNotEmpty)
-                    _RecipeGridSliver(
-                      recipes: shared,
-                      pendingJobs: [],
-                      title: 'Shared with Me',
-                    ),
+                  const CookbookListView(),
                 ],
-              ],
-            );
-          },
+              ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+}
+
+class _AllRecipesTab extends ConsumerWidget {
+  const _AllRecipesTab({
+    required this.searchController,
+    required this.searchFocusNode,
+    required this.searchQuery,
+    required this.onClearSearch,
+    required this.filterRecipes,
+  });
+
+  final TextEditingController searchController;
+  final FocusNode searchFocusNode;
+  final String searchQuery;
+  final VoidCallback onClearSearch;
+  final List<Recipe> Function(List<Recipe>) filterRecipes;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recipesAsync = ref.watch(recipesProvider);
+    final pendingJobs = ref.watch(pendingJobsProvider);
+
+    return recipesAsync.when(
+      loading: () => CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          CupertinoSliverRefreshControl(
+            onRefresh: () async {
+              ref.invalidate(recipesProvider);
+              await ref.read(recipesProvider.future);
+            },
+          ),
+          SliverToBoxAdapter(
+            child: _SearchField(
+              controller: searchController,
+              focusNode: searchFocusNode,
+              query: searchQuery,
+              onClear: onClearSearch,
+            ),
+          ),
+          const SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(child: CupertinoActivityIndicator()),
+          ),
+        ],
+      ),
+      error: (error, _) => CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          CupertinoSliverRefreshControl(
+            onRefresh: () async {
+              ref.invalidate(recipesProvider);
+              await ref.read(recipesProvider.future);
+            },
+          ),
+          SliverToBoxAdapter(
+            child: _SearchField(
+              controller: searchController,
+              focusNode: searchFocusNode,
+              query: searchQuery,
+              onClear: onClearSearch,
+            ),
+          ),
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Colors.grey.shade300,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Failed to load recipes',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: () => ref.invalidate(recipesProvider),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+      data: (recipes) {
+        final filtered = filterRecipes(recipes);
+        final owned = filtered.where((r) => !r.isShared).toList();
+        final shared = filtered.where((r) => r.isShared).toList();
+        final hasAnyRecipes =
+            owned.isNotEmpty || shared.isNotEmpty || pendingJobs.isNotEmpty;
+
+        return CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            CupertinoSliverRefreshControl(
+              onRefresh: () async {
+                ref.invalidate(recipesProvider);
+                await ref.read(recipesProvider.future);
+              },
+            ),
+            SliverToBoxAdapter(
+              child: _SearchField(
+                controller: searchController,
+                focusNode: searchFocusNode,
+                query: searchQuery,
+                onClear: onClearSearch,
+              ),
+            ),
+            if (!hasAnyRecipes && searchQuery.trim().isEmpty)
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: _EmptyState(),
+              )
+            else if (filtered.isEmpty && recipes.isNotEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: _NoSearchResults(query: searchQuery),
+              )
+            else ...[
+              if (owned.isNotEmpty ||
+                  (searchQuery.trim().isEmpty && pendingJobs.isNotEmpty))
+                _RecipeGridSliver(
+                  recipes: owned,
+                  pendingJobs: searchQuery.trim().isEmpty ? pendingJobs : [],
+                  title: 'My Recipes',
+                ),
+              if (shared.isNotEmpty)
+                _RecipeGridSliver(
+                  recipes: shared,
+                  pendingJobs: [],
+                  title: 'Shared with Me',
+                ),
+            ],
+          ],
+        );
+      },
     );
   }
 }
@@ -525,7 +617,7 @@ class _RecipeGridSliver extends StatelessWidget {
                 return const _PendingRecipeCard();
               }
               final recipe = recipes[index - pendingJobs.length];
-              return _RecipeCard(
+              return RecipeCard(
                 id: recipe.id,
                 title: recipe.name,
                 imageUrl: recipe.imageUrl,
@@ -633,8 +725,10 @@ class _PendingRecipeCardState extends State<_PendingRecipeCard>
   }
 }
 
-class _RecipeCard extends StatelessWidget {
-  const _RecipeCard({
+/// Public RecipeCard widget reused by cookbook detail screen.
+class RecipeCard extends StatelessWidget {
+  const RecipeCard({
+    super.key,
     required this.id,
     required this.title,
     this.imageUrl,
@@ -672,7 +766,8 @@ class _RecipeCard extends StatelessWidget {
                             ? Image.network(
                                 imageUrl!,
                                 fit: BoxFit.cover,
-                                loadingBuilder: (context, child, loadingProgress) {
+                                loadingBuilder:
+                                    (context, child, loadingProgress) {
                                   if (loadingProgress == null) return child;
                                   return Container(
                                     color: Colors.grey.shade200,
@@ -686,7 +781,8 @@ class _RecipeCard extends StatelessWidget {
                                   return Container(
                                     color: Colors.grey.shade200,
                                     alignment: Alignment.center,
-                                    child: const Icon(Icons.restaurant, size: 28),
+                                    child:
+                                        const Icon(Icons.restaurant, size: 28),
                                   );
                                 },
                               )

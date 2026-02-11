@@ -16,6 +16,10 @@ import {
   sharedRecipeTable,
 } from "../app/share/share.table";
 import { userTable } from "../app/user/user.table";
+import {
+  cookbookTable,
+  cookbookRecipeTable,
+} from "../app/cookbook/cookbook.table";
 
 export default {
   userTable,
@@ -30,4 +34,6 @@ export default {
   sharedRecipeTable,
   sharedRecipeSaveTable,
   shareEventTable,
+  cookbookTable,
+  cookbookRecipeTable,
 };
