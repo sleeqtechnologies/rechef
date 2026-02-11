@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../app/auth/presentation/sign_in_screen.dart';
 import '../../app/auth/providers/auth_providers.dart';
 import '../../app/main_layout.dart';
+import '../../app/onboarding/data/onboarding_repository.dart';
+import '../../app/onboarding/presentation/onboarding_screen.dart';
 import '../../app/pantry/presentation/pantry_screen.dart';
 import '../../app/recipes/presentation/recipe_detail_screen.dart';
 import '../../app/recipes/presentation/recipe_list_screen.dart';
@@ -19,24 +21,42 @@ import '../../app/cookbooks/presentation/cookbook_detail_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
+  final onboardingComplete = ref.watch(onboardingCompleteProvider);
 
   return GoRouter(
     initialLocation: '/',
     redirect: (context, state) {
+      final onboardingDone = onboardingComplete.value ?? false;
       final isAuthenticated = authState.value != null;
-      final isAuthRoute = state.matchedLocation == '/';
+      final loc = state.matchedLocation;
 
-      if (!isAuthenticated && !isAuthRoute) {
+      // First-time users: send to onboarding
+      if (!onboardingDone && loc != '/onboarding') {
+        return '/onboarding';
+      }
+
+      // After onboarding, unauthenticated users go to sign-in
+      if (onboardingDone && !isAuthenticated && loc != '/') {
         return '/';
       }
 
-      if (isAuthenticated && isAuthRoute) {
+      // Authenticated users who land on auth or onboarding go to recipes
+      if (onboardingDone &&
+          isAuthenticated &&
+          (loc == '/' || loc == '/onboarding')) {
         return '/recipes';
       }
 
       return null;
     },
     routes: [
+      // Onboarding
+      GoRoute(
+        path: '/onboarding',
+        name: 'onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
+
       // Auth
       GoRoute(
         path: '/',

@@ -16,6 +16,7 @@ import {
   sharedRecipeTable,
 } from "../app/share/share.table";
 import { userTable } from "../app/user/user.table";
+import { userOnboardingTable } from "../app/user/user-onboarding.table";
 import {
   cookbookTable,
   cookbookRecipeTable,
@@ -23,6 +24,7 @@ import {
 
 export default {
   userTable,
+  userOnboardingTable,
   savedContentTable,
   contentJobTable,
   recipeTable,
