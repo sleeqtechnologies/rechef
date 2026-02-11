@@ -38,6 +38,8 @@ final monthlyImportUsageProvider =
     final created = DateTime.tryParse(createdStr)?.toUtc();
     if (created == null) continue;
 
+    if (job.isFailed) continue;
+
     final isInMonth = !created.isBefore(startOfMonth) &&
         created.isBefore(startOfNextMonth);
     if (isInMonth) {
