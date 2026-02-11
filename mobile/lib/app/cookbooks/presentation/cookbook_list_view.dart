@@ -39,9 +39,10 @@ class CookbookListView extends ConsumerWidget {
       ),
       data: (state) {
         // Virtual cookbooks + user cookbooks + create button = total items
-        final virtualCount = 2; // "All Recipes" and "Shared with Me"
+        const virtualCount = 2; // "All Recipes" and "Shared with Me"
         final userCookbooks = state.cookbooks;
-        final totalItems = virtualCount + userCookbooks.length + 1; // +1 for create card
+        final totalItems =
+            virtualCount + userCookbooks.length + 1; // +1 for create card
 
         return CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -62,35 +63,33 @@ class CookbookListView extends ConsumerWidget {
               sliver: SliverGrid(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 18,
-                  childAspectRatio: 0.85,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.88,
                 ),
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     if (index == 0) {
                       return _CookbookCard(
-                        name: 'All Recipes',
+                        name: 'All recipes',
                         recipeCount: state.allRecipesCount,
-                        icon: Icons.restaurant_menu_rounded,
-                        iconColor: const Color(0xFFFF4F63),
+                        coverImages: state.allRecipeImages,
                         onTap: () =>
                             context.push('/cookbooks/__all_recipes__'),
                       );
                     }
                     if (index == 1) {
                       return _CookbookCard(
-                        name: 'Shared with Me',
+                        name: 'Shared with me',
                         recipeCount: state.sharedWithMeCount,
-                        icon: Icons.people_outline_rounded,
-                        iconColor: const Color(0xFF4A90D9),
+                        coverImages: state.sharedImages,
                         onTap: () =>
                             context.push('/cookbooks/__shared_with_me__'),
                       );
                     }
                     if (index == totalItems - 1) {
                       return _CreateCookbookCard(
-                        onTap: () => _showCreateCookbookDialog(context, ref),
+                        onTap: () => _showCreateCookbookSheet(context, ref),
                       );
                     }
 
@@ -98,7 +97,7 @@ class CookbookListView extends ConsumerWidget {
                     return _CookbookCard(
                       name: cookbook.name,
                       recipeCount: cookbook.recipeCount,
-                      coverImageUrl: cookbook.coverImageUrl,
+                      coverImages: cookbook.coverImages,
                       onTap: () => context.push('/cookbooks/${cookbook.id}'),
                       onLongPress: () =>
                           _showCookbookOptions(context, ref, cookbook),
@@ -114,38 +113,18 @@ class CookbookListView extends ConsumerWidget {
     );
   }
 
-  void _showCreateCookbookDialog(BuildContext context, WidgetRef ref) {
-    final controller = TextEditingController();
-    showDialog(
+  void _showCreateCookbookSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('New Cookbook'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(
-            hintText: 'Cookbook name',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final name = controller.text.trim();
-              if (name.isEmpty) return;
-              Navigator.pop(ctx);
-              await ref
-                  .read(cookbooksProvider.notifier)
-                  .createCookbook(name: name);
-            },
-            child: const Text('Create'),
-          ),
-        ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _CreateCookbookSheet(
+        onSave: (name) async {
+          Navigator.pop(ctx);
+          await ref
+              .read(cookbooksProvider.notifier)
+              .createCookbook(name: name);
+        },
       ),
     );
   }
@@ -158,12 +137,22 @@ class CookbookListView extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
             ListTile(
               leading: const Icon(Icons.edit_outlined),
               title: const Text('Rename'),
               onTap: () {
                 Navigator.pop(ctx);
-                _showRenameCookbookDialog(context, ref, cookbook);
+                _showRenameCookbookSheet(context, ref, cookbook);
               },
             ),
             ListTile(
@@ -175,45 +164,29 @@ class CookbookListView extends ConsumerWidget {
                 _confirmDeleteCookbook(context, ref, cookbook);
               },
             ),
+            const SizedBox(height: 8),
           ],
         ),
       ),
     );
   }
 
-  void _showRenameCookbookDialog(
+  void _showRenameCookbookSheet(
       BuildContext context, WidgetRef ref, Cookbook cookbook) {
-    final controller = TextEditingController(text: cookbook.name);
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Rename Cookbook'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(
-            hintText: 'Cookbook name',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final name = controller.text.trim();
-              if (name.isEmpty) return;
-              Navigator.pop(ctx);
-              await ref
-                  .read(cookbooksProvider.notifier)
-                  .updateCookbook(id: cookbook.id, name: name);
-            },
-            child: const Text('Rename'),
-          ),
-        ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _CreateCookbookSheet(
+        initialName: cookbook.name,
+        title: 'Rename Cookbook',
+        buttonLabel: 'Rename',
+        onSave: (name) async {
+          Navigator.pop(ctx);
+          await ref
+              .read(cookbooksProvider.notifier)
+              .updateCookbook(id: cookbook.id, name: name);
+        },
       ),
     );
   }
@@ -251,88 +224,292 @@ class CookbookListView extends ConsumerWidget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Create / Rename bottom sheet
+// ---------------------------------------------------------------------------
+
+class _CreateCookbookSheet extends StatefulWidget {
+  const _CreateCookbookSheet({
+    this.initialName,
+    this.title = 'New Cookbook',
+    this.buttonLabel = 'Create',
+    required this.onSave,
+  });
+
+  final String? initialName;
+  final String title;
+  final String buttonLabel;
+  final Future<void> Function(String name) onSave;
+
+  @override
+  State<_CreateCookbookSheet> createState() => _CreateCookbookSheetState();
+}
+
+class _CreateCookbookSheetState extends State<_CreateCookbookSheet> {
+  late final TextEditingController _controller;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialName ?? '');
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSave() async {
+    final name = _controller.text.trim();
+    if (name.isEmpty || _saving) return;
+    setState(() => _saving = true);
+    await widget.onSave(name);
+    if (mounted) setState(() => _saving = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.fromLTRB(24, 16, 24, 16 + bottomInset),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            widget.title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
+                ),
+          ),
+          const SizedBox(height: 20),
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            textCapitalization: TextCapitalization.words,
+            onSubmitted: (_) => _handleSave(),
+            decoration: InputDecoration(
+              hintText: 'Cookbook name',
+              filled: true,
+              fillColor: Colors.grey.shade100,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            ),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            height: 50,
+            child: FilledButton(
+              onPressed: _saving ? null : _handleSave,
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFFF4F63),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: _saving
+                  ? const CupertinoActivityIndicator(color: Colors.white)
+                  : Text(
+                      widget.buttonLabel,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Cookbook card with stacked/fanned images
+// ---------------------------------------------------------------------------
+
 class _CookbookCard extends StatelessWidget {
   const _CookbookCard({
     required this.name,
     required this.recipeCount,
-    this.coverImageUrl,
-    this.icon,
-    this.iconColor,
+    this.coverImages = const [],
     required this.onTap,
     this.onLongPress,
   });
 
   final String name;
   final int recipeCount;
-  final String? coverImageUrl;
-  final IconData? icon;
-  final Color? iconColor;
+  final List<String> coverImages;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
       onLongPress: onLongPress,
-      borderRadius: BorderRadius.circular(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final size = constraints.maxWidth;
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Container(
-                  width: size,
-                  height: size,
-                  color: Colors.grey.shade100,
-                  child: coverImageUrl != null
-                      ? Image.network(
-                          coverImageUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              _buildIconPlaceholder(size),
-                        )
-                      : _buildIconPlaceholder(size),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+            // Text at top-left
+            Positioned(
+              top: 16,
+              left: 16,
+              right: 16,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 17,
+                          height: 1.2,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$recipeCount ${recipeCount == 1 ? 'recipe' : 'recipes'}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade600,
+                          fontSize: 13,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            // Stacked images at bottom-right
+            if (coverImages.isNotEmpty)
+              Positioned(
+                bottom: -4,
+                right: -4,
+                child: _FannedImages(images: coverImages),
+              )
+            else
+              Positioned(
+                bottom: 12,
+                right: 12,
+                child: Icon(
+                  Icons.menu_book_rounded,
+                  size: 32,
+                  color: Colors.grey.shade300,
                 ),
-              );
-            },
-          ),
-          const SizedBox(height: 10),
-          Text(
-            name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            '$recipeCount ${recipeCount == 1 ? 'recipe' : 'recipes'}',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.grey.shade500,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildIconPlaceholder(double size) {
-    return Center(
-      child: Icon(
-        icon ?? Icons.menu_book_rounded,
-        size: 32,
-        color: iconColor ?? Colors.grey.shade400,
+              ),
+          ],
+        ),
       ),
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Fanned image stack (up to 3 images overlapping)
+// ---------------------------------------------------------------------------
+
+class _FannedImages extends StatelessWidget {
+  const _FannedImages({required this.images});
+
+  final List<String> images;
+
+  @override
+  Widget build(BuildContext context) {
+    final count = images.length.clamp(0, 3);
+    if (count == 0) return const SizedBox.shrink();
+
+    const double imgSize = 72;
+
+    // Rotations and offsets for each card (back to front)
+    const rotations = [-0.20, -0.06, 0.12];
+    const offsets = [
+      Offset(-38, -12),
+      Offset(-16, -6),
+      Offset(6, 0),
+    ];
+
+    final startIdx = 3 - count;
+
+    return SizedBox(
+      width: imgSize + 50,
+      height: imgSize + 24,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          for (int i = 0; i < count; i++)
+            Positioned(
+              right: -offsets[startIdx + i].dx,
+              bottom: -offsets[startIdx + i].dy,
+              child: Transform.rotate(
+                angle: rotations[startIdx + i],
+                child: Container(
+                  width: imgSize,
+                  height: imgSize,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.white, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      images[i],
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: Colors.grey.shade200,
+                        child: Icon(Icons.restaurant,
+                            size: 20, color: Colors.grey.shade400),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Create cookbook card
+// ---------------------------------------------------------------------------
 
 class _CreateCookbookCard extends StatelessWidget {
   const _CreateCookbookCard({required this.onTap});
@@ -341,51 +518,46 @@ class _CreateCookbookCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final size = constraints.maxWidth;
-              return Container(
-                width: size,
-                height: size,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: Colors.grey.shade300,
-                    width: 1.5,
-                    strokeAlign: BorderSide.strokeAlignInside,
-                  ),
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.add_rounded,
-                        size: 32,
-                        color: Colors.grey.shade400,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'New Cookbook',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade500,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Colors.grey.shade300,
+            width: 1.5,
+            strokeAlign: BorderSide.strokeAlignInside,
           ),
-        ],
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.add_rounded,
+                  size: 28,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'New Cookbook',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

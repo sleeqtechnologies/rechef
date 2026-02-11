@@ -72,10 +72,10 @@ const getRecipeCountsByCookbookIds = async (
 
 const getCoverImagesByCookbookIds = async (
   cookbookIds: string[],
-): Promise<Map<string, string | null>> => {
+): Promise<Map<string, string[]>> => {
   if (cookbookIds.length === 0) return new Map();
 
-  // For each cookbook, get the image_url of the first recipe (by position)
+  // For each cookbook, get up to 3 recipe image_urls (by position)
   const rows = await db
     .select({
       cookbookId: cookbookRecipeTable.cookbookId,
@@ -86,13 +86,15 @@ const getCoverImagesByCookbookIds = async (
     .where(inArray(cookbookRecipeTable.cookbookId, cookbookIds))
     .orderBy(cookbookRecipeTable.position);
 
-  const map = new Map<string, string | null>();
+  const map = new Map<string, string[]>();
   for (const row of rows) {
     const cbId = row.cookbookId as string;
     const imgUrl = row.imageUrl as string | null;
-    // Only keep the first one per cookbook
-    if (!map.has(cbId)) {
-      map.set(cbId, imgUrl);
+    if (!imgUrl) continue;
+    const arr = map.get(cbId) ?? [];
+    if (arr.length < 3) {
+      arr.push(imgUrl);
+      map.set(cbId, arr);
     }
   }
   return map;

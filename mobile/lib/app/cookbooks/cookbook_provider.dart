@@ -13,11 +13,15 @@ class CookbooksState {
     required this.cookbooks,
     required this.allRecipesCount,
     required this.sharedWithMeCount,
+    this.allRecipeImages = const [],
+    this.sharedImages = const [],
   });
 
   final List<Cookbook> cookbooks;
   final int allRecipesCount;
   final int sharedWithMeCount;
+  final List<String> allRecipeImages;
+  final List<String> sharedImages;
 }
 
 class CookbooksNotifier extends AsyncNotifier<CookbooksState> {
@@ -29,6 +33,8 @@ class CookbooksNotifier extends AsyncNotifier<CookbooksState> {
       cookbooks: response.cookbooks,
       allRecipesCount: response.allRecipesCount,
       sharedWithMeCount: response.sharedWithMeCount,
+      allRecipeImages: response.allRecipeImages,
+      sharedImages: response.sharedImages,
     );
   }
 
@@ -44,6 +50,8 @@ class CookbooksNotifier extends AsyncNotifier<CookbooksState> {
         cookbooks: [cookbook, ...current.cookbooks],
         allRecipesCount: current.allRecipesCount,
         sharedWithMeCount: current.sharedWithMeCount,
+        allRecipeImages: current.allRecipeImages,
+        sharedImages: current.sharedImages,
       ));
     }
     return cookbook;
@@ -68,6 +76,8 @@ class CookbooksNotifier extends AsyncNotifier<CookbooksState> {
         cookbooks: cookbooks,
         allRecipesCount: current.allRecipesCount,
         sharedWithMeCount: current.sharedWithMeCount,
+        allRecipeImages: current.allRecipeImages,
+        sharedImages: current.sharedImages,
       ));
     }
     return updated;
@@ -82,6 +92,8 @@ class CookbooksNotifier extends AsyncNotifier<CookbooksState> {
         cookbooks: current.cookbooks.where((c) => c.id != id).toList(),
         allRecipesCount: current.allRecipesCount,
         sharedWithMeCount: current.sharedWithMeCount,
+        allRecipeImages: current.allRecipeImages,
+        sharedImages: current.sharedImages,
       ));
     }
   }

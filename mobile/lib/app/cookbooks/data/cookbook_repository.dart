@@ -22,10 +22,21 @@ class CookbookRepository {
         .map((e) => Cookbook.fromJson(e as Map<String, dynamic>))
         .toList();
 
+    final allRecipeImages = (data['allRecipeImages'] as List<dynamic>?)
+            ?.map((e) => e as String)
+            .toList() ??
+        [];
+    final sharedImages = (data['sharedImages'] as List<dynamic>?)
+            ?.map((e) => e as String)
+            .toList() ??
+        [];
+
     return CookbooksResponse(
       cookbooks: cookbooks,
       allRecipesCount: data['allRecipesCount'] as int? ?? 0,
       sharedWithMeCount: data['sharedWithMeCount'] as int? ?? 0,
+      allRecipeImages: allRecipeImages,
+      sharedImages: sharedImages,
     );
   }
 
@@ -126,9 +137,13 @@ class CookbooksResponse {
     required this.cookbooks,
     required this.allRecipesCount,
     required this.sharedWithMeCount,
+    this.allRecipeImages = const [],
+    this.sharedImages = const [],
   });
 
   final List<Cookbook> cookbooks;
   final int allRecipesCount;
   final int sharedWithMeCount;
+  final List<String> allRecipeImages;
+  final List<String> sharedImages;
 }

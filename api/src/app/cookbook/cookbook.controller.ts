@@ -44,14 +44,32 @@ const getCookbooks = async (req: Request, res: Response) => {
       id: c.id,
       name: c.name,
       description: c.description,
-      coverImageUrl: c.coverImageUrl ?? coverImages.get(c.id) ?? null,
+      coverImages: coverImages.get(c.id) ?? [],
       recipeCount: recipeCounts.get(c.id) ?? 0,
     }));
+
+    const allRecipeImages: string[] = [];
+    for (const r of ownedRecipes) {
+      const imgUrl = (r as any).imageUrl as string | null;
+      if (imgUrl && allRecipeImages.length < 3) allRecipeImages.push(imgUrl);
+    }
+    for (const s of sharedRecipes) {
+      const imgUrl = (s as any).recipe?.imageUrl as string | null;
+      if (imgUrl && allRecipeImages.length < 3) allRecipeImages.push(imgUrl);
+    }
+
+    const sharedImages: string[] = [];
+    for (const s of sharedRecipes) {
+      const imgUrl = (s as any).recipe?.imageUrl as string | null;
+      if (imgUrl && sharedImages.length < 3) sharedImages.push(imgUrl);
+    }
 
     return res.status(200).json({
       cookbooks: formattedCookbooks,
       allRecipesCount,
       sharedWithMeCount,
+      allRecipeImages,
+      sharedImages,
     });
   } catch (error) {
     logger.error("Error fetching cookbooks:", error);
@@ -81,7 +99,7 @@ const createCookbook = async (req: Request, res: Response) => {
         id: cookbook.id,
         name: cookbook.name,
         description: cookbook.description,
-        coverImageUrl: cookbook.coverImageUrl,
+        coverImages: [],
         recipeCount: 0,
       },
     });
@@ -123,7 +141,7 @@ const updateCookbook = async (req: Request, res: Response) => {
         id: updated.id,
         name: updated.name,
         description: updated.description,
-        coverImageUrl: updated.coverImageUrl ?? coverImages.get(id) ?? null,
+        coverImages: coverImages.get(id) ?? [],
         recipeCount: recipeCounts.get(id) ?? 0,
       },
     });
