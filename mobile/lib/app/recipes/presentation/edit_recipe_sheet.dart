@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
@@ -117,9 +118,11 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
   void _save() {
     final recipe = _buildRecipe();
     if (recipe.name.isEmpty) {
-      ScaffoldMessenger.of(
+      AppSnackBar.show(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Recipe name is required')));
+        message: 'Recipe name is required',
+        type: SnackBarType.warning,
+      );
       return;
     }
     Navigator.of(context).pop(recipe);

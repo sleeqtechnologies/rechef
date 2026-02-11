@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import '../../recipes/domain/recipe.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/constants/api_endpoints.dart';
@@ -74,6 +75,29 @@ class ImportRepository {
       }
       final error = jsonDecode(response.body);
       throw Exception(error['error'] ?? 'Failed to submit content');
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    return SubmitResult.fromJson(data);
+  }
+
+  Future<SubmitResult> submitImage(String filePath) async {
+    final bytes = await File(filePath).readAsBytes();
+    final base64Image = base64Encode(bytes);
+
+    final response = await _apiClient.post(
+      ApiEndpoints.parseContent,
+      body: {'imageBase64': base64Image},
+    );
+
+    if (response.statusCode != 202) {
+      if (response.body.isEmpty) {
+        throw Exception(
+          'Server returned status ${response.statusCode} with no response',
+        );
+      }
+      final error = jsonDecode(response.body);
+      throw Exception(error['error'] ?? 'Failed to submit image');
     }
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;

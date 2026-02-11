@@ -19,6 +19,8 @@ import 'cooking_mode_sheet.dart';
 import 'edit_recipe_sheet.dart';
 import 'share_recipe_sheet.dart';
 import '../../cookbooks/presentation/add_to_cookbook_sheet.dart';
+import '../../../core/services/cook_reminder_notifications.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 
 bool _hasSourceOrAuthor(Recipe recipe) {
   final hasName =
@@ -43,19 +45,19 @@ class RecipeDetailScreen extends ConsumerStatefulWidget {
   ConsumerState<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
 }
 
-class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
+class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
   late final ScrollController _scrollController;
   bool _isCollapsed = false;
   bool _isMatchingPantry = true;
+  DateTime? _reminderDate;
+  int _selectedTab = 0;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
     _scrollController = ScrollController();
     _runPantryMatch();
+    _loadReminder();
     // For shared recipes, always refresh to get latest version
     _refreshIfShared();
   }
@@ -85,15 +87,19 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
       try {
         await ref.read(recipesProvider.notifier).updateRecipe(updated);
         if (mounted) {
-          ScaffoldMessenger.of(
+          AppSnackBar.show(
             context,
-          ).showSnackBar(const SnackBar(content: Text('Recipe updated')));
+            message: 'Recipe updated',
+            type: SnackBarType.success,
+          );
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(
+          AppSnackBar.show(
             context,
-          ).showSnackBar(SnackBar(content: Text('Failed to save: $e')));
+            message: 'Failed to save: $e',
+            type: SnackBarType.error,
+          );
         }
       }
     }
@@ -103,10 +109,10 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
     final ok = await ShareRecipeSheet.show(context, recipe: recipe);
     if (!mounted) return;
     if (!ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to create share link. Try again.'),
-        ),
+      AppSnackBar.show(
+        context,
+        message: 'Failed to create share link. Try again.',
+        type: SnackBarType.error,
       );
     }
   }
@@ -133,8 +139,10 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                   .read(recipesProvider.notifier)
                   .removeSharedRecipe(recipe.sharedSaveId!);
               if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Removed from library')),
+              AppSnackBar.show(
+                context,
+                message: 'Removed from library',
+                type: SnackBarType.success,
               );
               if (context.canPop()) {
                 context.pop();
@@ -143,9 +151,11 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
               }
             } catch (e) {
               if (mounted) {
-                ScaffoldMessenger.of(
+                AppSnackBar.show(
                   context,
-                ).showSnackBar(SnackBar(content: Text('Failed to remove: $e')));
+                  message: 'Failed to remove: $e',
+                  type: SnackBarType.error,
+                );
               }
             }
           },
@@ -174,9 +184,11 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
             try {
               await ref.read(recipesProvider.notifier).deleteRecipe(recipe.id);
               if (!mounted) return;
-              ScaffoldMessenger.of(
+              AppSnackBar.show(
                 context,
-              ).showSnackBar(const SnackBar(content: Text('Recipe deleted')));
+                message: 'Recipe deleted',
+                type: SnackBarType.success,
+              );
               if (context.canPop()) {
                 context.pop();
               } else {
@@ -184,9 +196,11 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
               }
             } catch (e) {
               if (mounted) {
-                ScaffoldMessenger.of(
+                AppSnackBar.show(
                   context,
-                ).showSnackBar(SnackBar(content: Text('Failed to delete: $e')));
+                  message: 'Failed to delete: $e',
+                  type: SnackBarType.error,
+                );
               }
             }
           },
@@ -195,9 +209,81 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
     );
   }
 
+  Future<void> _loadReminder() async {
+    final dt = await CookReminderNotifications.instance
+        .getReminder(widget.recipeId);
+    if (mounted) setState(() => _reminderDate = dt);
+  }
+
+  Future<void> _removeReminder(Recipe recipe) async {
+    await CookReminderNotifications.instance.cancel(recipe.id);
+    if (!mounted) return;
+    setState(() => _reminderDate = null);
+    AppSnackBar.show(
+      context,
+      message: 'Reminder removed',
+      type: SnackBarType.info,
+    );
+  }
+
+  Future<void> _handleReminder(Recipe recipe) async {
+    if (_reminderDate != null) {
+      await _removeReminder(recipe);
+      return;
+    }
+
+    // Pick date & time in one adaptive picker.
+    final now = DateTime.now();
+    final scheduledDate = await AdaptiveDatePicker.show(
+      context: context,
+      initialDate: now.add(const Duration(hours: 1)),
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+      mode: CupertinoDatePickerMode.dateAndTime,
+    );
+    if (scheduledDate == null || !mounted) return;
+
+    if (scheduledDate.isBefore(DateTime.now())) {
+      if (!mounted) return;
+      AppSnackBar.show(
+        context,
+        message: 'Please pick a time in the future',
+        type: SnackBarType.warning,
+      );
+      return;
+    }
+
+    await CookReminderNotifications.instance.schedule(
+      recipe.id,
+      recipe.name,
+      scheduledDate,
+    );
+
+    if (!mounted) return;
+    setState(() => _reminderDate = scheduledDate);
+    final formatted = _formatReminderDate(scheduledDate);
+    AppSnackBar.show(
+      context,
+      message: 'Reminder set for $formatted',
+      type: SnackBarType.success,
+    );
+  }
+
+  String _formatReminderDate(DateTime dt) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    final month = months[dt.month - 1];
+    final day = dt.day;
+    final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final period = dt.hour >= 12 ? 'PM' : 'AM';
+    return '$month $day at $hour:$minute $period';
+  }
+
   @override
   void dispose() {
-    _tabController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -366,11 +452,13 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                       _RecipeMorePopupMenu(
                         recipe: recipe,
                         isCollapsed: _isCollapsed,
+                        hasReminder: _reminderDate != null,
                         onDelete: () => _deleteRecipe(recipe),
                         onAddToCookbook: () => AddToCookbookSheet.show(
                           context,
                           recipeId: recipe.id,
                         ),
+                        onSetReminder: () => _handleReminder(recipe),
                       ),
                     if (recipe.isShared && recipe.sharedSaveId != null)
                       _SharedRecipeMorePopupMenu(
@@ -497,17 +585,20 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                               ),
                               const SizedBox(height: 16),
                             ],
-                            Row(
+                            Wrap(
+                              spacing: 10,
+                              runSpacing: 10,
                               children: [
                                 _MetaInfo(
                                   iconAsset: 'assets/icons/clock.svg',
                                   label: '${recipe.totalMinutes} min',
                                 ),
-                                const SizedBox(width: 20),
                                 _MetaInfo(
                                   iconAsset: 'assets/icons/servings.svg',
                                   label: '${recipe.servings ?? 0} servings',
                                 ),
+                                if (_reminderDate != null)
+                                  _ReminderChip(date: _reminderDate!),
                               ],
                             ),
                           ],
@@ -517,7 +608,17 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                       // Tab bar
                       Padding(
                         padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-                        child: _TabBarWidget(controller: _tabController),
+                        child: AdaptiveSegmentedControl(
+                          labels: const [
+                            'Ingredients',
+                            'Cooking',
+                            'Nutrition',
+                          ],
+                          selectedIndex: _selectedTab,
+                          onValueChanged: (index) {
+                            setState(() => _selectedTab = index);
+                          },
+                        ),
                       ),
                     ],
                   ),
@@ -525,115 +626,102 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen>
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                    child: AnimatedBuilder(
-                      animation: _tabController,
-                      builder: (context, _) {
-                        if (_tabController.index == 0) {
-                          return _IngredientsTab(
-                            recipe: recipe,
-                            isMatchingPantry: _isMatchingPantry,
-                            onToggle: recipe.isShared
-                                ? (_) {}
-                                : (index) {
-                                    ref
-                                        .read(recipesProvider.notifier)
-                                        .toggleIngredient(
-                                          widget.recipeId,
-                                          index,
-                                        );
-                                  },
-                          );
-                        } else if (_tabController.index == 1) {
-                          return _CookingTab(recipe: recipe);
-                        } else {
-                          return _NutritionTab(recipeId: recipe.id);
-                        }
-                      },
-                    ),
+                    child: switch (_selectedTab) {
+                      0 => _IngredientsTab(
+                        recipe: recipe,
+                        isMatchingPantry: _isMatchingPantry,
+                        onToggle: recipe.isShared
+                            ? (_) {}
+                            : (index) {
+                                ref
+                                    .read(recipesProvider.notifier)
+                                    .toggleIngredient(
+                                      widget.recipeId,
+                                      index,
+                                    );
+                              },
+                      ),
+                      1 => _CookingTab(recipe: recipe),
+                      _ => _NutritionTab(recipeId: recipe.id),
+                    },
                   ),
                 ),
                 const SliverToBoxAdapter(child: SizedBox(height: 120)),
               ],
             ),
           ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: AnimatedBuilder(
-              animation: _tabController,
-              builder: (context, _) {
-                if (_tabController.index == 2) {
-                  // No bottom CTA on Nutrition tab
-                  return const SizedBox.shrink();
-                }
-                return _BottomButton(
-                  isIngredientsTab: _tabController.index == 0,
-                  onPressed: () async {
-                    if (_tabController.index == 0) {
-                      final missing = recipe.ingredients
-                          .where((i) => !i.inPantry)
-                          .toList();
+          if (_selectedTab != 2)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: _BottomButton(
+                isIngredientsTab: _selectedTab == 0,
+                onPressed: () async {
+                  if (_selectedTab == 0) {
+                    final missing = recipe.ingredients
+                        .where((i) => !i.inPantry)
+                        .toList();
 
-                      if (missing.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'All ingredients are in your pantry!',
-                            ),
-                          ),
-                        );
-                        return;
-                      }
+                    if (missing.isEmpty) {
+                      AppSnackBar.show(
+                        context,
+                        message: 'All ingredients are in your pantry!',
+                        type: SnackBarType.info,
+                      );
+                      return;
+                    }
 
-                      try {
-                        final added = await ref
-                            .read(groceryProvider.notifier)
-                            .addItems(
-                              recipeId: widget.recipeId,
-                              items: missing
-                                  .map(
-                                    (i) => {
-                                      'name': i.name,
-                                      'quantity': i.quantity,
-                                      if (i.unit != null) 'unit': i.unit,
-                                    },
-                                  )
-                                  .toList(),
-                            );
-                        if (context.mounted) {
-                          if (recipe.isShared &&
-                              recipe.shareCode != null &&
-                              added > 0) {
-                            ShareEventService.recordEvent(
-                              shareCode: recipe.shareCode!,
-                              eventType: 'grocery_add',
-                            );
-                          }
-                          final msg = added == 0
-                              ? 'Items already in grocery list'
-                              : 'Added $added item${added == 1 ? '' : 's'} to grocery list';
-                          ScaffoldMessenger.of(
-                            context,
-                          ).showSnackBar(SnackBar(content: Text(msg)));
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Failed to add to grocery list'),
-                            ),
+                    try {
+                      final added = await ref
+                          .read(groceryProvider.notifier)
+                          .addItems(
+                            recipeId: widget.recipeId,
+                            items: missing
+                                .map(
+                                  (i) => {
+                                    'name': i.name,
+                                    'quantity': i.quantity,
+                                    if (i.unit != null) 'unit': i.unit,
+                                  },
+                                )
+                                .toList(),
+                          );
+                      if (context.mounted) {
+                        if (recipe.isShared &&
+                            recipe.shareCode != null &&
+                            added > 0) {
+                          ShareEventService.recordEvent(
+                            shareCode: recipe.shareCode!,
+                            eventType: 'grocery_add',
                           );
                         }
+                        final msg = added == 0
+                            ? 'Items already in grocery list'
+                            : 'Added $added item${added == 1 ? '' : 's'} to grocery list';
+                        AppSnackBar.show(
+                          context,
+                          message: msg,
+                          type: added == 0
+                              ? SnackBarType.info
+                              : SnackBarType.success,
+                        );
                       }
-                    } else {
-                      CookingModeSheet.show(context, recipe);
+                    } catch (e) {
+                      if (context.mounted) {
+                        AppSnackBar.show(
+                          context,
+                          message: 'Failed to add to grocery list',
+                          type: SnackBarType.error,
+                        );
+                      }
                     }
-                  },
-                );
-              },
+                  } else {
+                    CookingModeSheet.show(context, recipe);
+                  }
+                },
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -772,28 +860,39 @@ class _SharedRecipeMorePopupMenu extends StatelessWidget {
   }
 }
 
-enum _RecipeMoreAction { addToCookbook, delete }
+enum _RecipeMoreAction { addToCookbook, setReminder, delete }
 
 class _RecipeMorePopupMenu extends StatelessWidget {
   const _RecipeMorePopupMenu({
     required this.recipe,
     required this.isCollapsed,
+    required this.hasReminder,
     required this.onDelete,
     required this.onAddToCookbook,
+    required this.onSetReminder,
   });
 
   final Recipe recipe;
   final bool isCollapsed;
+  final bool hasReminder;
   final VoidCallback onDelete;
   final VoidCallback onAddToCookbook;
+  final VoidCallback onSetReminder;
 
-  static const _items = [
-    AdaptivePopupMenuItem<_RecipeMoreAction>(
+  List<AdaptivePopupMenuItem<_RecipeMoreAction>> get _items => [
+    const AdaptivePopupMenuItem<_RecipeMoreAction>(
       label: 'Add to Cookbook',
       icon: Icons.menu_book_outlined,
       value: _RecipeMoreAction.addToCookbook,
     ),
     AdaptivePopupMenuItem<_RecipeMoreAction>(
+      label: hasReminder ? 'Remove Reminder' : 'Set Reminder',
+      icon: hasReminder
+          ? Icons.notifications_off_outlined
+          : Icons.notifications_outlined,
+      value: _RecipeMoreAction.setReminder,
+    ),
+    const AdaptivePopupMenuItem<_RecipeMoreAction>(
       label: 'Delete recipe',
       icon: Icons.delete_outline,
       value: _RecipeMoreAction.delete,
@@ -823,6 +922,9 @@ class _RecipeMorePopupMenu extends StatelessWidget {
               switch (entry.value) {
                 case _RecipeMoreAction.addToCookbook:
                   onAddToCookbook();
+                  break;
+                case _RecipeMoreAction.setReminder:
+                  onSetReminder();
                   break;
                 case _RecipeMoreAction.delete:
                   onDelete();
@@ -1103,55 +1205,55 @@ class _MetaInfo extends StatelessWidget {
   }
 }
 
-class _TabBarWidget extends StatelessWidget {
-  const _TabBarWidget({required this.controller});
+class _ReminderChip extends StatelessWidget {
+  const _ReminderChip({required this.date});
 
-  final TabController controller;
+  final DateTime date;
 
-  static const _cream = Color(0xFFF7F5F0);
+  String get _label {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    final month = months[date.month - 1];
+    final day = date.day;
+    final hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
+    final minute = date.minute.toString().padLeft(2, '0');
+    final period = date.hour >= 12 ? 'PM' : 'AM';
+    return '$month $day, $hour:$minute $period';
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: IntrinsicWidth(
-        child: Container(
-          decoration: BoxDecoration(
-            color: _cream,
-            borderRadius: BorderRadius.circular(999),
+    final color = Colors.grey.shade700;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 18,
+            height: 18,
+            child: SvgPicture.asset(
+              'assets/icons/alert.svg',
+              width: 18,
+              height: 18,
+              colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+            ),
           ),
-          padding: const EdgeInsets.all(8),
-          child: TabBar(
-            controller: controller,
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-            indicator: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            indicatorSize: TabBarIndicatorSize.tab,
-            dividerColor: Colors.transparent,
-            labelColor: Colors.black,
-            unselectedLabelColor: Colors.black87,
-            labelStyle: const TextStyle(
+          const SizedBox(width: 6),
+          Text(
+            _label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: color,
               fontWeight: FontWeight.w600,
-              fontSize: 14,
             ),
-            unselectedLabelStyle: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
-            labelPadding: const EdgeInsets.symmetric(
-              horizontal: 24,
-              vertical: 2,
-            ),
-            tabs: const [
-              Tab(text: 'Ingredients'),
-              Tab(text: 'Cooking'),
-              Tab(text: 'Nutrition'),
-            ],
           ),
-        ),
+        ],
       ),
     );
   }
@@ -1410,13 +1512,12 @@ class _NutritionContentState extends State<_NutritionContent>
     super.initState();
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2400),
+      duration: const Duration(milliseconds: 600),
     );
     _fadeAnim = CurvedAnimation(
       parent: _animController,
       curve: const Interval(0.15, 0.5, curve: Curves.easeOut),
     );
-    // Feed data after the frame so the chart animates visibly
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         setState(() => _chartDataReady = true);
@@ -1533,7 +1634,7 @@ class _NutritionContentState extends State<_NutritionContent>
                         innerRadius: '68%',
                         radius: '90%',
                         cornerStyle: CornerStyle.bothCurve,
-                        animationDuration: 4200,
+                        animationDuration: 1200,
                         animationDelay: 0,
                         dataLabelSettings: const DataLabelSettings(
                           isVisible: false,

@@ -27,7 +27,8 @@ export default function SupportPage() {
               Need help with Rechef? We are here to assist you!
             </p>
             <p className="mt-4 text-zinc-700 dark:text-zinc-300">
-              If you have any questions, issues, or feedback, please reach out to us by sending an email to:
+              If you have any questions, issues, or feedback, please reach out
+              to us by sending an email to:
             </p>
             <p className="mt-6 text-center">
               <a
@@ -38,7 +39,8 @@ export default function SupportPage() {
               </a>
             </p>
             <p className="mt-6 text-zinc-700 dark:text-zinc-300">
-              We will do our best to respond to your inquiry as soon as possible.
+              We will do our best to respond to your inquiry as soon as
+              possible.
             </p>
           </section>
         </div>

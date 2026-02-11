@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 
 import '../data/import_repository.dart';
 import '../import_provider.dart';
@@ -28,7 +29,11 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
   void initState() {
     super.initState();
     _urlController = TextEditingController(text: widget.initialUrl);
-    if (widget.initialUrl != null && widget.initialUrl!.isNotEmpty) {
+    if (widget.initialImagePath != null &&
+        widget.initialImagePath!.isNotEmpty) {
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _submitImage(widget.initialImagePath!));
+    } else if (widget.initialUrl != null && widget.initialUrl!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _submitContent());
     }
   }
@@ -82,15 +87,61 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
       // top bar badge) reflects the new import.
       ref.invalidate(monthlyImportUsageProvider);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Recipe is being generated in the background'),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          duration: const Duration(seconds: 3),
+      AppSnackBar.show(
+        context,
+        message: 'Recipe is being generated in the background',
+        type: SnackBarType.info,
+      );
+
+      context.go('/recipes');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString().replaceFirst('Exception: ', '');
+        _isSubmitting = false;
+      });
+    }
+  }
+
+  Future<void> _submitImage(String imagePath) async {
+    final isPro = ref.read(isProUserProvider);
+    if (!isPro) {
+      final usageAsync = ref.read(monthlyImportUsageProvider);
+      final usage = usageAsync.maybeWhen(
+        data: (value) => value,
+        orElse: () => null,
+      );
+
+      if (usage != null && usage.used >= usage.limit) {
+        await ref.read(subscriptionProvider.notifier).showPaywall();
+        return;
+      }
+    }
+
+    setState(() {
+      _isSubmitting = true;
+      _error = null;
+    });
+
+    try {
+      final repo = ref.read(importRepositoryProvider);
+      final result = await repo.submitImage(imagePath);
+      if (!mounted) return;
+
+      ref.read(pendingJobsProvider.notifier).addJob(
+        ContentJob(
+          id: result.jobId,
+          status: 'pending',
+          savedContentId: result.savedContentId,
         ),
+      );
+
+      ref.invalidate(monthlyImportUsageProvider);
+
+      AppSnackBar.show(
+        context,
+        message: 'Recipe is being generated from your photo',
+        type: SnackBarType.info,
       );
 
       context.go('/recipes');

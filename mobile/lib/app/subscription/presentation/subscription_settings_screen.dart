@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 
 import '../subscription_provider.dart';
 
@@ -161,18 +162,14 @@ class _SubscriptionContent extends ConsumerWidget {
             await ref.read(subscriptionProvider.notifier).restorePurchases();
             if (!context.mounted) return;
             final restored = ref.read(isProUserProvider);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  restored
-                      ? 'Purchases restored successfully!'
-                      : 'No previous purchases found.',
-                ),
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
+            AppSnackBar.show(
+              context,
+              message: restored
+                  ? 'Purchases restored successfully!'
+                  : 'No previous purchases found.',
+              type: restored
+                  ? SnackBarType.success
+                  : SnackBarType.info,
             );
           },
           icon: const Icon(Icons.restore_rounded),

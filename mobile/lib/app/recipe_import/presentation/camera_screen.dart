@@ -2,451 +2,442 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
-class CameraScreen extends StatefulWidget {
+import '../data/import_repository.dart';
+import '../import_provider.dart';
+import '../pending_jobs_provider.dart';
+import '../monthly_import_usage_provider.dart';
+import '../../subscription/subscription_provider.dart';
+
+class CameraScreen extends ConsumerStatefulWidget {
   const CameraScreen({super.key});
 
   @override
-  State<CameraScreen> createState() => _CameraScreenState();
+  ConsumerState<CameraScreen> createState() => _CameraScreenState();
 }
 
-class _CameraScreenState extends State<CameraScreen> {
+class _CameraScreenState extends ConsumerState<CameraScreen>
+    with WidgetsBindingObserver {
   CameraController? _controller;
-  List<CameraDescription>? _cameras;
   bool _isInitialized = false;
   bool _isCapturing = false;
+  bool _isSubmitting = false;
   XFile? _capturedImage;
-  String _selectedMode = 'Meal'; // 'Meal' or 'Label'
   bool _flashEnabled = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initializeCamera();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final ctrl = _controller;
+    if (ctrl == null || !ctrl.value.isInitialized) return;
+    if (state == AppLifecycleState.inactive) {
+      ctrl.dispose();
+      _controller = null;
+    } else if (state == AppLifecycleState.resumed) {
+      _initializeCamera();
+    }
   }
 
   Future<void> _initializeCamera() async {
     try {
-      _cameras = await availableCameras();
-      if (_cameras != null && _cameras!.isNotEmpty) {
-        _controller = CameraController(
-          _cameras![0],
-          ResolutionPreset.high,
-          enableAudio: false,
-        );
-
-        await _controller!.initialize();
-        if (mounted) {
-          setState(() {
-            _isInitialized = true;
-          });
-        }
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) return;
+      final controller = CameraController(
+        cameras.first,
+        ResolutionPreset.high,
+        enableAudio: false,
+      );
+      await controller.initialize();
+      if (!mounted) {
+        controller.dispose();
+        return;
       }
+      setState(() {
+        _controller = controller;
+        _isInitialized = true;
+      });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error initializing camera: $e')),
+        AppSnackBar.show(
+          context,
+          message: 'Could not start camera',
+          type: SnackBarType.error,
         );
       }
     }
   }
 
   Future<void> _takePicture() async {
-    if (_controller == null || !_controller!.value.isInitialized) {
-      return;
-    }
+    final ctrl = _controller;
+    if (ctrl == null || !ctrl.value.isInitialized || _isCapturing) return;
 
-    setState(() {
-      _isCapturing = true;
-    });
-
+    setState(() => _isCapturing = true);
     try {
-      final XFile image = await _controller!.takePicture();
-      setState(() {
-        _capturedImage = image;
-        _isCapturing = false;
-      });
+      if (_flashEnabled) {
+        await ctrl.setFlashMode(FlashMode.torch);
+      }
+      final image = await ctrl.takePicture();
+      if (_flashEnabled) {
+        await ctrl.setFlashMode(FlashMode.off);
+      }
+      if (mounted) setState(() => _capturedImage = image);
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _isCapturing = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error taking picture: $e')),
+        AppSnackBar.show(
+          context,
+          message: 'Failed to take picture',
+          type: SnackBarType.error,
         );
       }
+    } finally {
+      if (mounted) setState(() => _isCapturing = false);
     }
   }
 
   Future<void> _pickFromGallery() async {
     try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
+      final image = await ImagePicker().pickImage(
         source: ImageSource.gallery,
         imageQuality: 85,
       );
-
       if (image != null && mounted) {
-        _navigateToImport(image.path);
+        setState(() => _capturedImage = image);
+        await _submitImage(image.path);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error picking image: $e')),
+        AppSnackBar.show(
+          context,
+          message: 'Could not open gallery',
+          type: SnackBarType.error,
         );
       }
     }
   }
 
-  void _navigateToImport(String imagePath) {
-    context.go('/recipes/import?image=$imagePath');
-  }
+  Future<void> _submitImage(String imagePath) async {
+    // Check free-tier limits.
+    final isPro = ref.read(isProUserProvider);
+    if (!isPro) {
+      final usageAsync = ref.read(monthlyImportUsageProvider);
+      final usage = usageAsync.maybeWhen(
+        data: (value) => value,
+        orElse: () => null,
+      );
+      if (usage != null && usage.used >= usage.limit) {
+        await ref.read(subscriptionProvider.notifier).showPaywall();
+        return;
+      }
+    }
 
-  void _useCapturedImage() {
-    if (_capturedImage != null) {
-      _navigateToImport(_capturedImage!.path);
+    setState(() => _isSubmitting = true);
+
+    try {
+      final repo = ref.read(importRepositoryProvider);
+      final result = await repo.submitImage(imagePath);
+      if (!mounted) return;
+
+      ref.read(pendingJobsProvider.notifier).addJob(
+        ContentJob(
+          id: result.jobId,
+          status: 'pending',
+          savedContentId: result.savedContentId,
+        ),
+      );
+
+      ref.invalidate(monthlyImportUsageProvider);
+
+      AppSnackBar.show(
+        context,
+        message: 'Recipe is being generated from your photo',
+        type: SnackBarType.success,
+      );
+
+      context.go('/recipes');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      AppSnackBar.show(
+        context,
+        message: e.toString().replaceFirst('Exception: ', ''),
+        type: SnackBarType.error,
+      );
     }
   }
 
-  void _retakePicture() {
-    setState(() {
-      _capturedImage = null;
-    });
+  Future<void> _useCapturedImage() async {
+    if (_capturedImage != null) {
+      await _submitImage(_capturedImage!.path);
+    }
   }
 
-  Future<void> _closeCamera() async {
-    await _controller?.dispose();
-    if (mounted) {
+  void _retake() {
+    setState(() => _capturedImage = null);
+  }
+
+  void _close() {
+    if (context.canPop()) {
       context.pop();
+    } else {
+      context.go('/recipes');
     }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller?.dispose();
     super.dispose();
   }
 
+  // ──────────────────── Build ────────────────────
+
   @override
   Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
     return PopScope(
-      canPop: false,
-      onPopInvoked: (didPop) async {
-        if (!didPop) {
-          await _closeCamera();
-        }
-      },
+      canPop: !_isSubmitting,
       child: Scaffold(
         backgroundColor: Colors.black,
-        body: SafeArea(
-          child: Stack(
-            children: [
-              // Camera preview or captured image
-              if (_capturedImage != null)
-                _buildCapturedImagePreview()
-              else if (_isInitialized && _controller != null)
-                _buildCameraPreview()
-              else
-                _buildLoadingView(),
-
-              // Circular guide overlay
-              if (_capturedImage == null && _isInitialized)
-                _buildCircularGuide(),
-
-              // Top bar
-              _buildTopBar(),
-
-              // Bottom controls
-              if (_capturedImage == null) _buildBottomControls(),
-              if (_capturedImage != null) _buildImageControls(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoadingView() {
-    return const Center(
-      child: const CupertinoActivityIndicator(color: Colors.white),
-    );
-  }
-
-  Widget _buildCameraPreview() {
-    return SizedBox.expand(
-      child: CameraPreview(_controller!),
-    );
-  }
-
-  Widget _buildCapturedImagePreview() {
-    return SizedBox.expand(
-      child: Image.file(
-        File(_capturedImage!.path),
-        fit: BoxFit.cover,
-      ),
-    );
-  }
-
-  Widget _buildCircularGuide() {
-    return Center(
-      child: Container(
-        width: 280,
-        height: 280,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: Colors.white.withOpacity(0.3),
-            width: 2,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTopBar() {
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        body: Stack(
+          fit: StackFit.expand,
           children: [
-            // Close button
-            _buildCircleButton(
-              icon: Icons.close,
-              onPressed: _closeCamera,
-            ),
-            // Segmented control
-            _buildSegmentedControl(),
-            // Flash/settings button
-            _buildCircleButton(
-              icon: _flashEnabled ? Icons.flash_on : Icons.flash_off,
-              onPressed: () {
-                setState(() {
-                  _flashEnabled = !_flashEnabled;
-                });
-                // TODO: Implement flash toggle
-              },
-            ),
+            // Preview
+            if (_capturedImage != null)
+              Image.file(File(_capturedImage!.path), fit: BoxFit.cover)
+            else if (_isInitialized && _controller != null)
+              CameraPreview(_controller!)
+            else
+              const Center(
+                child: CupertinoActivityIndicator(color: Colors.white),
+              ),
+
+            // Submitting overlay
+            if (_isSubmitting)
+              Container(
+                color: Colors.black.withValues(alpha: 0.6),
+                child: const Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CupertinoActivityIndicator(
+                        radius: 16,
+                        color: Colors.white,
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'Submitting photo...',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+            // Top bar
+            if (!_isSubmitting)
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 12,
+                left: 16,
+                right: 16,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _PillButton(
+                      icon: Icons.close,
+                      onTap: _close,
+                    ),
+                    if (_capturedImage == null)
+                      _PillButton(
+                        icon: _flashEnabled
+                            ? Icons.flash_on_rounded
+                            : Icons.flash_off_rounded,
+                        onTap: () {
+                          setState(() => _flashEnabled = !_flashEnabled);
+                        },
+                      ),
+                  ],
+                ),
+              ),
+
+            // Bottom controls
+            if (!_isSubmitting)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: EdgeInsets.fromLTRB(
+                    24,
+                    20,
+                    24,
+                    bottomPadding + 20,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.85),
+                        Colors.black.withValues(alpha: 0.0),
+                      ],
+                    ),
+                  ),
+                  child: _capturedImage != null
+                      ? _buildImageControls()
+                      : _buildCaptureControls(),
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCircleButton({
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.grey[300],
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            icon,
-            color: Colors.black87,
-            size: 20,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSegmentedControl() {
-    return Container(
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: Colors.grey[800],
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildSegmentButton('Meal', _selectedMode == 'Meal'),
-          _buildSegmentButton('Label', _selectedMode == 'Label'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSegmentButton(String label, bool isSelected) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedMode = label;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.grey[300] : Colors.transparent,
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.black87 : Colors.grey[400],
-            fontSize: 14,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBottomControls() {
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-        decoration: BoxDecoration(
-          color: Colors.grey[900],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            // Gallery button
-            _buildBottomButton(
-              icon: Icons.photo_library_outlined,
-              label: 'Gallery',
-              onPressed: _pickFromGallery,
+  Widget _buildCaptureControls() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Gallery
+        GestureDetector(
+          onTap: _pickFromGallery,
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(14),
             ),
-            // Shutter button
-            GestureDetector(
-              onTap: _isCapturing ? null : _takePicture,
-              child: Container(
-                width: 72,
-                height: 72,
+            child: const Icon(
+              Icons.photo_library_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+        ),
+
+        // Shutter
+        GestureDetector(
+          onTap: _isCapturing ? null : _takePicture,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            width: 76,
+            height: 76,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 4),
+            ),
+            child: Center(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 120),
+                width: _isCapturing ? 30 : 62,
+                height: _isCapturing ? 30 : 62,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.transparent,
-                  border: Border.all(color: Colors.white, width: 3),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(
+                    _isCapturing ? 8 : 31,
+                  ),
                 ),
-                child: _isCapturing
-                    ? const Padding(
-                        padding: EdgeInsets.all(20),
-                        child: CupertinoActivityIndicator(
-                          radius: 15,
-                          color: Colors.white,
-                        ),
-                      )
-                    : null,
               ),
             ),
-            // Type button
-            _buildBottomButton(
-              icon: Icons.grid_view_outlined,
-              label: 'Type',
-              onPressed: () {
-                // TODO: Navigate to type input screen
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Type input coming soon')),
-                );
-              },
-            ),
-          ],
+          ),
         ),
-      ),
-    );
-  }
 
-  Widget _buildBottomButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onPressed,
-  }) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: Colors.white,
-            size: 28,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
+        // Spacer to balance the row
+        const SizedBox(width: 48, height: 48),
+      ],
     );
   }
 
   Widget _buildImageControls() {
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.bottomCenter,
-            end: Alignment.topCenter,
-            colors: [
-              Colors.black.withOpacity(0.8),
-              Colors.transparent,
-            ],
+    return Row(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            onTap: _retake,
+            child: Container(
+              height: 52,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(26),
+              ),
+              child: const Center(
+                child: Text(
+                  'Retake',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            // Retake button
-            TextButton.icon(
-              onPressed: _retakePicture,
-              icon: const Icon(Icons.refresh, color: Colors.white),
-              label: const Text(
-                'Retake',
-                style: TextStyle(color: Colors.white, fontSize: 16),
+        const SizedBox(width: 12),
+        Expanded(
+          flex: 2,
+          child: GestureDetector(
+            onTap: _useCapturedImage,
+            child: Container(
+              height: 52,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(26),
               ),
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.black.withOpacity(0.5),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
+              child: const Center(
+                child: Text(
+                  'Use Photo',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
-            // Use photo button
-            ElevatedButton.icon(
-              onPressed: _useCapturedImage,
-              icon: const Icon(Icons.check),
-              label: const Text(
-                'Use Photo',
-                style: TextStyle(fontSize: 16),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF4F63),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
+      ],
+    );
+  }
+}
+
+class _PillButton extends StatelessWidget {
+  const _PillButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.35),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: Colors.white, size: 20),
       ),
     );
   }

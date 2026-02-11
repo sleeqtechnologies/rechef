@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -273,8 +274,10 @@ class _AddToCookbookSheetState extends ConsumerState<AddToCookbookSheet> {
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update cookbooks: $e')),
+        AppSnackBar.show(
+          context,
+          message: 'Failed to update cookbooks: $e',
+          type: SnackBarType.error,
         );
       }
     } finally {

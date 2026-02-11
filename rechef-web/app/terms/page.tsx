@@ -21,7 +21,12 @@ export default function TermsPage() {
           Terms and Conditions
         </h1>
         <p className="mb-12 text-sm text-zinc-600 dark:text-zinc-400">
-          Last updated: {new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+          Last updated:{" "}
+          {new Date().toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })}
         </p>
 
         <div className="prose prose-zinc dark:prose-invert max-w-none space-y-8">
@@ -49,9 +54,15 @@ export default function TermsPage() {
             <ul className="ml-6 mt-2 list-disc space-y-2 text-zinc-700 dark:text-zinc-300">
               <li>Creating, viewing, and organizing recipes</li>
               <li>Tracking pantry items and ingredients you have on hand</li>
-              <li>Generating or managing grocery lists based on your pantry or recipes</li>
+              <li>
+                Generating or managing grocery lists based on your pantry or
+                recipes
+              </li>
               <li>Importing recipes from supported URLs or content sources</li>
-              <li>Access to additional functionality as part of a paid Rechef Pro subscription</li>
+              <li>
+                Access to additional functionality as part of a paid Rechef Pro
+                subscription
+              </li>
             </ul>
           </section>
 
@@ -64,10 +75,17 @@ export default function TermsPage() {
               account. You are responsible for:
             </p>
             <ul className="ml-6 mt-2 list-disc space-y-2 text-zinc-700 dark:text-zinc-300">
-              <li>Maintaining the confidentiality of your account credentials</li>
+              <li>
+                Maintaining the confidentiality of your account credentials
+              </li>
               <li>All activities that occur under your account</li>
-              <li>Providing accurate and complete information when creating your account</li>
-              <li>Notifying us immediately of any unauthorized use of your account</li>
+              <li>
+                Providing accurate and complete information when creating your
+                account
+              </li>
+              <li>
+                Notifying us immediately of any unauthorized use of your account
+              </li>
             </ul>
           </section>
 
@@ -79,14 +97,38 @@ export default function TermsPage() {
               You agree not to use the Service to:
             </p>
             <ul className="ml-6 mt-2 list-disc space-y-2 text-zinc-700 dark:text-zinc-300">
-              <li>Create, upload, or share content that is illegal, harmful, threatening, abusive, or otherwise violates any applicable law</li>
-              <li>Impersonate any person or entity or misrepresent your affiliation with any person or entity</li>
-              <li>Upload or share content that infringes on intellectual property, privacy, or other rights of third parties</li>
-              <li>Upload or share content that promotes violence, hate speech, discrimination, or harassment</li>
-              <li>Upload or share content featuring minors without proper consent and authorization where required</li>
-              <li>Attempt to circumvent technical protections, reverse engineer, decompile, or otherwise tamper with the Service</li>
-              <li>Use automated systems, bots, or scraping methods to access or interact with the Service without authorization</li>
-              <li>Interfere with or disrupt the Service or servers or networks connected to the Service</li>
+              <li>
+                Create, upload, or share content that is illegal, harmful,
+                threatening, abusive, or otherwise violates any applicable law
+              </li>
+              <li>
+                Impersonate any person or entity or misrepresent your
+                affiliation with any person or entity
+              </li>
+              <li>
+                Upload or share content that infringes on intellectual property,
+                privacy, or other rights of third parties
+              </li>
+              <li>
+                Upload or share content that promotes violence, hate speech,
+                discrimination, or harassment
+              </li>
+              <li>
+                Upload or share content featuring minors without proper consent
+                and authorization where required
+              </li>
+              <li>
+                Attempt to circumvent technical protections, reverse engineer,
+                decompile, or otherwise tamper with the Service
+              </li>
+              <li>
+                Use automated systems, bots, or scraping methods to access or
+                interact with the Service without authorization
+              </li>
+              <li>
+                Interfere with or disrupt the Service or servers or networks
+                connected to the Service
+              </li>
             </ul>
           </section>
 
@@ -98,13 +140,13 @@ export default function TermsPage() {
               5.1 User Content
             </h3>
             <p className="mt-2 text-zinc-700 dark:text-zinc-300">
-              You retain ownership of the content you add to Rechef
-              (&quot;User Content&quot;), such as your recipes, pantry items,
-              notes, and related data. By uploading or otherwise providing User
-              Content to the Service, you grant us a worldwide, non-exclusive,
-              royalty-free license to use, store, process, and display your User
-              Content as reasonably necessary to operate, maintain, and improve
-              the Service.
+              You retain ownership of the content you add to Rechef (&quot;User
+              Content&quot;), such as your recipes, pantry items, notes, and
+              related data. By uploading or otherwise providing User Content to
+              the Service, you grant us a worldwide, non-exclusive, royalty-free
+              license to use, store, process, and display your User Content as
+              reasonably necessary to operate, maintain, and improve the
+              Service.
             </p>
             <h3 className="mt-4 text-xl font-semibold text-black dark:text-zinc-50">
               5.2 Generated Content
@@ -119,7 +161,10 @@ export default function TermsPage() {
             <ul className="ml-6 mt-2 list-disc space-y-2 text-zinc-700 dark:text-zinc-300">
               <li>Violate any law or regulation</li>
               <li>Infringe the rights of others</li>
-              <li>Misrepresent information in a way that could reasonably cause harm</li>
+              <li>
+                Misrepresent information in a way that could reasonably cause
+                harm
+              </li>
             </ul>
             <h3 className="mt-4 text-xl font-semibold text-black dark:text-zinc-50">
               5.3 Service Intellectual Property
@@ -160,13 +205,13 @@ export default function TermsPage() {
               6.2 Payment Terms
             </h3>
             <p className="mt-2 text-zinc-700 dark:text-zinc-300">
-              Subscriptions are billed by the applicable app store (for
-              example, Apple App Store or Google Play Store) on a monthly or
-              yearly basis, or as otherwise specified at the time of purchase.
-              All fees are charged in advance and are generally non-refundable
-              except as required by law or by the policies of the app store
-              where you made the purchase. Prices may change at any time, but
-              price changes will not affect your current billing period.
+              Subscriptions are billed by the applicable app store (for example,
+              Apple App Store or Google Play Store) on a monthly or yearly
+              basis, or as otherwise specified at the time of purchase. All fees
+              are charged in advance and are generally non-refundable except as
+              required by law or by the policies of the app store where you made
+              the purchase. Prices may change at any time, but price changes
+              will not affect your current billing period.
             </p>
             <h3 className="mt-4 text-xl font-semibold text-black dark:text-zinc-50">
               6.3 Auto-Renewal
@@ -188,11 +233,11 @@ export default function TermsPage() {
             </h2>
             <p className="mt-2 text-zinc-700 dark:text-zinc-300">
               We reserve the right to modify, suspend, or discontinue the
-              Service (in whole or in part) at any time, with or without
-              notice. We do not guarantee that the Service will be available at
-              all times or that it will be error-free. We may perform
-              maintenance, updates, or other work that may temporarily interrupt
-              access to the Service.
+              Service (in whole or in part) at any time, with or without notice.
+              We do not guarantee that the Service will be available at all
+              times or that it will be error-free. We may perform maintenance,
+              updates, or other work that may temporarily interrupt access to
+              the Service.
             </p>
           </section>
 
@@ -246,12 +291,12 @@ export default function TermsPage() {
             <p className="mt-2 text-zinc-700 dark:text-zinc-300">
               We may terminate or suspend your account and access to the Service
               immediately, without prior notice, if we believe that you have
-              violated these Terms or if your conduct is harmful to other
-              users, us, or third parties, or for any other reason at our
-              discretion. Upon termination, your right to use the Service will
-              cease immediately, and we may delete or disable access to your
-              account and User Content, subject to any legal obligations to
-              retain certain data.
+              violated these Terms or if your conduct is harmful to other users,
+              us, or third parties, or for any other reason at our discretion.
+              Upon termination, your right to use the Service will cease
+              immediately, and we may delete or disable access to your account
+              and User Content, subject to any legal obligations to retain
+              certain data.
             </p>
           </section>
 
@@ -261,12 +306,12 @@ export default function TermsPage() {
             </h2>
             <p className="mt-2 text-zinc-700 dark:text-zinc-300">
               These Terms and your use of the Service shall be governed by and
-              construed in accordance with the laws of Canada, without regard
-              to its conflict of law principles. Subject to any applicable
-              consumer protection laws that provide you with additional rights,
-              you agree that any disputes arising out of or relating to these
-              Terms or the Service will be brought in the courts of a competent
-              jurisdiction in Canada.
+              construed in accordance with the laws of Canada, without regard to
+              its conflict of law principles. Subject to any applicable consumer
+              protection laws that provide you with additional rights, you agree
+              that any disputes arising out of or relating to these Terms or the
+              Service will be brought in the courts of a competent jurisdiction
+              in Canada.
             </p>
           </section>
 

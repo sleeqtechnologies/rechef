@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/api_endpoints.dart';
@@ -97,9 +98,11 @@ class _ShareRecipeSheetState extends ConsumerState<ShareRecipeSheet> {
     await Clipboard.setData(ClipboardData(text: widget.shareUrl));
     if (!mounted) return;
     setState(() => _copied = true);
-    ScaffoldMessenger.of(
+    AppSnackBar.show(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Link copied to clipboard')));
+      message: 'Link copied to clipboard',
+      type: SnackBarType.success,
+    );
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) setState(() => _copied = false);
     });

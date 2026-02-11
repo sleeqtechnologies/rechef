@@ -3,6 +3,7 @@ import 'dart:math' show min;
 import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_core/flutter_chat_core.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
@@ -217,9 +218,11 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
     } catch (e) {
       debugPrint('Failed to send message: $e');
       if (mounted) {
-        ScaffoldMessenger.of(
+        AppSnackBar.show(
           context,
-        ).showSnackBar(SnackBar(content: Text('Failed to send: $e')));
+          message: 'Failed to send: $e',
+          type: SnackBarType.error,
+        );
       }
     } finally {
       if (mounted) _sending = false;

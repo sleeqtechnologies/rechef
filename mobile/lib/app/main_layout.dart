@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/widgets/app_snack_bar.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../app/pantry/presentation/add_item_sheet.dart';
 import '../app/pantry/pantry_provider.dart';
@@ -142,63 +143,42 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Recipe is being generated in the background'),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          duration: const Duration(seconds: 3),
-        ),
+      AppSnackBar.show(
+        context,
+        message: 'Recipe is being generated in the background',
+        type: SnackBarType.info,
       );
 
       final router = ref.read(routerProvider);
       router.go('/recipes');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          backgroundColor: Colors.red.shade400,
-          duration: const Duration(seconds: 4),
-        ),
+      AppSnackBar.show(
+        context,
+        message: e.toString().replaceFirst('Exception: ', ''),
+        type: SnackBarType.error,
       );
     }
   }
 
   void _onCameraTap() {
     final router = ref.read(routerProvider);
-    router.go('/camera');
+    router.push('/camera');
   }
 
   Future<void> _onOrderOnlineTap(BuildContext context) async {
     // Show a loading indicator
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Row(
-          children: [
-            CupertinoActivityIndicator(
-              radius: 9,
-              color: Colors.white,
-            ),
-            SizedBox(width: 12),
-            Text('Creating your shopping list...'),
-          ],
-        ),
-        duration: Duration(seconds: 10),
-      ),
+    AppSnackBar.show(
+      context,
+      message: 'Creating your shopping list...',
+      type: SnackBarType.info,
+      duration: const Duration(seconds: 10),
     );
 
     try {
       final url = await ref.read(groceryProvider.notifier).createOrder();
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
       // Fire grocery_purchase for shared recipes that have items in this order
       final groceryList = ref.read(groceryProvider).value ?? [];
@@ -227,12 +207,10 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
-          backgroundColor: Colors.red.shade400,
-        ),
+      AppSnackBar.show(
+        context,
+        message: e.toString().replaceFirst('Exception: ', ''),
+        type: SnackBarType.error,
       );
     }
   }

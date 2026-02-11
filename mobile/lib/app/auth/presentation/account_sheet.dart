@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter/material.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
@@ -263,15 +264,14 @@ class _SubscriptionSection extends ConsumerWidget {
             await ref.read(subscriptionProvider.notifier).restorePurchases();
             if (!context.mounted) return;
             final restored = ref.read(isProUserProvider);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  restored
-                      ? 'Purchases restored successfully.'
-                      : 'No previous purchases found.',
-                ),
-                behavior: SnackBarBehavior.floating,
-              ),
+            AppSnackBar.show(
+              context,
+              message: restored
+                  ? 'Purchases restored successfully.'
+                  : 'No previous purchases found.',
+              type: restored
+                  ? SnackBarType.success
+                  : SnackBarType.info,
             );
           },
         ),
@@ -311,8 +311,10 @@ extension _AccountSheetExtension on AccountSheet {
               }
             } catch (e) {
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Failed to delete account: $e')),
+                AppSnackBar.show(
+                  context,
+                  message: 'Failed to delete account: $e',
+                  type: SnackBarType.error,
                 );
               }
             }
