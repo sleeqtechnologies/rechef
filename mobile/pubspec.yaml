@@ -2,7 +2,7 @@ name: rechef
 description: "AI-powered recipe discovery and cooking assistant"
 publish_to: "none"
 
-version: 1.0.0+8
+version: 1.0.0+10
 
 environment:
   sdk: ^3.9.2
@@ -75,27 +75,27 @@ flutter:
   # https://flutter.dev/to/asset-from-package
 
   fonts:
-  - family: Roobert
-    fonts:
-    - asset: assets/font/Roobert-Regular.ttf
-    - asset: assets/font/Roobert-Medium.ttf
-      weight: 500
-    - asset: assets/font/Roobert-SemiBold.ttf
-      weight: 600
-  - family: Carena
-    fonts:
-    - asset: assets/font/Carena-Regular.otf
+    - family: Roobert
+      fonts:
+        - asset: assets/font/Roobert-Regular.ttf
+        - asset: assets/font/Roobert-Medium.ttf
+          weight: 500
+        - asset: assets/font/Roobert-SemiBold.ttf
+          weight: 600
+    - family: Carena
+      fonts:
+        - asset: assets/font/Carena-Regular.otf
 
   assets:
-  - .env
-  - assets/splash_background.png
-  - assets/rechef-logo.png
-  - assets/cookbook.png
-  - assets/grocery.png
-  - assets/share.png
-  - assets/clutter-image.jpeg
-  - assets/icons/
-  - assets/translations/
+    - .env
+    - assets/splash_background.png
+    - assets/rechef-logo.png
+    - assets/cookbook.png
+    - assets/grocery.png
+    - assets/share.png
+    - assets/clutter-image.jpeg
+    - assets/icons/
+    - assets/translations/
 
 flutter_native_splash:
   # Background image for splash screen (gradient)

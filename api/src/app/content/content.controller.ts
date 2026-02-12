@@ -8,6 +8,7 @@ import {
 import { parseYouTubeContent } from "../../services/youtube";
 import { parseTikTokContent } from "../../services/tiktok";
 import { parseInstagramContent } from "../../services/instagram";
+import { parseFacebookContent } from "../../services/facebook";
 import { parseWebsiteContent } from "../../services/website";
 import {
   extractFramesFromUrl,
@@ -48,6 +49,7 @@ function contentSourceToType(
     case "youtube":
     case "tiktok":
     case "instagram":
+    case "facebook":
       return "video";
     case "image":
       return "image";
@@ -367,6 +369,60 @@ async function generateRecipe(
           sourceAuthorAvatarUrl: null,
           savedContentTitle: sourceTitle,
           savedContentThumbnailUrl: instagramContent.thumbnailUrl ?? null,
+        };
+      }
+    }
+
+    case "facebook": {
+      const facebookContent = await parseFacebookContent(input.url);
+      const fbSourceTitle =
+        facebookContent.title || facebookContent.authorName || "Facebook";
+
+      try {
+        await acquireProcessingSlot();
+        try {
+          const { foodFrames: bestFrames, firstFrameBase64 } =
+            await extractAndFilterFrames(facebookContent.mediaUrl, {
+              intervalSeconds: 2,
+              maxFrames: 8,
+            });
+          const recipe = await generateRecipeFromContent({
+            foodFrames: bestFrames,
+            firstFrameBase64,
+            sourceTitle: fbSourceTitle,
+            sourceDescription: facebookContent.caption,
+            sourceImageUrls: facebookContent.thumbnailUrl
+              ? [facebookContent.thumbnailUrl]
+              : undefined,
+          });
+          return {
+            recipe,
+            sourceUrl: input.url,
+            sourceTitle: fbSourceTitle,
+            sourceAuthorName: facebookContent.authorName ?? null,
+            sourceAuthorAvatarUrl: null,
+            savedContentTitle: fbSourceTitle,
+            savedContentThumbnailUrl: facebookContent.thumbnailUrl ?? null,
+          };
+        } finally {
+          releaseProcessingSlot();
+        }
+      } catch {
+        const recipe = await generateRecipeFromContent({
+          sourceTitle: fbSourceTitle,
+          sourceDescription: facebookContent.caption,
+          sourceImageUrls: facebookContent.thumbnailUrl
+            ? [facebookContent.thumbnailUrl, facebookContent.mediaUrl]
+            : [facebookContent.mediaUrl],
+        });
+        return {
+          recipe,
+          sourceUrl: input.url,
+          sourceTitle: fbSourceTitle,
+          sourceAuthorName: facebookContent.authorName ?? null,
+          sourceAuthorAvatarUrl: null,
+          savedContentTitle: fbSourceTitle,
+          savedContentThumbnailUrl: facebookContent.thumbnailUrl ?? null,
         };
       }
     }

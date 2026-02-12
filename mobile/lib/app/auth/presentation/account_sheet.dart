@@ -149,6 +149,7 @@ class AccountSheet extends ConsumerWidget {
                         _SectionCard(
                           label: 'settings.other'.tr(),
                           children: [
+                            _LanguageRow(theme: theme),
                             _SettingsRow(
                               title: 'settings.privacy_notice'.tr(),
                               onTap: () => _openUrl(
@@ -281,6 +282,79 @@ class _SubscriptionSection extends ConsumerWidget {
           },
         ),
       ],
+    );
+  }
+}
+
+const _supportedLocales = [
+  Locale('en'),
+  Locale('fr'),
+  Locale('es'),
+  Locale('de'),
+  Locale('pt'),
+];
+
+const _localeDisplayNames = {
+  'en': 'English',
+  'fr': 'Français',
+  'es': 'Español',
+  'de': 'Deutsch',
+  'pt': 'Português',
+};
+
+String _localeDisplayName(Locale locale) {
+  return _localeDisplayNames[locale.languageCode] ?? locale.languageCode;
+}
+
+List<AdaptivePopupMenuItem<Locale>> _languageMenuItems(Locale active) =>
+    _supportedLocales
+        .map((locale) => AdaptivePopupMenuItem<Locale>(
+              label: _localeDisplayName(locale),
+              icon: locale == active ? 'checkmark' : null,
+              value: locale,
+            ))
+        .toList();
+
+class _LanguageRow extends StatelessWidget {
+  const _LanguageRow({required this.theme});
+
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return AdaptivePopupMenuButton.widget<Locale>(
+      items: _languageMenuItems(context.locale),
+      onSelected: (index, entry) async {
+        if (entry.value != null) {
+          await context.setLocale(entry.value!);
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'settings.language'.tr(),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Text(
+              _localeDisplayName(context.locale),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: Colors.grey.shade500,
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: Colors.grey.shade400,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

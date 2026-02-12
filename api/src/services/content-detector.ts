@@ -1,4 +1,4 @@
-type ContentSource = "youtube" | "tiktok" | "instagram" | "website" | "image";
+type ContentSource = "youtube" | "tiktok" | "instagram" | "facebook" | "website" | "image";
 
 interface ContentInfo {
   source: ContentSource;
@@ -38,6 +38,25 @@ function detectContentSource(url: string): ContentInfo {
   ) {
     return {
       source: "instagram",
+      url,
+    };
+  }
+
+  if (
+    normalizedUrl.includes("fb.watch/") ||
+    ((normalizedUrl.includes("facebook.com") ||
+      normalizedUrl.includes("www.facebook.com") ||
+      normalizedUrl.includes("m.facebook.com")) &&
+      (normalizedUrl.includes("/watch") ||
+        normalizedUrl.includes("/reel/") ||
+        normalizedUrl.includes("/reels/") ||
+        normalizedUrl.includes("/videos/") ||
+        normalizedUrl.includes("/posts/") ||
+        normalizedUrl.includes("/share/v/") ||
+        normalizedUrl.includes("/share/r/")))
+  ) {
+    return {
+      source: "facebook",
       url,
     };
   }
