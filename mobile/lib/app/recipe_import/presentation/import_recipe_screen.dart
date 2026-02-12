@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/widgets/app_snack_bar.dart';
 
+import '../../../core/utils/url_validator.dart';
 import '../data/import_repository.dart';
 import '../import_provider.dart';
 import '../monthly_import_usage_provider.dart';
@@ -48,6 +49,14 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
   Future<void> _submitContent() async {
     final url = _urlController.text.trim();
     if (url.isEmpty) return;
+
+    final validationError = UrlValidator.validate(url);
+    if (validationError != null) {
+      setState(() {
+        _error = validationError;
+      });
+      return;
+    }
 
     // Free users are limited to 5 imports per calendar month. We use the
     // cached monthlyImportUsageProvider value if available; if it's still

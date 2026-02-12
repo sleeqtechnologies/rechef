@@ -1,9 +1,8 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import '../../../core/utils/url_validator.dart';
 
-/// Frosted-glass bottom sheet for entering a recipe URL.
-/// Returns the trimmed URL string when the user taps Done on the keyboard.
 class ImportUrlSheet extends StatefulWidget {
   const ImportUrlSheet({super.key});
 
@@ -14,6 +13,7 @@ class ImportUrlSheet extends StatefulWidget {
 class _ImportUrlSheetState extends State<ImportUrlSheet> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  String? _error;
 
   static const double _sheetRadius = 20;
   static const double _blurSigma = 12;
@@ -21,8 +21,6 @@ class _ImportUrlSheetState extends State<ImportUrlSheet> {
   @override
   void initState() {
     super.initState();
-    // Automatically focus the URL field when the sheet opens so the keyboard
-    // appears without requiring an extra tap.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _focusNode.requestFocus();
@@ -39,9 +37,12 @@ class _ImportUrlSheetState extends State<ImportUrlSheet> {
 
   void _submit() {
     final url = _controller.text.trim();
-    if (url.isNotEmpty) {
-      Navigator.of(context).pop(url);
+    final validationError = UrlValidator.validate(url);
+    if (validationError != null) {
+      setState(() => _error = validationError);
+      return;
     }
+    Navigator.of(context).pop(url);
   }
 
   @override
@@ -83,7 +84,6 @@ class _ImportUrlSheetState extends State<ImportUrlSheet> {
                       ),
                     ),
                   ),
-                  // URL text field (no border)
                   TextField(
                     controller: _controller,
                     focusNode: _focusNode,
@@ -105,8 +105,22 @@ class _ImportUrlSheetState extends State<ImportUrlSheet> {
                     keyboardType: TextInputType.url,
                     textInputAction: TextInputAction.done,
                     onSubmitted: (_) => _submit(),
+                    onChanged: (_) {
+                      if (_error != null) setState(() => _error = null);
+                    },
                     maxLines: 1,
                   ),
+                  if (_error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        _error!,
+                        style: TextStyle(
+                          color: Colors.red.shade400,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
