@@ -13,6 +13,7 @@ import '../app/recipe_import/presentation/import_url_sheet.dart';
 import '../app/recipe_import/data/import_repository.dart';
 import '../app/recipe_import/import_provider.dart';
 import '../app/recipe_import/pending_jobs_provider.dart';
+import '../core/utils/url_validator.dart';
 import '../app/recipe_import/monthly_import_usage_provider.dart';
 import '../app/subscription/subscription_provider.dart';
 import '../core/routing/app_router.dart';
@@ -108,6 +109,16 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
   Future<void> _submitRecipeUrl(String url) async {
     final trimmedUrl = url.trim();
     if (trimmedUrl.isEmpty) return;
+
+    final validationError = UrlValidator.validate(trimmedUrl);
+    if (validationError != null) {
+      AppSnackBar.show(
+        context,
+        message: validationError,
+        type: SnackBarType.error,
+      );
+      return;
+    }
 
     // Enforce free-tier limit (5 imports per calendar month) using the cached
     // monthlyImportUsageProvider value when available.
