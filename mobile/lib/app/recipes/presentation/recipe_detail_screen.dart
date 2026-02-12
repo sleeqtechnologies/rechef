@@ -631,23 +631,34 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                   ),
                 ),
                 SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                    child: switch (_selectedTab) {
-                      0 => _IngredientsTab(
-                        recipe: recipe,
-                        isMatchingPantry: _isMatchingPantry,
-                        onToggle: recipe.isShared
-                            ? (_) {}
-                            : (index) {
-                                ref
-                                    .read(recipesProvider.notifier)
-                                    .toggleIngredient(widget.recipeId, index);
-                              },
-                      ),
-                      1 => _CookingTab(recipe: recipe),
-                      _ => _NutritionTab(recipeId: recipe.id),
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onHorizontalDragEnd: (details) {
+                      final velocity = details.primaryVelocity ?? 0;
+                      if (velocity < -300 && _selectedTab < 2) {
+                        setState(() => _selectedTab++);
+                      } else if (velocity > 300 && _selectedTab > 0) {
+                        setState(() => _selectedTab--);
+                      }
                     },
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                      child: switch (_selectedTab) {
+                        0 => _IngredientsTab(
+                          recipe: recipe,
+                          isMatchingPantry: _isMatchingPantry,
+                          onToggle: recipe.isShared
+                              ? (_) {}
+                              : (index) {
+                                  ref
+                                      .read(recipesProvider.notifier)
+                                      .toggleIngredient(widget.recipeId, index);
+                                },
+                        ),
+                        1 => _CookingTab(recipe: recipe),
+                        _ => _NutritionTab(recipeId: recipe.id),
+                      },
+                    ),
                   ),
                 ),
                 const SliverToBoxAdapter(child: SizedBox(height: 120)),
