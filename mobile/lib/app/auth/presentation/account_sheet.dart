@@ -103,11 +103,12 @@ class AccountSheet extends ConsumerWidget {
                                   radius: 40,
                                   backgroundImage:
                                       user.photoUrl != null &&
-                                              user.photoUrl!.trim().isNotEmpty
-                                          ? NetworkImage(user.photoUrl!)
-                                          : null,
+                                          user.photoUrl!.trim().isNotEmpty
+                                      ? NetworkImage(user.photoUrl!)
+                                      : null,
                                   backgroundColor: _accentColor,
-                                  child: user.photoUrl == null ||
+                                  child:
+                                      user.photoUrl == null ||
                                           user.photoUrl!.trim().isEmpty
                                       ? Text(
                                           user.initials,
@@ -149,13 +150,15 @@ class AccountSheet extends ConsumerWidget {
                           children: [
                             _SettingsRow(
                               title: 'Privacy Notice',
-                              onTap: () =>
-                                  _openUrl('https://rechef-ten.vercel.app/privacy'),
+                              onTap: () => _openUrl(
+                                'https://rechef-ten.vercel.app/privacy',
+                              ),
                             ),
                             _SettingsRow(
                               title: 'Terms of Service',
-                              onTap: () =>
-                                  _openUrl('https://rechef-ten.vercel.app/terms'),
+                              onTap: () => _openUrl(
+                                'https://rechef-ten.vercel.app/terms',
+                              ),
                             ),
                             _SettingsRow(
                               title: 'App version',
@@ -233,7 +236,6 @@ class AccountSheet extends ConsumerWidget {
       ),
     );
   }
-
 }
 
 class _SubscriptionSection extends ConsumerWidget {
@@ -257,7 +259,9 @@ class _SubscriptionSection extends ConsumerWidget {
           _SettingsRow(
             title: 'Manage subscription',
             onTap: () async {
-              await ref.read(subscriptionProvider.notifier).showCustomerCenter();
+              await ref
+                  .read(subscriptionProvider.notifier)
+                  .showCustomerCenter();
             },
           ),
         _SettingsRow(
@@ -271,9 +275,7 @@ class _SubscriptionSection extends ConsumerWidget {
               message: restored
                   ? 'Purchases restored successfully.'
                   : 'No previous purchases found.',
-              type: restored
-                  ? SnackBarType.success
-                  : SnackBarType.info,
+              type: restored ? SnackBarType.success : SnackBarType.info,
             );
           },
         ),
@@ -290,7 +292,10 @@ extension _AccountSheetExtension on AccountSheet {
     }
   }
 
-  Future<void> _confirmDeleteAccount(BuildContext context, WidgetRef ref) async {
+  Future<void> _confirmDeleteAccount(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     await AdaptiveAlertDialog.show(
       context: context,
       title: 'Delete account',

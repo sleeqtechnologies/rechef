@@ -143,10 +143,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                   ),
                   child: const Text(
                     'Get Started',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -157,10 +154,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                 onPressed: _loading ? null : () => _showLoginSheet(context),
                 child: const Text(
                   'Already have an account? Log in',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.white, fontSize: 14),
                 ),
               ),
               const SizedBox(height: 16),
@@ -197,10 +191,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
               ),
               const Text(
                 'Welcome back',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 24),
 

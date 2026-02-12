@@ -233,10 +233,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                         )
                       : const Text(
                           AppStrings.continueWithoutAccount,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                          ),
+                          style: TextStyle(color: Colors.white, fontSize: 14),
                         ),
                 ),
                 const SizedBox(height: 16),

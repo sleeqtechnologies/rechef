@@ -31,8 +31,9 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
     _urlController = TextEditingController(text: widget.initialUrl);
     if (widget.initialImagePath != null &&
         widget.initialImagePath!.isNotEmpty) {
-      WidgetsBinding.instance
-          .addPostFrameCallback((_) => _submitImage(widget.initialImagePath!));
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _submitImage(widget.initialImagePath!),
+      );
     } else if (widget.initialUrl != null && widget.initialUrl!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _submitContent());
     }
@@ -75,13 +76,15 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
       final result = await repo.submitContent(url);
       if (!mounted) return;
 
-      ref.read(pendingJobsProvider.notifier).addJob(
-        ContentJob(
-          id: result.jobId,
-          status: 'pending',
-          savedContentId: result.savedContentId,
-        ),
-      );
+      ref
+          .read(pendingJobsProvider.notifier)
+          .addJob(
+            ContentJob(
+              id: result.jobId,
+              status: 'pending',
+              savedContentId: result.savedContentId,
+            ),
+          );
 
       // Refresh monthly usage so any UI showing the count (e.g. the recipes
       // top bar badge) reflects the new import.
@@ -128,13 +131,15 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
       final result = await repo.submitImage(imagePath);
       if (!mounted) return;
 
-      ref.read(pendingJobsProvider.notifier).addJob(
-        ContentJob(
-          id: result.jobId,
-          status: 'pending',
-          savedContentId: result.savedContentId,
-        ),
-      );
+      ref
+          .read(pendingJobsProvider.notifier)
+          .addJob(
+            ContentJob(
+              id: result.jobId,
+              status: 'pending',
+              savedContentId: result.savedContentId,
+            ),
+          );
 
       ref.invalidate(monthlyImportUsageProvider);
 
@@ -242,7 +247,10 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 20),
                           ),
                           child: _isSubmitting
-                              ? const CupertinoActivityIndicator(radius: 10, color: Colors.white)
+                              ? const CupertinoActivityIndicator(
+                                  radius: 10,
+                                  color: Colors.white,
+                                )
                               : const Text(
                                   'Import',
                                   style: TextStyle(fontWeight: FontWeight.w600),
@@ -259,8 +267,8 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
               child: _isSubmitting
                   ? _SubmittingView()
                   : _error != null
-                      ? _ErrorView(error: _error!, onRetry: _submitContent)
-                      : _EmptyView(),
+                  ? _ErrorView(error: _error!, onRetry: _submitContent)
+                  : _EmptyView(),
             ),
           ],
         ),
@@ -276,10 +284,7 @@ class _SubmittingView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          CupertinoActivityIndicator(
-            radius: 16,
-            color: Colors.red.shade400,
-          ),
+          CupertinoActivityIndicator(radius: 16, color: Colors.red.shade400),
           const SizedBox(height: 20),
           Text(
             'Submitting...',

@@ -25,10 +25,9 @@ class CookbookListView extends ConsumerWidget {
             const SizedBox(height: 12),
             Text(
               'Failed to load cookbooks',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: Colors.grey.shade600),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
             ),
             const SizedBox(height: 16),
             TextButton(
@@ -68,54 +67,49 @@ class CookbookListView extends ConsumerWidget {
                   mainAxisSpacing: 12,
                   childAspectRatio: 0.88,
                 ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    if (index == 0) {
-                      return _CreateCookbookCard(
-                        onTap: () => _showCreateCookbookSheet(context, ref),
-                      );
-                    }
-                    if (index == 1) {
-                      return _CookbookCard(
-                        name: 'All recipes',
-                        recipeCount: state.allRecipesCount,
-                        coverImages: state.allRecipeImages,
-                        onTap: () =>
-                            context.push('/cookbooks/__all_recipes__'),
-                      );
-                    }
-                    if (index == 2) {
-                      return _CookbookCard(
-                        name: 'Shared with me',
-                        recipeCount: state.sharedWithMeCount,
-                        coverImages: state.sharedImages,
-                        onTap: () =>
-                            context.push('/cookbooks/__shared_with_me__'),
-                      );
-                    }
-                    if (index == 3) {
-                      return _CookbookCard(
-                        name: 'Pantry Picks',
-                        recipeCount: null,
-                        coverImages: const [],
-                        svgIcon: 'assets/icons/pantry.svg',
-                        onTap: () =>
-                            context.push('/cookbooks/__pantry_picks__'),
-                      );
-                    }
-
-                    final cookbook = userCookbooks[index - fixedCount];
-                    return _CookbookCard(
-                      name: cookbook.name,
-                      recipeCount: cookbook.recipeCount,
-                      coverImages: cookbook.coverImages,
-                      onTap: () => context.push('/cookbooks/${cookbook.id}'),
-                      onLongPress: () =>
-                          _showCookbookOptions(context, ref, cookbook),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  if (index == 0) {
+                    return _CreateCookbookCard(
+                      onTap: () => _showCreateCookbookSheet(context, ref),
                     );
-                  },
-                  childCount: totalItems,
-                ),
+                  }
+                  if (index == 1) {
+                    return _CookbookCard(
+                      name: 'All recipes',
+                      recipeCount: state.allRecipesCount,
+                      coverImages: state.allRecipeImages,
+                      onTap: () => context.push('/cookbooks/__all_recipes__'),
+                    );
+                  }
+                  if (index == 2) {
+                    return _CookbookCard(
+                      name: 'Shared with me',
+                      recipeCount: state.sharedWithMeCount,
+                      coverImages: state.sharedImages,
+                      onTap: () =>
+                          context.push('/cookbooks/__shared_with_me__'),
+                    );
+                  }
+                  if (index == 3) {
+                    return _CookbookCard(
+                      name: 'Pantry Picks',
+                      recipeCount: null,
+                      coverImages: const [],
+                      svgIcon: 'assets/icons/pantry.svg',
+                      onTap: () => context.push('/cookbooks/__pantry_picks__'),
+                    );
+                  }
+
+                  final cookbook = userCookbooks[index - fixedCount];
+                  return _CookbookCard(
+                    name: cookbook.name,
+                    recipeCount: cookbook.recipeCount,
+                    coverImages: cookbook.coverImages,
+                    onTap: () => context.push('/cookbooks/${cookbook.id}'),
+                    onLongPress: () =>
+                        _showCookbookOptions(context, ref, cookbook),
+                  );
+                }, childCount: totalItems),
               ),
             ),
           ],
@@ -133,16 +127,17 @@ class CookbookListView extends ConsumerWidget {
       builder: (ctx) => _CreateCookbookSheet(
         onSave: (name) async {
           Navigator.pop(ctx);
-          await ref
-              .read(cookbooksProvider.notifier)
-              .createCookbook(name: name);
+          await ref.read(cookbooksProvider.notifier).createCookbook(name: name);
         },
       ),
     );
   }
 
   void _showCookbookOptions(
-      BuildContext context, WidgetRef ref, Cookbook cookbook) {
+    BuildContext context,
+    WidgetRef ref,
+    Cookbook cookbook,
+  ) {
     showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
@@ -169,8 +164,10 @@ class CookbookListView extends ConsumerWidget {
             ),
             ListTile(
               leading: Icon(Icons.delete_outline, color: Colors.red.shade400),
-              title: Text('Delete',
-                  style: TextStyle(color: Colors.red.shade400)),
+              title: Text(
+                'Delete',
+                style: TextStyle(color: Colors.red.shade400),
+              ),
               onTap: () {
                 Navigator.pop(ctx);
                 _confirmDeleteCookbook(context, ref, cookbook);
@@ -184,7 +181,10 @@ class CookbookListView extends ConsumerWidget {
   }
 
   void _showRenameCookbookSheet(
-      BuildContext context, WidgetRef ref, Cookbook cookbook) {
+    BuildContext context,
+    WidgetRef ref,
+    Cookbook cookbook,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -204,7 +204,10 @@ class CookbookListView extends ConsumerWidget {
   }
 
   void _confirmDeleteCookbook(
-      BuildContext context, WidgetRef ref, Cookbook cookbook) {
+    BuildContext context,
+    WidgetRef ref,
+    Cookbook cookbook,
+  ) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -219,9 +222,7 @@ class CookbookListView extends ConsumerWidget {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red.shade400,
-            ),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade400),
             onPressed: () async {
               Navigator.pop(ctx);
               await ref
@@ -309,9 +310,9 @@ class _CreateCookbookSheetState extends State<_CreateCookbookSheet> {
           Text(
             widget.title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 18,
-                ),
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
+            ),
           ),
           const SizedBox(height: 20),
           TextField(
@@ -327,8 +328,10 @@ class _CreateCookbookSheetState extends State<_CreateCookbookSheet> {
                 borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide.none,
               ),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
             ),
           ),
           const SizedBox(height: 20),
@@ -407,19 +410,19 @@ class _CookbookCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 17,
-                          height: 1.2,
-                        ),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 17,
+                      height: 1.2,
+                    ),
                   ),
                   if (recipeCount != null) ...[
                     const SizedBox(height: 4),
                     Text(
                       '$recipeCount ${recipeCount == 1 ? 'recipe' : 'recipes'}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey.shade600,
-                            fontSize: 13,
-                          ),
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ],
@@ -477,11 +480,7 @@ class _FannedImages extends StatelessWidget {
 
     // Rotations and offsets for each card (back to front)
     const rotations = [-0.20, -0.06, 0.12];
-    const offsets = [
-      Offset(-38, -12),
-      Offset(-16, -6),
-      Offset(6, 0),
-    ];
+    const offsets = [Offset(-38, -12), Offset(-16, -6), Offset(6, 0)];
 
     final startIdx = 3 - count;
 
@@ -519,8 +518,11 @@ class _FannedImages extends StatelessWidget {
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Container(
                         color: Colors.grey.shade200,
-                        child: Icon(Icons.restaurant,
-                            size: 20, color: Colors.grey.shade400),
+                        child: Icon(
+                          Icons.restaurant,
+                          size: 20,
+                          color: Colors.grey.shade400,
+                        ),
                       ),
                     ),
                   ),
@@ -579,9 +581,9 @@ class _CreateCookbookCard extends StatelessWidget {
               Text(
                 'New Cookbook',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),

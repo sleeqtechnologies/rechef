@@ -47,10 +47,7 @@ class CookbookDetailScreen extends ConsumerWidget {
 // ---------------------------------------------------------------------------
 
 class _VirtualCookbookScreen extends ConsumerWidget {
-  const _VirtualCookbookScreen({
-    required this.title,
-    required this.filter,
-  });
+  const _VirtualCookbookScreen({required this.title, required this.filter});
 
   final String title;
   final List<Recipe> Function(List<Recipe>) filter;
@@ -80,14 +77,18 @@ class _VirtualCookbookScreen extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.error_outline,
-                        size: 48, color: Colors.grey.shade300),
+                    Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.grey.shade300,
+                    ),
                     const SizedBox(height: 12),
-                    Text('Failed to load recipes',
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.copyWith(color: Colors.grey.shade600)),
+                    Text(
+                      'Failed to load recipes',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     TextButton(
                       onPressed: () => ref.invalidate(recipesProvider),
@@ -101,8 +102,11 @@ class _VirtualCookbookScreen extends ConsumerWidget {
         ),
         data: (recipes) {
           final filtered = filter(recipes);
-          final images =
-              filtered.where((r) => r.imageUrl != null).take(3).map((r) => r.imageUrl!).toList();
+          final images = filtered
+              .where((r) => r.imageUrl != null)
+              .take(3)
+              .map((r) => r.imageUrl!)
+              .toList();
 
           return CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -116,10 +120,7 @@ class _VirtualCookbookScreen extends ConsumerWidget {
                 ),
               ),
               if (filtered.isEmpty)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _EmptyState(),
-                )
+                SliverFillRemaining(hasScrollBody: false, child: _EmptyState())
               else
                 _RecipeListSliver(
                   recipes: filtered,
@@ -164,9 +165,9 @@ class _PantryPicksScreen extends ConsumerWidget {
                     Text(
                       'Recommending recipes...',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey.shade600,
-                            fontSize: 15,
-                          ),
+                        color: Colors.grey.shade600,
+                        fontSize: 15,
+                      ),
                     ),
                   ],
                 ),
@@ -183,14 +184,18 @@ class _PantryPicksScreen extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.error_outline,
-                        size: 48, color: Colors.grey.shade300),
+                    Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.grey.shade300,
+                    ),
                     const SizedBox(height: 12),
-                    Text('Failed to load recommendations',
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.copyWith(color: Colors.grey.shade600)),
+                    Text(
+                      'Failed to load recommendations',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     TextButton(
                       onPressed: () => ref.invalidate(pantryPicksProvider),
@@ -285,10 +290,8 @@ class _CustomCookbookScreen extends ConsumerWidget {
             _DetailAppBar(
               title: cookbookName,
               showMenu: true,
-              onRename: () =>
-                  _showRenameSheet(context, ref, cookbookName),
-              onDelete: () =>
-                  _confirmDelete(context, ref, cookbookName),
+              onRename: () => _showRenameSheet(context, ref, cookbookName),
+              onDelete: () => _confirmDelete(context, ref, cookbookName),
             ),
             const SliverFillRemaining(
               hasScrollBody: false,
@@ -301,10 +304,8 @@ class _CustomCookbookScreen extends ConsumerWidget {
             _DetailAppBar(
               title: cookbookName,
               showMenu: true,
-              onRename: () =>
-                  _showRenameSheet(context, ref, cookbookName),
-              onDelete: () =>
-                  _confirmDelete(context, ref, cookbookName),
+              onRename: () => _showRenameSheet(context, ref, cookbookName),
+              onDelete: () => _confirmDelete(context, ref, cookbookName),
             ),
             SliverFillRemaining(
               hasScrollBody: false,
@@ -312,14 +313,18 @@ class _CustomCookbookScreen extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.error_outline,
-                        size: 48, color: Colors.grey.shade300),
+                    Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.grey.shade300,
+                    ),
                     const SizedBox(height: 12),
-                    Text('Failed to load recipes',
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.copyWith(color: Colors.grey.shade600)),
+                    Text(
+                      'Failed to load recipes',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     TextButton(
                       onPressed: () =>
@@ -353,10 +358,8 @@ class _CustomCookbookScreen extends ConsumerWidget {
               _DetailAppBar(
                 title: cookbookName,
                 showMenu: true,
-                onRename: () =>
-                    _showRenameSheet(context, ref, cookbookName),
-                onDelete: () =>
-                    _confirmDelete(context, ref, cookbookName),
+                onRename: () => _showRenameSheet(context, ref, cookbookName),
+                onDelete: () => _confirmDelete(context, ref, cookbookName),
               ),
               SliverToBoxAdapter(
                 child: _CookbookHeader(
@@ -388,7 +391,10 @@ class _CustomCookbookScreen extends ConsumerWidget {
   }
 
   void _showRenameSheet(
-      BuildContext context, WidgetRef ref, String currentName) {
+    BuildContext context,
+    WidgetRef ref,
+    String currentName,
+  ) {
     final controller = TextEditingController(text: currentName);
     showModalBottomSheet(
       context: context,
@@ -420,9 +426,9 @@ class _CustomCookbookScreen extends ConsumerWidget {
               Text(
                 'Rename Cookbook',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18,
-                    ),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
+                ),
               ),
               const SizedBox(height: 20),
               TextField(
@@ -437,8 +443,10 @@ class _CustomCookbookScreen extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide.none,
                   ),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
@@ -461,10 +469,7 @@ class _CustomCookbookScreen extends ConsumerWidget {
                   ),
                   child: const Text(
                     'Rename',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                   ),
                 ),
               ),
@@ -477,7 +482,10 @@ class _CustomCookbookScreen extends ConsumerWidget {
   }
 
   void _confirmDelete(
-      BuildContext context, WidgetRef ref, String cookbookName) {
+    BuildContext context,
+    WidgetRef ref,
+    String cookbookName,
+  ) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -492,9 +500,7 @@ class _CustomCookbookScreen extends ConsumerWidget {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red.shade400,
-            ),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade400),
             onPressed: () async {
               Navigator.pop(ctx);
               await ref
@@ -508,7 +514,6 @@ class _CustomCookbookScreen extends ConsumerWidget {
       ),
     );
   }
-
 }
 
 // ---------------------------------------------------------------------------
@@ -579,9 +584,7 @@ class _DetailAppBar extends StatelessWidget {
                     break;
                 }
               },
-              child: const Center(
-                child: Icon(Icons.more_vert, size: 22),
-              ),
+              child: const Center(child: Icon(Icons.more_vert, size: 22)),
             ),
           ),
       ],
@@ -617,8 +620,11 @@ class _CookbookHeader extends StatelessWidget {
             height: 120,
             child: images.isNotEmpty
                 ? _HeaderFannedImages(images: images)
-                : Icon(Icons.menu_book_outlined,
-                    size: 64, color: Colors.grey.shade300),
+                : Icon(
+                    Icons.menu_book_outlined,
+                    size: 64,
+                    color: Colors.grey.shade300,
+                  ),
           ),
           const SizedBox(height: 16),
           // Title
@@ -626,9 +632,9 @@ class _CookbookHeader extends StatelessWidget {
             title,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 26,
-                ),
+              fontWeight: FontWeight.w800,
+              fontSize: 26,
+            ),
           ),
           const SizedBox(height: 10),
           // Count pill
@@ -641,10 +647,10 @@ class _CookbookHeader extends StatelessWidget {
             child: Text(
               '$recipeCount ${recipeCount == 1 ? 'recipe' : 'recipes'}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: Colors.grey.shade700,
-                  ),
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                color: Colors.grey.shade700,
+              ),
             ),
           ),
         ],
@@ -711,8 +717,11 @@ class _HeaderFannedImages extends StatelessWidget {
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Container(
                         color: Colors.grey.shade200,
-                        child: Icon(Icons.restaurant,
-                            size: 24, color: Colors.grey.shade400),
+                        child: Icon(
+                          Icons.restaurant,
+                          size: 24,
+                          color: Colors.grey.shade400,
+                        ),
                       ),
                     ),
                   ),
@@ -751,11 +760,8 @@ class _RecipeListSliver extends StatelessWidget {
       ),
       sliver: SliverList.separated(
         itemCount: recipes.length,
-        separatorBuilder: (_, __) => Divider(
-          height: 1,
-          color: Colors.grey.shade100,
-          indent: 80,
-        ),
+        separatorBuilder: (_, __) =>
+            Divider(height: 1, color: Colors.grey.shade100, indent: 80),
         itemBuilder: (context, index) {
           final recipe = recipes[index];
           return _RecipeListTile(
@@ -793,11 +799,8 @@ class _PantryRecipeListSliver extends StatelessWidget {
       ),
       sliver: SliverList.separated(
         itemCount: recipes.length,
-        separatorBuilder: (_, __) => Divider(
-          height: 1,
-          color: Colors.grey.shade100,
-          indent: 80,
-        ),
+        separatorBuilder: (_, __) =>
+            Divider(height: 1, color: Colors.grey.shade100, indent: 80),
         itemBuilder: (context, index) {
           final rec = recipes[index];
           return _RecipeListTile(
@@ -849,14 +852,20 @@ class _RecipeListTile extends StatelessWidget {
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Container(
                           color: Colors.grey.shade200,
-                          child: Icon(Icons.restaurant,
-                              size: 24, color: Colors.grey.shade400),
+                          child: Icon(
+                            Icons.restaurant,
+                            size: 24,
+                            color: Colors.grey.shade400,
+                          ),
                         ),
                       )
                     : Container(
                         color: Colors.grey.shade200,
-                        child: Icon(Icons.restaurant,
-                            size: 24, color: Colors.grey.shade400),
+                        child: Icon(
+                          Icons.restaurant,
+                          size: 24,
+                          color: Colors.grey.shade400,
+                        ),
                       ),
               ),
             ),
@@ -871,9 +880,9 @@ class _RecipeListTile extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                        ),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   if (matchLabel != null)
@@ -885,13 +894,13 @@ class _RecipeListTile extends StatelessWidget {
             ),
             // Three-dot menu -> opens cookbook picker
             IconButton(
-              icon: Icon(Icons.more_vert,
-                  color: Colors.grey.shade500, size: 22),
+              icon: Icon(
+                Icons.more_vert,
+                color: Colors.grey.shade500,
+                size: 22,
+              ),
               onPressed: () {
-                AddToCookbookSheet.show(
-                  context,
-                  recipeId: recipe.id,
-                );
+                AddToCookbookSheet.show(context, recipeId: recipe.id);
               },
             ),
           ],
@@ -919,19 +928,15 @@ class _MatchBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.check_circle_outline,
-            size: 13,
-            color: _green,
-          ),
+          const Icon(Icons.check_circle_outline, size: 13, color: _green),
           const SizedBox(width: 4),
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: _green,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                ),
+              color: _green,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
           ),
         ],
       ),
@@ -953,31 +958,30 @@ class _RecipeMetaRow extends StatelessWidget {
     final items = <Widget>[];
 
     if (recipe.servings != null) {
-      items.add(_MetaChip(
-        icon: Icons.people_outline,
-        label: '${recipe.servings}',
-      ));
+      items.add(
+        _MetaChip(icon: Icons.people_outline, label: '${recipe.servings}'),
+      );
     }
     if (recipe.prepTimeMinutes != null) {
-      items.add(_MetaChip(
-        icon: Icons.access_time,
-        label: '${recipe.prepTimeMinutes} min',
-      ));
+      items.add(
+        _MetaChip(
+          icon: Icons.access_time,
+          label: '${recipe.prepTimeMinutes} min',
+        ),
+      );
     }
     if (recipe.cookTimeMinutes != null) {
-      items.add(_MetaChip(
-        icon: Icons.local_fire_department_outlined,
-        label: '${recipe.cookTimeMinutes} min',
-      ));
+      items.add(
+        _MetaChip(
+          icon: Icons.local_fire_department_outlined,
+          label: '${recipe.cookTimeMinutes} min',
+        ),
+      );
     }
 
     if (items.isEmpty) return const SizedBox.shrink();
 
-    return Wrap(
-      spacing: 12,
-      runSpacing: 4,
-      children: items,
-    );
+    return Wrap(spacing: 12, runSpacing: 4, children: items);
   }
 }
 
@@ -997,10 +1001,10 @@ class _MetaChip extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey.shade500,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
+            color: Colors.grey.shade500,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ],
     );
@@ -1012,10 +1016,7 @@ class _MetaChip extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState({
-    this.message = 'No recipes yet',
-    this.subtitle,
-  });
+  const _EmptyState({this.message = 'No recipes yet', this.subtitle});
 
   final String message;
   final String? subtitle;
@@ -1031,17 +1032,17 @@ class _EmptyState extends StatelessWidget {
           Text(
             message,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade600,
-                ),
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade600,
+            ),
           ),
           if (subtitle != null) ...[
             const SizedBox(height: 8),
             Text(
               subtitle!,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey.shade500,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade500),
             ),
           ],
         ],

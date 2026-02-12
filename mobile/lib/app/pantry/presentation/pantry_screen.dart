@@ -34,9 +34,9 @@ class PantryScreen extends ConsumerWidget {
               child: Text(
                 'Your pantry is empty.\nTap + to add ingredients.',
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.grey.shade500,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: Colors.grey.shade500),
               ),
             );
           }
@@ -51,19 +51,15 @@ class PantryScreen extends ConsumerWidget {
             children: [
               for (final entry in byCategory.entries) ...[
                 _CategoryHeader(title: entry.key),
-                Divider(
-                    height: 1, thickness: 1, color: Colors.grey.shade200),
+                Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
                 for (final item in entry.value) ...[
                   _PantryItemRow(
                     item: item,
                     onDismissed: () {
-                      ref
-                          .read(pantryProvider.notifier)
-                          .deleteItem(item.id);
+                      ref.read(pantryProvider.notifier).deleteItem(item.id);
                     },
                   ),
-                  Divider(
-                      height: 1, thickness: 1, color: Colors.grey.shade200),
+                  Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
                 ],
               ],
             ],
@@ -85,19 +81,16 @@ class _CategoryHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Text(
         title,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
       ),
     );
   }
 }
 
 class _PantryItemRow extends StatelessWidget {
-  const _PantryItemRow({
-    required this.item,
-    required this.onDismissed,
-  });
+  const _PantryItemRow({required this.item, required this.onDismissed});
 
   final PantryItem item;
   final VoidCallback onDismissed;
@@ -116,10 +109,7 @@ class _PantryItemRow extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 14),
-        child: Text(
-          item.name,
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
+        child: Text(item.name, style: Theme.of(context).textTheme.bodyMedium),
       ),
     );
   }

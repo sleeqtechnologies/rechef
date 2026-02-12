@@ -21,8 +21,7 @@ class GroceryListScreen extends ConsumerWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
-        final keyboardHeight =
-            MediaQuery.of(sheetContext).viewInsets.bottom;
+        final keyboardHeight = MediaQuery.of(sheetContext).viewInsets.bottom;
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Column(
@@ -41,9 +40,9 @@ class GroceryListScreen extends ConsumerWidget {
       },
     ).then((names) {
       if (names != null && names.isNotEmpty) {
-        ref.read(groceryProvider.notifier).addItems(
-              items: names.map((n) => {'name': n}).toList(),
-            );
+        ref
+            .read(groceryProvider.notifier)
+            .addItems(items: names.map((n) => {'name': n}).toList());
       }
     });
   }
@@ -56,7 +55,8 @@ class GroceryListScreen extends ConsumerWidget {
         : ref.watch(groceryByRecipeProvider);
 
     // Check for any checked items across all groups for the "Clear checked" button.
-    final hasChecked = groupedAsync.value != null &&
+    final hasChecked =
+        groupedAsync.value != null &&
         groupedAsync.value!.values
             .expand((items) => items)
             .any((i) => i.checked);
@@ -157,10 +157,8 @@ class GroceryListScreen extends ConsumerWidget {
                         child: Text(
                           'Your grocery list is empty.\nAdd missing items from a recipe.',
                           textAlign: TextAlign.center,
-                          style:
-                              Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    color: Colors.grey.shade500,
-                                  ),
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(color: Colors.grey.shade500),
                         ),
                       )
                     : ListView(
@@ -261,9 +259,9 @@ class _SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Text(
         title,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -312,8 +310,7 @@ class _GroceryItemRow extends StatelessWidget {
                 height: 24,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color:
-                      item.checked ? const Color(0xFF2E7D32) : Colors.white,
+                  color: item.checked ? const Color(0xFF2E7D32) : Colors.white,
                   border: Border.all(
                     color: item.checked
                         ? Colors.transparent
@@ -335,25 +332,22 @@ class _GroceryItemRow extends StatelessWidget {
                     Text(
                       item.name,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w500,
-                            decoration: item.checked
-                                ? TextDecoration.lineThrough
-                                : null,
-                            color: item.checked
-                                ? Colors.grey.shade400
-                                : textColor,
-                          ),
+                        fontWeight: FontWeight.w500,
+                        decoration: item.checked
+                            ? TextDecoration.lineThrough
+                            : null,
+                        color: item.checked ? Colors.grey.shade400 : textColor,
+                      ),
                     ),
                     if (showRecipeSubtitle &&
                         item.recipeName != null &&
                         item.recipeName!.isNotEmpty)
                       Text(
                         item.recipeName!,
-                        style:
-                            Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Colors.grey.shade400,
-                                  fontSize: 12,
-                                ),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade400,
+                          fontSize: 12,
+                        ),
                       ),
                   ],
                 ),
@@ -362,9 +356,9 @@ class _GroceryItemRow extends StatelessWidget {
               if (item.displayQuantity.isNotEmpty)
                 Text(
                   item.displayQuantity,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey.shade500,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade500),
                 ),
             ],
           ),

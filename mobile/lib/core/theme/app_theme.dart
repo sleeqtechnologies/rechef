@@ -29,26 +29,4 @@ class AppTheme {
     );
   }
 
-  static ThemeData get dark {
-    return ThemeData(
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: _accentColor,
-        brightness: Brightness.dark,
-      ),
-      useMaterial3: true,
-      fontFamily: _fontFamily,
-      scaffoldBackgroundColor: Colors.black,
-      appBarTheme: AppBarTheme(
-        backgroundColor: Colors.black,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        titleTextStyle: TextStyle(
-          color: Colors.white,
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          fontFamily: _fontFamily,
-        ),
-      ),
-    );
-  }
 }

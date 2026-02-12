@@ -64,7 +64,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
 
   Future<void> _refreshIfShared() async {
     final recipeAsync = ref.read(recipeByIdProvider(widget.recipeId));
-    await recipeAsync.whenData((recipe) async {
+    recipeAsync.whenData((recipe) async {
       if (recipe?.isShared == true && mounted) {
         ref.invalidate(recipesProvider);
         await ref.read(recipesProvider.future);
@@ -210,8 +210,9 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
   }
 
   Future<void> _loadReminder() async {
-    final dt = await CookReminderNotifications.instance
-        .getReminder(widget.recipeId);
+    final dt = await CookReminderNotifications.instance.getReminder(
+      widget.recipeId,
+    );
     if (mounted) setState(() => _reminderDate = dt);
   }
 
@@ -271,8 +272,18 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
 
   String _formatReminderDate(DateTime dt) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final month = months[dt.month - 1];
     final day = dt.day;
@@ -609,11 +620,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                       Padding(
                         padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
                         child: AdaptiveSegmentedControl(
-                          labels: const [
-                            'Ingredients',
-                            'Cooking',
-                            'Nutrition',
-                          ],
+                          labels: const ['Ingredients', 'Cooking', 'Nutrition'],
                           selectedIndex: _selectedTab,
                           onValueChanged: (index) {
                             setState(() => _selectedTab = index);
@@ -635,10 +642,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                             : (index) {
                                 ref
                                     .read(recipesProvider.notifier)
-                                    .toggleIngredient(
-                                      widget.recipeId,
-                                      index,
-                                    );
+                                    .toggleIngredient(widget.recipeId, index);
                               },
                       ),
                       1 => _CookingTab(recipe: recipe),
@@ -1212,8 +1216,18 @@ class _ReminderChip extends StatelessWidget {
 
   String get _label {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final month = months[date.month - 1];
     final day = date.day;

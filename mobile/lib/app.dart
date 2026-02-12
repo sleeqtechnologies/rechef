@@ -120,7 +120,6 @@ class _RechefAppState extends ConsumerState<RechefApp>
         title: 'Rechef',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
         themeMode: ThemeMode.light,
         routerConfig: router,
       ),

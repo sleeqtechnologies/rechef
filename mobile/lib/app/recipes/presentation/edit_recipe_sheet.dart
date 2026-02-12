@@ -40,7 +40,7 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
   late List<_IngredientEdit> _ingredients;
   late List<TextEditingController> _instructionCtrls;
 
-  bool _saving = false;
+  final bool _saving = false;
 
   @override
   void initState() {

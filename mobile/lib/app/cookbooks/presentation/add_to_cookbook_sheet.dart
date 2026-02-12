@@ -8,7 +8,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../cookbook_provider.dart';
 
-
 class AddToCookbookSheet extends ConsumerStatefulWidget {
   const AddToCookbookSheet({
     super.key,
@@ -38,8 +37,7 @@ class AddToCookbookSheet extends ConsumerStatefulWidget {
   }
 
   @override
-  ConsumerState<AddToCookbookSheet> createState() =>
-      _AddToCookbookSheetState();
+  ConsumerState<AddToCookbookSheet> createState() => _AddToCookbookSheetState();
 }
 
 class _AddToCookbookSheetState extends ConsumerState<AddToCookbookSheet> {
@@ -126,13 +124,10 @@ class _AddToCookbookSheetState extends ConsumerState<AddToCookbookSheet> {
                   // Title
                   Text(
                     'Add to Cookbook',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 18,
-                        ),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   // Cookbook list
@@ -162,20 +157,23 @@ class _AddToCookbookSheetState extends ConsumerState<AddToCookbookSheet> {
                             padding: const EdgeInsets.all(32),
                             child: Column(
                               children: [
-                                Icon(Icons.menu_book_outlined,
-                                    size: 48, color: Colors.grey.shade300),
+                                Icon(
+                                  Icons.menu_book_outlined,
+                                  size: 48,
+                                  color: Colors.grey.shade300,
+                                ),
                                 const SizedBox(height: 12),
                                 Text(
                                   'No cookbooks yet',
-                                  style:
-                                      TextStyle(color: Colors.grey.shade600),
+                                  style: TextStyle(color: Colors.grey.shade600),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
                                   'Create one to start organizing',
                                   style: TextStyle(
-                                      color: Colors.grey.shade500,
-                                      fontSize: 13),
+                                    color: Colors.grey.shade500,
+                                    fontSize: 13,
+                                  ),
                                 ),
                               ],
                             ),
@@ -183,8 +181,7 @@ class _AddToCookbookSheetState extends ConsumerState<AddToCookbookSheet> {
                         }
                         return ConstrainedBox(
                           constraints: BoxConstraints(
-                            maxHeight:
-                                MediaQuery.of(context).size.height * 0.4,
+                            maxHeight: MediaQuery.of(context).size.height * 0.4,
                           ),
                           child: ListView.separated(
                             shrinkWrap: true,
@@ -198,8 +195,7 @@ class _AddToCookbookSheetState extends ConsumerState<AddToCookbookSheet> {
                             itemBuilder: (context, index) {
                               final cookbook = cookbooks[index];
                               final isSelected =
-                                  _selectedIds?.contains(cookbook.id) ??
-                                      false;
+                                  _selectedIds?.contains(cookbook.id) ?? false;
                               return _CookbookCheckRow(
                                 name: cookbook.name,
                                 recipeCount: cookbook.recipeCount,
@@ -234,7 +230,8 @@ class _AddToCookbookSheetState extends ConsumerState<AddToCookbookSheet> {
                       ),
                       child: _saving
                           ? const CupertinoActivityIndicator(
-                              color: Colors.white)
+                              color: Colors.white,
+                            )
                           : const Text(
                               'Save',
                               style: TextStyle(
@@ -284,7 +281,6 @@ class _AddToCookbookSheetState extends ConsumerState<AddToCookbookSheet> {
       if (mounted) setState(() => _saving = false);
     }
   }
-
 }
 
 // ---------------------------------------------------------------------------
@@ -322,9 +318,7 @@ class _CookbookCheckRow extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: isSelected ? _accentColor : Colors.white,
                 border: Border.all(
-                  color: isSelected
-                      ? Colors.transparent
-                      : Colors.grey.shade300,
+                  color: isSelected ? Colors.transparent : Colors.grey.shade300,
                   width: 1.5,
                 ),
               ),
@@ -349,16 +343,16 @@ class _CookbookCheckRow extends StatelessWidget {
                   Text(
                     name,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '$recipeCount ${recipeCount == 1 ? 'recipe' : 'recipes'}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade500,
-                          fontSize: 13,
-                        ),
+                      color: Colors.grey.shade500,
+                      fontSize: 13,
+                    ),
                   ),
                 ],
               ),

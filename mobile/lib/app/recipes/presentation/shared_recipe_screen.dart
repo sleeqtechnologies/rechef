@@ -19,8 +19,7 @@ class SharedRecipeScreen extends ConsumerStatefulWidget {
   final String shareCode;
 
   @override
-  ConsumerState<SharedRecipeScreen> createState() =>
-      _SharedRecipeScreenState();
+  ConsumerState<SharedRecipeScreen> createState() => _SharedRecipeScreenState();
 }
 
 class _SharedRecipeScreenState extends ConsumerState<SharedRecipeScreen> {
@@ -159,17 +158,17 @@ class _SharedRecipeScreenState extends ConsumerState<SharedRecipeScreen> {
                     ? 'Recipe not found'
                     : 'Could not load recipe',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               if (_error != null) ...[
                 const SizedBox(height: 8),
                 Text(
                   _error!,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey.shade500,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade500),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -206,15 +205,15 @@ class _SharedRecipeScreenState extends ConsumerState<SharedRecipeScreen> {
                   Text(
                     'Shared Recipe',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Save this recipe to your library to access it anytime and get live updates from the creator.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey.shade600,
-                        ),
+                      color: Colors.grey.shade600,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   // Show recipe preview
@@ -230,23 +229,15 @@ class _SharedRecipeScreenState extends ConsumerState<SharedRecipeScreen> {
                       children: [
                         Text(
                           _recipe!.name,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.w600),
                         ),
                         if (_recipe!.description.isNotEmpty) ...[
                           const SizedBox(height: 8),
                           Text(
                             _recipe!.description,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color: Colors.grey.shade600,
-                                ),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: Colors.grey.shade600),
                             maxLines: 3,
                             overflow: TextOverflow.ellipsis,
                           ),
