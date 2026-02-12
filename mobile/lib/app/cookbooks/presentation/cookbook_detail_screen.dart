@@ -1,6 +1,7 @@
 import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -717,10 +718,15 @@ class _HeaderFannedImages extends StatelessWidget {
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Container(
                         color: Colors.grey.shade200,
-                        child: Icon(
-                          Icons.restaurant,
-                          size: 24,
-                          color: Colors.grey.shade400,
+                        alignment: Alignment.center,
+                        child: SvgPicture.asset(
+                          'assets/icons/recipe.svg',
+                          width: 24,
+                          height: 24,
+                          colorFilter: ColorFilter.mode(
+                            Colors.grey.shade500,
+                            BlendMode.srcIn,
+                          ),
                         ),
                       ),
                     ),
@@ -852,19 +858,29 @@ class _RecipeListTile extends StatelessWidget {
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Container(
                           color: Colors.grey.shade200,
-                          child: Icon(
-                            Icons.restaurant,
-                            size: 24,
-                            color: Colors.grey.shade400,
+                          alignment: Alignment.center,
+                          child: SvgPicture.asset(
+                            'assets/icons/recipe.svg',
+                            width: 24,
+                            height: 24,
+                            colorFilter: ColorFilter.mode(
+                              Colors.grey.shade500,
+                              BlendMode.srcIn,
+                            ),
                           ),
                         ),
                       )
                     : Container(
                         color: Colors.grey.shade200,
-                        child: Icon(
-                          Icons.restaurant,
-                          size: 24,
-                          color: Colors.grey.shade400,
+                        alignment: Alignment.center,
+                        child: SvgPicture.asset(
+                          'assets/icons/recipe.svg',
+                          width: 24,
+                          height: 24,
+                          colorFilter: ColorFilter.mode(
+                            Colors.grey.shade500,
+                            BlendMode.srcIn,
+                          ),
                         ),
                       ),
               ),

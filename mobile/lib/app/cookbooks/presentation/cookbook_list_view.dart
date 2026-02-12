@@ -520,10 +520,15 @@ class _FannedImages extends StatelessWidget {
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Container(
                         color: Colors.grey.shade200,
-                        child: Icon(
-                          Icons.restaurant,
-                          size: 20,
-                          color: Colors.grey.shade400,
+                        alignment: Alignment.center,
+                        child: SvgPicture.asset(
+                          'assets/icons/recipe.svg',
+                          width: 20,
+                          height: 20,
+                          colorFilter: ColorFilter.mode(
+                            Colors.grey.shade500,
+                            BlendMode.srcIn,
+                          ),
                         ),
                       ),
                     ),

@@ -877,9 +877,14 @@ class RecipeCard extends StatelessWidget {
                                   return Container(
                                     color: Colors.grey.shade200,
                                     alignment: Alignment.center,
-                                    child: const Icon(
-                                      Icons.restaurant,
-                                      size: 28,
+                                    child: SvgPicture.asset(
+                                      'assets/icons/recipe.svg',
+                                      width: 28,
+                                      height: 28,
+                                      colorFilter: ColorFilter.mode(
+                                        Colors.grey.shade500,
+                                        BlendMode.srcIn,
+                                      ),
                                     ),
                                   );
                                 },
@@ -887,7 +892,15 @@ class RecipeCard extends StatelessWidget {
                             : Container(
                                 color: Colors.grey.shade200,
                                 alignment: Alignment.center,
-                                child: const Icon(Icons.restaurant, size: 28),
+                                child: SvgPicture.asset(
+                                  'assets/icons/recipe.svg',
+                                  width: 28,
+                                  height: 28,
+                                  colorFilter: ColorFilter.mode(
+                                    Colors.grey.shade500,
+                                    BlendMode.srcIn,
+                                  ),
+                                ),
                               ),
                       ),
                       if (isShared)

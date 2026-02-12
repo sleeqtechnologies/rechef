@@ -495,9 +495,14 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                                     return Container(
                                       color: Colors.grey.shade200,
                                       alignment: Alignment.center,
-                                      child: const Icon(
-                                        Icons.restaurant,
-                                        size: 48,
+                                      child: SvgPicture.asset(
+                                        'assets/icons/recipe.svg',
+                                        width: 48,
+                                        height: 48,
+                                        colorFilter: ColorFilter.mode(
+                                          Colors.grey.shade500,
+                                          BlendMode.srcIn,
+                                        ),
                                       ),
                                     );
                                   },
@@ -505,7 +510,15 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                               : Container(
                                   color: Colors.grey.shade200,
                                   alignment: Alignment.center,
-                                  child: const Icon(Icons.restaurant, size: 48),
+                                  child: SvgPicture.asset(
+                                    'assets/icons/recipe.svg',
+                                    width: 48,
+                                    height: 48,
+                                    colorFilter: ColorFilter.mode(
+                                      Colors.grey.shade500,
+                                      BlendMode.srcIn,
+                                    ),
+                                  ),
                                 ),
                         ),
                         AnimatedContainer(
