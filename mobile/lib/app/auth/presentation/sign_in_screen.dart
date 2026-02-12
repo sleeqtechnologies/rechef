@@ -1,8 +1,8 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/constants/app_strings.dart';
 import '../../onboarding/data/onboarding_repository.dart';
 import '../providers/auth_providers.dart';
 
@@ -112,9 +112,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 const Spacer(flex: 2),
                 Image.asset('assets/rechef-logo.png', height: 90, width: 90),
                 const SizedBox(height: 64),
-                const Text(
-                  'Turn saved recipes into \n cooked meals',
-                  style: TextStyle(
+                Text(
+                  'auth.tagline'.tr(),
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                     color: Colors.white,
@@ -176,9 +176,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                                     const Icon(Icons.g_mobiledata, size: 24),
                               ),
                               const SizedBox(width: 12),
-                              const Text(
-                                'continue with Google',
-                                style: TextStyle(
+                              Text(
+                                'auth.continue_with_google'.tr(),
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -207,14 +207,14 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                             radius: 12,
                             color: Colors.white70,
                           )
-                        : const Row(
+                        : Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.apple, size: 24),
-                              SizedBox(width: 12),
+                              const Icon(Icons.apple, size: 24),
+                              const SizedBox(width: 12),
                               Text(
-                                'continue with Apple',
-                                style: TextStyle(
+                                'auth.continue_with_apple'.tr(),
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -231,9 +231,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                           radius: 10,
                           color: Colors.white70,
                         )
-                      : const Text(
-                          AppStrings.continueWithoutAccount,
-                          style: TextStyle(color: Colors.white, fontSize: 14),
+                      : Text(
+                          'auth.continue_without_account'.tr(),
+                          style: const TextStyle(color: Colors.white, fontSize: 14),
                         ),
                 ),
                 const SizedBox(height: 16),

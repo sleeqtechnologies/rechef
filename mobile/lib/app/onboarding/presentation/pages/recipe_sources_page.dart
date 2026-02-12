@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:simple_icons/simple_icons.dart';
@@ -27,8 +28,8 @@ class RecipeSourcesPage extends ConsumerWidget {
     final notifier = ref.read(onboardingProvider.notifier);
 
     return OnboardingPageWrapper(
-      title: 'Where do you find recipes?',
-      subtitle: 'Select all that apply',
+      title: 'onboarding.sources_title'.tr(),
+      subtitle: 'onboarding.sources_subtitle'.tr(),
       bottomAction: SizedBox(
         width: double.infinity,
         height: 56,
@@ -44,9 +45,9 @@ class RecipeSourcesPage extends ConsumerWidget {
             ),
             elevation: 0,
           ),
-          child: const Text(
-            'Continue',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+          child: Text(
+            'common.continue_btn'.tr(),
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
           ),
         ),
       ),
@@ -57,7 +58,7 @@ class RecipeSourcesPage extends ConsumerWidget {
         children: RecipeSources.labels.entries.map((entry) {
           final isSelected = state.data.recipeSources.contains(entry.key);
           return SelectableChip(
-            label: entry.value,
+            label: entry.value.tr(),
             isSelected: isSelected,
             onTap: () => notifier.toggleRecipeSource(entry.key),
             icon: Icon(

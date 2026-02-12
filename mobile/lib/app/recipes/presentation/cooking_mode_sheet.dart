@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../../core/services/cooking_timer_notifications.dart';
 import '../domain/recipe.dart';
@@ -478,9 +479,9 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
                   width: 20,
                   height: 20,
                 ),
-                label: const Text(
-                  'Help',
-                  style: TextStyle(
+                label: Text(
+                  'cooking_mode.help'.tr(),
+                  style: const TextStyle(
                     fontWeight: FontWeight.w500,
                     fontSize: 14,
                     color: Colors.black87,
@@ -520,7 +521,7 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        _timerDone ? 'Timer done!' : timeStr,
+                        _timerDone ? 'cooking_mode.timer_done'.tr() : timeStr,
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -569,7 +570,7 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
                 ),
               ),
               child: Text(
-                _isLastStep ? 'Complete cooking' : 'Next',
+                _isLastStep ? 'cooking_mode.complete_cooking'.tr() : 'common.next'.tr(),
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 15,

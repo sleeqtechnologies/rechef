@@ -1,3 +1,5 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,14 +18,14 @@ class PantryScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: const CustomAppBar(title: 'Pantry'),
+      appBar: CustomAppBar(title: 'pantry.title'.tr()),
       body: byCategoryAsync.when(
         loading: () => const Center(child: CupertinoActivityIndicator()),
         error: (error, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Text(
-              'Failed to load pantry.\n$error',
+              'pantry.failed_to_load'.tr(args: [error.toString()]),
               textAlign: TextAlign.center,
             ),
           ),
@@ -32,7 +34,7 @@ class PantryScreen extends ConsumerWidget {
           if (byCategory.isEmpty) {
             return Center(
               child: Text(
-                'Your pantry is empty.\nTap + to add ingredients.',
+                'pantry.empty'.tr(),
                 textAlign: TextAlign.center,
                 style: Theme.of(
                   context,
@@ -108,8 +110,52 @@ class _PantryItemRow extends StatelessWidget {
         child: const Icon(Icons.delete_outline, color: Colors.white),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        child: Text(item.name, style: Theme.of(context).textTheme.bodyMedium),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: item.imageUrl != null
+                  ? CachedNetworkImage(
+                      imageUrl: item.imageUrl!,
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => const _PlaceholderIcon(),
+                      errorWidget: (_, __, ___) => const _PlaceholderIcon(),
+                    )
+                  : const _PlaceholderIcon(),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                item.name,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PlaceholderIcon extends StatelessWidget {
+  const _PlaceholderIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(
+        Icons.restaurant_outlined,
+        size: 20,
+        color: Colors.grey.shade400,
       ),
     );
   }

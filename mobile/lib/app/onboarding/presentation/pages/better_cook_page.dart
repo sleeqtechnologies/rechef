@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -155,7 +156,7 @@ class _BetterCookPageState extends ConsumerState<BetterCookPage>
   @override
   Widget build(BuildContext context) {
     return OnboardingPageWrapper(
-      title: 'Become a better cook with Rechef',
+      title: 'onboarding.better_cook_title'.tr(),
       bottomAction: FadeTransition(
         opacity: _buttonFade,
         child: SlideTransition(position: _buttonSlide, child: _buildButtons()),
@@ -205,8 +206,7 @@ class _BetterCookPageState extends ConsumerState<BetterCookPage>
             child: SlideTransition(
               position: _descSlide,
               child: Text(
-                "You're on your way! Watch as your cooking habits "
-                'evolve and your kitchen experience gets easier.',
+                'onboarding.better_cook_body'.tr(),
                 style: TextStyle(
                   fontSize: 16,
                   height: 1.5,
@@ -259,14 +259,14 @@ class _BetterCookPageState extends ConsumerState<BetterCookPage>
                       radius: 12,
                       color: Colors.white,
                     )
-                  : const Row(
+                  : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.auto_awesome_rounded, size: 20),
-                        SizedBox(width: 8),
+                        const Icon(Icons.auto_awesome_rounded, size: 20),
+                        const SizedBox(width: 8),
                         Text(
-                          'Try Rechef Pro',
-                          style: TextStyle(
+                          'onboarding.try_pro'.tr(),
+                          style: const TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w600,
                           ),
@@ -283,7 +283,7 @@ class _BetterCookPageState extends ConsumerState<BetterCookPage>
           child: TextButton(
             onPressed: _finishing ? null : _finishOnboarding,
             child: Text(
-              'Continue without Pro',
+              'onboarding.continue_without_pro'.tr(),
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,

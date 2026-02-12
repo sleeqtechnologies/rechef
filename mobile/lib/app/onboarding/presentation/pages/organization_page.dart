@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,7 +16,7 @@ class OrganizationPage extends ConsumerWidget {
     final notifier = ref.read(onboardingProvider.notifier);
 
     return OnboardingPageWrapper(
-      title: 'How do you organize recipes now?',
+      title: 'onboarding.organization_title'.tr(),
       bottomAction: SizedBox(
         width: double.infinity,
         height: 56,
@@ -31,9 +32,9 @@ class OrganizationPage extends ConsumerWidget {
             ),
             elevation: 0,
           ),
-          child: const Text(
-            'Continue',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+          child: Text(
+            'common.continue_btn'.tr(),
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
           ),
         ),
       ),
@@ -44,7 +45,7 @@ class OrganizationPage extends ConsumerWidget {
         children: OrganizationMethods.labels.entries.map((entry) {
           final isSelected = state.data.organizationMethod == entry.key;
           return SelectableChip(
-            label: entry.value,
+            label: entry.value.tr(),
             isSelected: isSelected,
             onTap: () => notifier.setOrganizationMethod(entry.key),
           );

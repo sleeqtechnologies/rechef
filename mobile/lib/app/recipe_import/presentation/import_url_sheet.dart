@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 /// Frosted-glass bottom sheet for entering a recipe URL.
@@ -89,7 +90,7 @@ class _ImportUrlSheetState extends State<ImportUrlSheet> {
                     focusNode: _focusNode,
                     autofocus: true,
                     decoration: InputDecoration(
-                      hintText: 'Paste recipe URL here...',
+                      hintText: 'import.url_hint'.tr(),
                       hintStyle: TextStyle(
                         color: Colors.grey.shade600,
                         fontWeight: FontWeight.w400,

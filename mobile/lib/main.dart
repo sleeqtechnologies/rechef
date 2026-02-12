@@ -1,9 +1,9 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
 import 'app/subscription/data/subscription_repository.dart';
 import 'core/config/env.dart';
@@ -12,9 +12,7 @@ import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  final prefs = await SharedPreferences.getInstance();
-  prefs.remove('onboarding_complete');
+  await EasyLocalization.ensureInitialized();
 
   await dotenv.load(fileName: ".env");
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -25,5 +23,18 @@ Future<void> main() async {
   final currentUser = FirebaseAuth.instance.currentUser;
   await repo.configure(appUserId: currentUser?.uid);
 
-  runApp(const ProviderScope(child: RechefApp()));
+  runApp(
+    EasyLocalization(
+      supportedLocales: const [
+        Locale('en'),
+        Locale('fr'),
+        Locale('es'),
+        Locale('de'),
+        Locale('pt'),
+      ],
+      path: 'assets/translations',
+      fallbackLocale: const Locale('en'),
+      child: const ProviderScope(child: RechefApp()),
+    ),
+  );
 }

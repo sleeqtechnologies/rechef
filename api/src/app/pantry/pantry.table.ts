@@ -11,6 +11,7 @@ const userPantryTable = pgTable("user_pantry", {
   category: varchar("category", { length: 100 }).notNull().default("Other"),
   quantity: varchar("quantity", { length: 50 }),
   unit: varchar("unit", { length: 50 }),
+  imageUrl: varchar("image_url", { length: 500 }),
   updatedAt,
 });
 

@@ -42,6 +42,10 @@ dependencies:
   wakelock_plus: ^1.4.0
   syncfusion_flutter_charts: ^32.2.3
   shared_preferences: ^2.5.4
+  cached_network_image: ^3.4.1
+  easy_localization: ^3.0.7
+  flutter_localizations:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:
@@ -71,26 +75,27 @@ flutter:
   # https://flutter.dev/to/asset-from-package
 
   fonts:
-    - family: Roobert
-      fonts:
-        - asset: assets/font/Roobert-Regular.ttf
-        - asset: assets/font/Roobert-Medium.ttf
-          weight: 500
-        - asset: assets/font/Roobert-SemiBold.ttf
-          weight: 600
-    - family: Carena
-      fonts:
-        - asset: assets/font/Carena-Regular.otf
+  - family: Roobert
+    fonts:
+    - asset: assets/font/Roobert-Regular.ttf
+    - asset: assets/font/Roobert-Medium.ttf
+      weight: 500
+    - asset: assets/font/Roobert-SemiBold.ttf
+      weight: 600
+  - family: Carena
+    fonts:
+    - asset: assets/font/Carena-Regular.otf
 
   assets:
-    - .env
-    - assets/splash_background.png
-    - assets/rechef-logo.png
-    - assets/cookbook.png
-    - assets/grocery.png
-    - assets/share.png
-    - assets/clutter-image.jpeg
-    - assets/icons/
+  - .env
+  - assets/splash_background.png
+  - assets/rechef-logo.png
+  - assets/cookbook.png
+  - assets/grocery.png
+  - assets/share.png
+  - assets/clutter-image.jpeg
+  - assets/icons/
+  - assets/translations/
 
 flutter_native_splash:
   # Background image for splash screen (gradient)

@@ -96,8 +96,14 @@ class ImportRepository {
           'Server returned status ${response.statusCode} with no response',
         );
       }
-      final error = jsonDecode(response.body);
-      throw Exception(error['error'] ?? 'Failed to submit image');
+      try {
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? 'Failed to submit image');
+      } on FormatException {
+        throw Exception(
+          'Server returned status ${response.statusCode}',
+        );
+      }
     }
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;

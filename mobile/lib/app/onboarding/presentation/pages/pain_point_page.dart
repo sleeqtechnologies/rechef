@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -12,7 +13,7 @@ class PainPointPage extends ConsumerWidget {
     final notifier = ref.read(onboardingProvider.notifier);
 
     return OnboardingPageWrapper(
-      title: "We've been there too",
+      title: 'onboarding.pain_point_title'.tr(),
       bottomAction: SizedBox(
         width: double.infinity,
         height: 56,
@@ -26,9 +27,9 @@ class PainPointPage extends ConsumerWidget {
             ),
             elevation: 0,
           ),
-          child: const Text(
-            'Continue',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+          child: Text(
+            'common.continue_btn'.tr(),
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
           ),
         ),
       ),
@@ -48,9 +49,9 @@ class PainPointPage extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 40),
-          const Text(
-            'Recipes scattered across screenshots, bookmarks, and apps.',
-            style: TextStyle(
+          Text(
+            'onboarding.pain_point_heading'.tr(),
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,
               color: Colors.black,
@@ -59,10 +60,7 @@ class PainPointPage extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            "We built Rechef because we were tired of losing great recipes. "
-            "Every time we found something amazing, it ended up buried in a "
-            "sea of screenshots or forgotten in browser tabs.\n\n"
-            "Sound familiar? We built this app for people like us -- and you.",
+            'onboarding.pain_point_body'.tr(),
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w400,

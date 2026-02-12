@@ -10,6 +10,7 @@ import '../../../core/constants/api_endpoints.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/utils/share_utils.dart';
 import '../data/recipe_repository.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../domain/recipe.dart';
 
 /// Bottom sheet for sharing a recipe: copy link, share via system, and analytics.
@@ -100,7 +101,7 @@ class _ShareRecipeSheetState extends ConsumerState<ShareRecipeSheet> {
     setState(() => _copied = true);
     AppSnackBar.show(
       context,
-      message: 'Link copied to clipboard',
+      message: 'share.link_copied'.tr(),
       type: SnackBarType.success,
     );
     Future.delayed(const Duration(seconds: 2), () {
@@ -153,13 +154,13 @@ class _ShareRecipeSheetState extends ConsumerState<ShareRecipeSheet> {
                   // Actions
                   _ActionTile(
                     icon: Icons.link_rounded,
-                    label: _copied ? 'Copied!' : 'Copy link',
+                    label: _copied ? 'share.copied'.tr() : 'share.copy_link'.tr(),
                     onTap: _copyLink,
                   ),
                   const SizedBox(height: 10),
                   _ActionTile(
                     icon: Icons.share_outlined,
-                    label: 'Share via…',
+                    label: 'share.share_via'.tr(),
                     onTap: _shareViaSystem,
                   ),
                   const SizedBox(height: 20),
@@ -175,7 +176,7 @@ class _ShareRecipeSheetState extends ConsumerState<ShareRecipeSheet> {
                         Expanded(
                           child: _StatTile(
                             icon: Icons.visibility_outlined,
-                            label: 'Views',
+                            label: 'share.views'.tr(),
                             value: '${_getInt(_stats?['webViews'])}',
                           ),
                         ),
@@ -183,7 +184,7 @@ class _ShareRecipeSheetState extends ConsumerState<ShareRecipeSheet> {
                         Expanded(
                           child: _StatTile(
                             icon: Icons.bookmark_outline,
-                            label: 'Saves',
+                            label: 'share.saves'.tr(),
                             value: '${_getInt(_stats?['recipeSaves'])}',
                           ),
                         ),

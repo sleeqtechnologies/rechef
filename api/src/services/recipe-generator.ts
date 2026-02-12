@@ -174,17 +174,11 @@ Guidelines:
     } else if (input.imageBase64 && isValidDataUrl(input.imageBase64)) {
       imageUrl = input.imageBase64;
     } else if (env.UNSPLASH_ACCESS_KEY) {
-      const ingredientTerms = ingredients
-        .map((ingredient) => ingredient.name)
-        .filter(Boolean)
-        .slice(0, 3)
-        .join(" ");
-      const searchQuery = [name, ingredientTerms].filter(Boolean).join(" ");
-      const candidateUrls = await searchFoodImages(`${searchQuery} food`);
+      const candidates = await searchFoodImages(name, 6, "regular", true);
       imageUrl = await selectBestImageUrl({
         recipeName: name,
         description,
-        candidateUrls,
+        candidates,
       });
     }
 

@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../../../core/widgets/app_snack_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -57,7 +58,7 @@ class AccountSheet extends ConsumerWidget {
                   child: Row(
                     children: [
                       Text(
-                        'Settings',
+                        'settings.title'.tr(),
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w700,
                           height: 1.2,
@@ -122,7 +123,7 @@ class AccountSheet extends ConsumerWidget {
                                 ),
                                 const SizedBox(height: 12),
                                 Text(
-                                  user.displayName ?? user.email ?? 'Account',
+                                  user.displayName ?? user.email ?? 'settings.account'.tr(),
                                   style: theme.textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -146,22 +147,22 @@ class AccountSheet extends ConsumerWidget {
 
                         // Other section
                         _SectionCard(
-                          label: 'Other',
+                          label: 'settings.other'.tr(),
                           children: [
                             _SettingsRow(
-                              title: 'Privacy Notice',
+                              title: 'settings.privacy_notice'.tr(),
                               onTap: () => _openUrl(
                                 'https://rechef-ten.vercel.app/privacy',
                               ),
                             ),
                             _SettingsRow(
-                              title: 'Terms of Service',
+                              title: 'settings.terms_of_service'.tr(),
                               onTap: () => _openUrl(
                                 'https://rechef-ten.vercel.app/terms',
                               ),
                             ),
                             _SettingsRow(
-                              title: 'App version',
+                              title: 'settings.app_version'.tr(),
                               trailing: Text(
                                 '1.0.0',
                                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -178,7 +179,7 @@ class AccountSheet extends ConsumerWidget {
                         _SectionCard(
                           children: [
                             _SettingsRow(
-                              title: 'Delete my account',
+                              title: 'settings.delete_account'.tr(),
                               titleColor: _accentColor,
                               onTap: () => _confirmDeleteAccount(context, ref),
                             ),
@@ -202,9 +203,9 @@ class AccountSheet extends ConsumerWidget {
                               side: BorderSide(color: theme.colorScheme.error),
                               shape: const StadiumBorder(),
                             ),
-                            child: const Text(
-                              'Sign out',
-                              style: TextStyle(
+                            child: Text(
+                              'auth.sign_out'.tr(),
+                              style: const TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 16,
                               ),
@@ -246,18 +247,18 @@ class _SubscriptionSection extends ConsumerWidget {
     final isPro = ref.watch(isProUserProvider);
 
     return _SectionCard(
-      label: 'Account',
+      label: 'settings.account'.tr(),
       children: [
         if (!isPro)
           _SettingsRow(
-            title: 'Upgrade to Rechef Pro',
+            title: 'settings.upgrade_to_pro'.tr(),
             onTap: () async {
               await ref.read(subscriptionProvider.notifier).showPaywall();
             },
           ),
         if (isPro)
           _SettingsRow(
-            title: 'Manage subscription',
+            title: 'settings.manage_subscription'.tr(),
             onTap: () async {
               await ref
                   .read(subscriptionProvider.notifier)
@@ -265,7 +266,7 @@ class _SubscriptionSection extends ConsumerWidget {
             },
           ),
         _SettingsRow(
-          title: 'Restore purchases',
+            title: 'settings.restore_purchases'.tr(),
           onTap: () async {
             await ref.read(subscriptionProvider.notifier).restorePurchases();
             if (!context.mounted) return;
@@ -273,8 +274,8 @@ class _SubscriptionSection extends ConsumerWidget {
             AppSnackBar.show(
               context,
               message: restored
-                  ? 'Purchases restored successfully.'
-                  : 'No previous purchases found.',
+                  ? 'settings.purchases_restored'.tr()
+                  : 'settings.no_purchases_found'.tr(),
               type: restored ? SnackBarType.success : SnackBarType.info,
             );
           },
@@ -298,17 +299,17 @@ extension _AccountSheetExtension on AccountSheet {
   ) async {
     await AdaptiveAlertDialog.show(
       context: context,
-      title: 'Delete account',
+      title: 'settings.delete_account_title'.tr(),
       message:
-          'Are you sure? This will permanently delete your account and all your data. This action cannot be undone.',
+          'settings.delete_account_message'.tr(),
       actions: [
         AlertAction(
-          title: 'Cancel',
+          title: 'common.cancel'.tr(),
           style: AlertActionStyle.cancel,
           onPressed: () {},
         ),
         AlertAction(
-          title: 'Delete',
+          title: 'common.delete'.tr(),
           style: AlertActionStyle.destructive,
           onPressed: () async {
             try {
@@ -320,7 +321,7 @@ extension _AccountSheetExtension on AccountSheet {
               if (context.mounted) {
                 AppSnackBar.show(
                   context,
-                  message: 'Failed to delete account: $e',
+                  message: 'settings.failed_delete_account'.tr(args: [e.toString()]),
                   type: SnackBarType.error,
                 );
               }

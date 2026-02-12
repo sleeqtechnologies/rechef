@@ -19,11 +19,38 @@ type UnsplashSearchResponse = {
   }>;
 };
 
+type ImageCandidate = {
+  url: string;
+  description: string;
+};
+
 const imageSelectionSchema = z.object({
-  imageUrl: z.string().url().nullable().optional(),
+  selectedIndex: z
+    .number()
+    .int()
+    .min(0)
+    .describe("Zero-based index of the best matching image"),
 });
 
-async function searchFoodImages(query: string, limit = 6): Promise<string[]> {
+type UnsplashImageSize = "raw" | "full" | "regular" | "small" | "thumb";
+
+async function searchFoodImages(
+  query: string,
+  limit?: number,
+  size?: UnsplashImageSize,
+): Promise<string[]>;
+async function searchFoodImages(
+  query: string,
+  limit: number,
+  size: UnsplashImageSize,
+  withMetadata: true,
+): Promise<ImageCandidate[]>;
+async function searchFoodImages(
+  query: string,
+  limit = 6,
+  size: UnsplashImageSize = "regular",
+  withMetadata = false,
+): Promise<string[] | ImageCandidate[]> {
   if (!env.UNSPLASH_ACCESS_KEY) {
     logger.warn("UNSPLASH_ACCESS_KEY is missing");
     return [];
@@ -53,7 +80,18 @@ async function searchFoodImages(query: string, limit = 6): Promise<string[]> {
     }
 
     const data = (await response.json()) as UnsplashSearchResponse;
-    return data.results.map((result) => result.urls.regular).filter(Boolean);
+
+    if (withMetadata) {
+      return data.results
+        .filter((r) => r.urls[size])
+        .map((r) => ({
+          url: r.urls[size],
+          description:
+            r.alt_description || r.description || "No description available",
+        }));
+    }
+
+    return data.results.map((result) => result.urls[size]).filter(Boolean);
   } catch (error) {
     logger.error("Unsplash search error", error);
     return [];
@@ -63,56 +101,58 @@ async function searchFoodImages(query: string, limit = 6): Promise<string[]> {
 async function selectBestImageUrl(input: {
   recipeName: string;
   description?: string;
-  candidateUrls: string[];
+  candidates: ImageCandidate[];
 }): Promise<string | undefined> {
-  const { recipeName, description, candidateUrls } = input;
+  const { recipeName, description, candidates } = input;
 
-  if (!candidateUrls.length) {
+  if (!candidates.length) {
     return undefined;
   }
 
-  if (candidateUrls.length === 1) {
-    return candidateUrls[0];
+  if (candidates.length === 1) {
+    return candidates[0].url;
   }
 
   try {
+    const candidateList = candidates
+      .map(
+        (c, i) => `${i}. "${c.description}"`,
+      )
+      .join("\n");
+
     const { object } = await generateObject({
-      model: openai("gpt-5.2"),
+      model: openai("gpt-4o-mini"),
       schema: imageSelectionSchema,
       messages: [
         {
           role: "system",
           content:
-            "Select the single best image URL that matches the recipe. " +
-            "Only choose from the provided list.",
+            "You are selecting the best stock photo for a recipe. " +
+            "You will be given a recipe name, its description, and a numbered list of image descriptions from Unsplash. " +
+            "Pick the image whose description best matches the finished dish. " +
+            "Prefer images that show the actual prepared dish over raw ingredients or unrelated food. " +
+            "Return the zero-based index of your selection.",
         },
         {
           role: "user",
-          content: [
-            {
-              type: "text",
-              text:
-                `Recipe Name: ${recipeName}\n` +
-                `Description: ${description || ""}\n\n` +
-                "Candidate URLs:\n" +
-                candidateUrls
-                  .map((url, index) => `${index + 1}. ${url}`)
-                  .join("\n"),
-            },
-          ],
+          content:
+            `Recipe: ${recipeName}\n` +
+            `Description: ${description || "N/A"}\n\n` +
+            `Image candidates:\n${candidateList}`,
         },
       ],
     });
 
-    if (object.imageUrl && candidateUrls.includes(object.imageUrl)) {
-      return object.imageUrl;
+    const idx = object.selectedIndex;
+    if (idx >= 0 && idx < candidates.length) {
+      return candidates[idx].url;
     }
 
-    return candidateUrls[0];
+    return candidates[0].url;
   } catch (error) {
     logger.error("Failed to select image URL", error);
-    return candidateUrls[0];
+    return candidates[0].url;
   }
 }
 
-export { searchFoodImages, selectBestImageUrl };
+export { searchFoodImages, selectBestImageUrl, type ImageCandidate };

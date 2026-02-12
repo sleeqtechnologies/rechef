@@ -6,17 +6,18 @@ import { logger } from "./logger";
 import { verifyUserToken } from "./src/auth";
 import { failStaleJobs } from "./src/app/content/content.repository";
 import { sharePublicRouter } from "./src/app/share/share.route";
+import { pantryPublicRouter } from "./src/app/pantry/pantry.route";
 
 const app = express();
 const port = env.PORT;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
 
-// Public share endpoints (no auth)
 app.use(sharePublicRouter);
 
-// Authenticated API
+app.use("/api", pantryPublicRouter);
+
 app.use("/api", verifyUserToken, apiRoutes);
 
 app.listen(port, async () => {

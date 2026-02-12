@@ -8,6 +8,7 @@ import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:simple_icons/simple_icons.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../domain/recipe.dart';
 import '../domain/ingredient.dart';
@@ -89,7 +90,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
         if (mounted) {
           AppSnackBar.show(
             context,
-            message: 'Recipe updated',
+            message: 'recipes.recipe_updated'.tr(),
             type: SnackBarType.success,
           );
         }
@@ -97,7 +98,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
         if (mounted) {
           AppSnackBar.show(
             context,
-            message: 'Failed to save: $e',
+            message: 'recipes.failed_to_save'.tr(args: [e.toString()]),
             type: SnackBarType.error,
           );
         }
@@ -111,7 +112,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     if (!ok) {
       AppSnackBar.show(
         context,
-        message: 'Failed to create share link. Try again.',
+        message: 'recipes.failed_share_link'.tr(),
         type: SnackBarType.error,
       );
     }
@@ -121,17 +122,17 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     if (recipe.sharedSaveId == null) return;
     await AdaptiveAlertDialog.show(
       context: context,
-      title: 'Remove from library?',
+      title: 'recipes.remove_from_library_title'.tr(),
       message:
-          '"${recipe.name}" will be removed from your recipes. You can save it again later from the share link.',
+          'recipes.remove_from_library_message'.tr(args: [recipe.name]),
       actions: [
         AlertAction(
-          title: 'Cancel',
+          title: 'common.cancel'.tr(),
           style: AlertActionStyle.cancel,
           onPressed: () {},
         ),
         AlertAction(
-          title: 'Remove',
+          title: 'recipes.remove'.tr(),
           style: AlertActionStyle.destructive,
           onPressed: () async {
             try {
@@ -141,7 +142,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
               if (!mounted) return;
               AppSnackBar.show(
                 context,
-                message: 'Removed from library',
+                message: 'recipes.removed_from_library'.tr(),
                 type: SnackBarType.success,
               );
               if (context.canPop()) {
@@ -153,7 +154,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
               if (mounted) {
                 AppSnackBar.show(
                   context,
-                  message: 'Failed to remove: $e',
+                  message: 'recipes.failed_to_remove'.tr(args: [e.toString()]),
                   type: SnackBarType.error,
                 );
               }
@@ -167,18 +168,18 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
   Future<void> _deleteRecipe(Recipe recipe) async {
     await AdaptiveAlertDialog.show(
       context: context,
-      title: 'Delete recipe?',
+      title: 'recipes.delete_recipe_title'.tr(),
       message: '"${recipe.name}" will be permanently removed.',
       actions: [
         AlertAction(
-          title: 'Cancel',
+          title: 'common.cancel'.tr(),
           style: AlertActionStyle.cancel,
           onPressed: () {
             // Cancel - do nothing
           },
         ),
         AlertAction(
-          title: 'Delete',
+          title: 'common.delete'.tr(),
           style: AlertActionStyle.destructive,
           onPressed: () async {
             try {
@@ -186,7 +187,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
               if (!mounted) return;
               AppSnackBar.show(
                 context,
-                message: 'Recipe deleted',
+                message: 'recipes.recipe_deleted'.tr(),
                 type: SnackBarType.success,
               );
               if (context.canPop()) {
@@ -198,7 +199,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
               if (mounted) {
                 AppSnackBar.show(
                   context,
-                  message: 'Failed to delete: $e',
+                  message: 'recipes.failed_to_delete'.tr(args: [e.toString()]),
                   type: SnackBarType.error,
                 );
               }
@@ -222,7 +223,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     setState(() => _reminderDate = null);
     AppSnackBar.show(
       context,
-      message: 'Reminder removed',
+      message: 'recipes.reminder_removed'.tr(),
       type: SnackBarType.info,
     );
   }
@@ -248,7 +249,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
       if (!mounted) return;
       AppSnackBar.show(
         context,
-        message: 'Please pick a time in the future',
+        message: 'recipes.pick_future_time'.tr(),
         type: SnackBarType.warning,
       );
       return;
@@ -339,7 +340,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Could not load recipe',
+                'recipes.failed_to_load'.tr(),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Colors.grey.shade600,
                   fontWeight: FontWeight.w600,
@@ -379,7 +380,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Recipe not found',
+                'recipes.failed_to_load'.tr(),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Colors.grey.shade600,
                   fontWeight: FontWeight.w600,
@@ -440,7 +441,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                   actions: [
                     if (!recipe.isShared) ...[
                       _AppBarTextButton(
-                        label: 'Edit',
+                        label: 'recipes.edit'.tr(),
                         textColor: Colors.black,
                         glassColor: _isCollapsed
                             ? const Color(0xCCFFFFFF)
@@ -563,7 +564,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
-                                      'Shared recipe',
+                                      'recipes.shared_recipe'.tr(),
                                       style: Theme.of(context)
                                           .textTheme
                                           .labelMedium
@@ -620,7 +621,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                       Padding(
                         padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
                         child: AdaptiveSegmentedControl(
-                          labels: const ['Ingredients', 'Cooking', 'Nutrition'],
+                          labels: ['recipes.ingredients'.tr(), 'recipes.cooking'.tr(), 'recipes.nutrition'.tr()],
                           selectedIndex: _selectedTab,
                           onValueChanged: (index) {
                             setState(() => _selectedTab = index);
@@ -681,7 +682,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                     if (missing.isEmpty) {
                       AppSnackBar.show(
                         context,
-                        message: 'All ingredients are in your pantry!',
+                        message: 'recipes.all_in_pantry'.tr(),
                         type: SnackBarType.info,
                       );
                       return;
@@ -712,7 +713,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                           );
                         }
                         final msg = added == 0
-                            ? 'Items already in grocery list'
+                            ? 'recipes.already_in_grocery'.tr()
                             : 'Added $added item${added == 1 ? '' : 's'} to grocery list';
                         AppSnackBar.show(
                           context,
@@ -726,7 +727,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                       if (context.mounted) {
                         AppSnackBar.show(
                           context,
-                          message: 'Failed to add to grocery list',
+                          message: 'recipes.failed_add_grocery'.tr(),
                           type: SnackBarType.error,
                         );
                       }
@@ -829,9 +830,9 @@ class _SharedRecipeMorePopupMenu extends StatelessWidget {
   final bool isCollapsed;
   final VoidCallback onRemoveFromLibrary;
 
-  static const _items = [
+  static final _items = [
     AdaptivePopupMenuItem<_SharedRecipeMoreAction>(
-      label: 'Remove from library',
+      label: 'recipes.remove_from_library'.tr(),
       icon: Icons.remove_circle_outline,
       value: _SharedRecipeMoreAction.removeFromLibrary,
     ),
@@ -895,20 +896,20 @@ class _RecipeMorePopupMenu extends StatelessWidget {
   final VoidCallback onSetReminder;
 
   List<AdaptivePopupMenuItem<_RecipeMoreAction>> get _items => [
-    const AdaptivePopupMenuItem<_RecipeMoreAction>(
-      label: 'Add to Cookbook',
+    AdaptivePopupMenuItem<_RecipeMoreAction>(
+      label: 'recipes.add_to_cookbook'.tr(),
       icon: Icons.menu_book_outlined,
       value: _RecipeMoreAction.addToCookbook,
     ),
     AdaptivePopupMenuItem<_RecipeMoreAction>(
-      label: hasReminder ? 'Remove Reminder' : 'Set Reminder',
+      label: hasReminder ? 'recipes.remove_reminder'.tr() : 'recipes.set_reminder'.tr(),
       icon: hasReminder
           ? Icons.notifications_off_outlined
           : Icons.notifications_outlined,
       value: _RecipeMoreAction.setReminder,
     ),
-    const AdaptivePopupMenuItem<_RecipeMoreAction>(
-      label: 'Delete recipe',
+    AdaptivePopupMenuItem<_RecipeMoreAction>(
+      label: 'recipes.delete_recipe'.tr(),
       icon: Icons.delete_outline,
       value: _RecipeMoreAction.delete,
     ),
@@ -1429,7 +1430,7 @@ class _CookingTab extends StatelessWidget {
       children: [
         const SizedBox(height: 8),
         Text(
-          'Cooking Instructions',
+          'recipes.cooking_instructions'.tr(),
           style: Theme.of(
             context,
           ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
@@ -1480,7 +1481,7 @@ class _NutritionError extends StatelessWidget {
       children: [
         const SizedBox(height: 8),
         Text(
-          'Nutrition',
+          'recipes.nutrition'.tr(),
           style: Theme.of(
             context,
           ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
@@ -1497,14 +1498,14 @@ class _NutritionError extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Couldn’t load nutrition right now.',
+                'recipes.nutrition_unavailable'.tr(),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: Colors.red.shade700,
                 ),
               ),
               const SizedBox(height: 8),
-              TextButton(onPressed: onRetry, child: const Text('Try again')),
+              TextButton(onPressed: onRetry, child: Text('recipes.try_again'.tr())),
             ],
           ),
         ),
@@ -1560,16 +1561,16 @@ class _NutritionContentState extends State<_NutritionContent>
   List<_MacroData> _buildMacroData(NutritionFacts nutrition) {
     final items = <_MacroData>[
       _MacroData(
-        label: 'Protein',
+        label: 'recipes.protein'.tr(),
         grams: nutrition.proteinGrams,
         color: _proteinColor,
       ),
       _MacroData(
-        label: 'Carbs',
+        label: 'recipes.carbs'.tr(),
         grams: nutrition.carbsGrams,
         color: _carbsColor,
       ),
-      _MacroData(label: 'Fat', grams: nutrition.fatGrams, color: _fatColor),
+      _MacroData(label: 'recipes.fat'.tr(), grams: nutrition.fatGrams, color: _fatColor),
     ];
     return items.where((m) => m.grams > 0).toList();
   }
@@ -1586,7 +1587,7 @@ class _NutritionContentState extends State<_NutritionContent>
       children: [
         const SizedBox(height: 8),
         Text(
-          'Nutrition',
+          'recipes.nutrition'.tr(),
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -1601,7 +1602,7 @@ class _NutritionContentState extends State<_NutritionContent>
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
-              'Nutrition information is not available for this recipe.',
+              'recipes.nutrition_not_available'.tr(),
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: Colors.grey.shade600,
               ),
@@ -1639,7 +1640,7 @@ class _NutritionContentState extends State<_NutritionContent>
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'kcal',
+                                'recipes.kcal'.tr(),
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: Colors.grey.shade600,
                                   fontWeight: FontWeight.w500,
@@ -1706,7 +1707,7 @@ class _NutritionContentState extends State<_NutritionContent>
           const SizedBox(height: 20),
           // Macro breakdown cards
           Text(
-            'Per serving',
+            'recipes.per_serving'.tr(),
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w600,
               color: Colors.grey.shade800,
@@ -1918,8 +1919,8 @@ class _BottomButton extends StatelessWidget {
               children: [
                 Text(
                   isIngredientsTab
-                      ? 'Add missing items to Grocery list'
-                      : 'Start cooking',
+                      ? 'recipes.add_missing_to_grocery'.tr()
+                      : 'recipes.start_cooking'.tr(),
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 16,

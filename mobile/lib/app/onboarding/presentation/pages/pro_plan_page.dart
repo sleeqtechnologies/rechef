@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,10 +62,10 @@ class _ProPlanPageState extends ConsumerState<ProPlanPage> {
             alignment: Alignment.topRight,
             child: Padding(
               padding: const EdgeInsets.only(right: 16),
-              child: TextButton(
+                child: TextButton(
                 onPressed: () => notifier.nextPage(),
                 child: Text(
-                  'Maybe later',
+                  'onboarding.maybe_later'.tr(),
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
@@ -131,14 +132,14 @@ class _FallbackProContent extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
-            'Unlock the full experience',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+          Text(
+            'onboarding.unlock_full'.tr(),
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
           Text(
-            'Unlimited recipe imports, AI cooking assistant, and more with Rechef Pro.',
+            'onboarding.unlock_body'.tr(),
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey.shade600,
@@ -160,9 +161,9 @@ class _FallbackProContent extends StatelessWidget {
                 ),
                 elevation: 0,
               ),
-              child: const Text(
-                'Continue',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+              child: Text(
+                'common.continue_btn'.tr(),
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
               ),
             ),
           ),

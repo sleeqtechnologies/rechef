@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
@@ -98,8 +99,8 @@ class CookingTimerNotifications {
 
     await _plugin.zonedSchedule(
       id: _timerNotificationId,
-      title: 'Timer done',
-      body: 'Timer done: $label',
+      title: 'notifications.timer_done'.tr(),
+      body: 'notifications.timer_done_label'.tr(args: [label]),
       scheduledDate: scheduledDate,
       notificationDetails: details,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -64,7 +65,7 @@ class GroceryListScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: CustomAppBar(
-        title: 'Grocery',
+        title: 'grocery.title'.tr(),
         actions: [
           if (hasChecked)
             TextButton(
@@ -72,7 +73,7 @@ class GroceryListScreen extends ConsumerWidget {
                 ref.read(groceryProvider.notifier).clearChecked();
               },
               child: Text(
-                'Clear checked',
+                'grocery.clear_checked'.tr(),
                 style: TextStyle(
                   color: Colors.red.shade400,
                   fontWeight: FontWeight.w600,
@@ -115,7 +116,7 @@ class GroceryListScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Text(
-              'Failed to load grocery list.\n$error',
+              'grocery.failed_to_load'.tr(args: [error.toString()]),
               textAlign: TextAlign.center,
             ),
           ),
@@ -132,7 +133,7 @@ class GroceryListScreen extends ConsumerWidget {
                 child: Row(
                   children: [
                     _FilterChip(
-                      label: 'Category',
+                      label: 'grocery.category'.tr(),
                       selected: mode == GroceryGroupMode.category,
                       onTap: () => ref
                           .read(groceryGroupModeProvider.notifier)
@@ -140,7 +141,7 @@ class GroceryListScreen extends ConsumerWidget {
                     ),
                     const SizedBox(width: 8),
                     _FilterChip(
-                      label: 'Recipe',
+                      label: 'grocery.recipe'.tr(),
                       selected: mode == GroceryGroupMode.recipe,
                       onTap: () => ref
                           .read(groceryGroupModeProvider.notifier)
@@ -155,7 +156,7 @@ class GroceryListScreen extends ConsumerWidget {
                 child: grouped.isEmpty
                     ? Center(
                         child: Text(
-                          'Your grocery list is empty.\nAdd missing items from a recipe.',
+                          'grocery.empty'.tr(),
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.bodyLarge
                               ?.copyWith(color: Colors.grey.shade500),

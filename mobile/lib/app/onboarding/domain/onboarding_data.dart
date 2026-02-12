@@ -71,13 +71,13 @@ class OnboardingGoals {
   static const cookFaster = 'cook_faster';
 
   static const Map<String, String> labels = {
-    saveRecipes: '📖  Save recipes in one place',
-    cookMore: '👨‍🍳  Cook more at home',
-    eatHealthier: '🥗  Eat healthier',
-    mealPlan: '📅  Meal plan my week',
-    reduceFoodWaste: '♻️  Reduce food waste',
-    tryNewCuisines: '🍜  Try new cuisines',
-    cookFaster: '⏱️  Cook faster meals',
+    saveRecipes: 'goals.save_recipes',
+    cookMore: 'goals.cook_more',
+    eatHealthier: 'goals.eat_healthier',
+    mealPlan: 'goals.meal_plan',
+    reduceFoodWaste: 'goals.reduce_food_waste',
+    tryNewCuisines: 'goals.try_new_cuisines',
+    cookFaster: 'goals.cook_faster',
   };
 }
 
@@ -95,14 +95,14 @@ class RecipeSources {
   static const other = 'other';
 
   static const Map<String, String> labels = {
-    tiktok: 'TikTok',
-    instagram: 'Instagram',
-    youtube: 'YouTube',
-    pinterest: 'Pinterest',
-    foodBlogs: 'Food Blogs',
-    cookbooks: 'Cookbooks',
-    friendsFamily: 'Friends & Family',
-    other: 'Other',
+    tiktok: 'sources.tiktok',
+    instagram: 'sources.instagram',
+    youtube: 'sources.youtube',
+    pinterest: 'sources.pinterest',
+    foodBlogs: 'sources.food_blogs',
+    cookbooks: 'sources.cookbooks',
+    friendsFamily: 'sources.friends_family',
+    other: 'sources.other',
   };
 }
 
@@ -116,9 +116,9 @@ class OrganizationMethods {
   static const dontOrganize = 'dont_organize';
 
   static const Map<String, String> labels = {
-    screenshots: '📱  Screenshots on my phone',
-    bookmarks: '🔖  Browser bookmarks',
-    notesApp: '📝  Notes app',
-    dontOrganize: "🤷  I don't really organize them",
+    screenshots: 'organization.screenshots',
+    bookmarks: 'organization.bookmarks',
+    notesApp: 'organization.notes_app',
+    dontOrganize: 'organization.dont_organize',
   };
 }

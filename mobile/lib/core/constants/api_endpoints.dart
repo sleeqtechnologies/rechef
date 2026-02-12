@@ -20,8 +20,7 @@ class ApiEndpoints {
       '/api/recipes/$recipeId/ingredients/$index';
   static String recipeNutrition(String recipeId) =>
       '/api/recipes/$recipeId/nutrition';
-  static String recipeChat(String recipeId) =>
-      '/api/recipes/$recipeId/chat';
+  static String recipeChat(String recipeId) => '/api/recipes/$recipeId/chat';
   static String get pantryRecommendations =>
       '/api/recipes/pantry-recommendations';
 
@@ -42,6 +41,7 @@ class ApiEndpoints {
 
   // Pantry endpoints
   static String get pantry => '/api/pantry';
+  static String get pantryImages => '/api/pantry/images';
   static String pantryItem(String id) => '/api/pantry/$id';
 
   // Grocery list endpoints

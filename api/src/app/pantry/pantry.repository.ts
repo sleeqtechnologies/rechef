@@ -1,13 +1,11 @@
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, isNull } from "drizzle-orm";
 import db from "../../database";
 import { userPantryTable } from "./pantry.table";
 
 type PantryItem = typeof userPantryTable.$inferSelect;
 type NewPantryItem = typeof userPantryTable.$inferInsert;
 
-const createMany = async (
-  items: NewPantryItem[],
-): Promise<PantryItem[]> => {
+const createMany = async (items: NewPantryItem[]): Promise<PantryItem[]> => {
   if (items.length === 0) return [];
   return db.insert(userPantryTable).values(items).returning();
 };
@@ -34,9 +32,14 @@ const deleteById = async (id: string): Promise<void> => {
 };
 
 const deleteAllByUserId = async (userId: string): Promise<void> => {
+  await db.delete(userPantryTable).where(eq(userPantryTable.userId, userId));
+};
+
+const updateImageUrl = async (id: string, imageUrl: string): Promise<void> => {
   await db
-    .delete(userPantryTable)
-    .where(eq(userPantryTable.userId, userId));
+    .update(userPantryTable)
+    .set({ imageUrl })
+    .where(eq(userPantryTable.id, id));
 };
 
 export {
@@ -45,5 +48,6 @@ export {
   findById,
   deleteById,
   deleteAllByUserId,
+  updateImageUrl,
 };
 export type { PantryItem, NewPantryItem };

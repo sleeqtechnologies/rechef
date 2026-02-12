@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -57,7 +58,7 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
       await _completeOnboarding();
     } catch (e) {
       if (mounted) {
-        setState(() => _error = 'Google sign-in failed. Please try again.');
+        setState(() => _error = 'auth.error_google'.tr());
       }
     } finally {
       if (mounted) {
@@ -78,8 +79,7 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
     } catch (e) {
       if (mounted) {
         setState(
-          () => _error =
-              "Apple sign-in isn't available right now. Please try Google or continue without an account.",
+          () => _error = 'auth.error_apple_full'.tr(),
         );
       }
     } finally {
@@ -101,8 +101,7 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
     } catch (e) {
       if (mounted) {
         setState(
-          () => _error =
-              'Could not continue without an account. Please try again.',
+          () => _error = 'auth.error_guest'.tr(),
         );
       }
     } finally {
@@ -128,9 +127,9 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
             const Spacer(flex: 1),
 
             // Header
-            const Text(
-              'Create your account',
-              style: TextStyle(
+            Text(
+              'onboarding.create_account_title'.tr(),
+              style: const TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w700,
                 height: 1.2,
@@ -217,9 +216,9 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
                                 const Icon(Icons.g_mobiledata, size: 24),
                           ),
                           const SizedBox(width: 12),
-                          const Text(
-                            'Continue with Google',
-                            style: TextStyle(
+                          Text(
+                            'auth.continue_with_google'.tr(),
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
                             ),
@@ -250,14 +249,14 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
                         radius: 12,
                         color: Colors.white70,
                       )
-                    : const Row(
+                    : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.apple, size: 24),
-                          SizedBox(width: 12),
+                          const Icon(Icons.apple, size: 24),
+                          const SizedBox(width: 12),
                           Text(
-                            'Continue with Apple',
-                            style: TextStyle(
+                            'auth.continue_with_apple'.tr(),
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
                             ),
@@ -277,7 +276,7 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
                       color: Colors.grey,
                     )
                   : Text(
-                      'Continue without an account',
+                      'auth.continue_without_account'.tr(),
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 14,
@@ -293,9 +292,9 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
 
   String _buildSubtitle(OnboardingState state) {
     if (state.data.pantryItems.isNotEmpty) {
-      return 'Your preferences and pantry are ready to go';
+      return 'onboarding.preferences_pantry_ready'.tr();
     }
-    return 'Your preferences are saved and ready to go';
+    return 'onboarding.preferences_ready'.tr();
   }
 }
 
@@ -325,22 +324,21 @@ class _ReadySummary extends StatelessWidget {
           if (goalCount > 0)
             _SummaryItem(
               icon: Icons.flag_rounded,
-              text: '$goalCount goal${goalCount == 1 ? '' : 's'} set',
+              text: 'onboarding.n_goals_set'.plural(goalCount),
             ),
           if (pantryCount > 0) ...[
             if (goalCount > 0) const SizedBox(height: 8),
             _SummaryItem(
               icon: Icons.kitchen_rounded,
-              text:
-                  '$pantryCount pantry item${pantryCount == 1 ? '' : 's'} ready',
+              text: 'onboarding.n_pantry_items_ready'.plural(pantryCount),
             ),
           ],
           if (hasProPlan) ...[
             const SizedBox(height: 8),
-            const _SummaryItem(
+            _SummaryItem(
               icon: Icons.star_rounded,
-              text: 'Rechef Pro activated',
-              color: Color(0xFF219653),
+              text: 'onboarding.pro_activated'.tr(),
+              color: const Color(0xFF219653),
             ),
           ],
         ],

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -92,7 +93,7 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
 
       AppSnackBar.show(
         context,
-        message: 'Recipe is being generated in the background',
+        message: 'import.generating_background'.tr(),
         type: SnackBarType.info,
       );
 
@@ -145,7 +146,7 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
 
       AppSnackBar.show(
         context,
-        message: 'Recipe is being generated from your photo',
+        message: 'import.generating_photo'.tr(),
         type: SnackBarType.info,
       );
 
@@ -171,7 +172,7 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
           onPressed: () => context.go('/recipes'),
         ),
         title: Text(
-          'Import Recipe',
+          'import.title'.tr(),
           style: Theme.of(
             context,
           ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
@@ -187,7 +188,7 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Paste a recipe URL',
+                    'import.paste_url'.tr(),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.grey.shade600,
                     ),
@@ -251,9 +252,9 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
                                   radius: 10,
                                   color: Colors.white,
                                 )
-                              : const Text(
-                                  'Import',
-                                  style: TextStyle(fontWeight: FontWeight.w600),
+                              : Text(
+                                  'import.import_btn'.tr(),
+                                  style: const TextStyle(fontWeight: FontWeight.w600),
                                 ),
                         ),
                       ),
@@ -287,7 +288,7 @@ class _SubmittingView extends StatelessWidget {
           CupertinoActivityIndicator(radius: 16, color: Colors.red.shade400),
           const SizedBox(height: 20),
           Text(
-            'Submitting...',
+            'import.submitting'.tr(),
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
@@ -315,7 +316,7 @@ class _ErrorView extends StatelessWidget {
             Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
             const SizedBox(height: 16),
             Text(
-              'Something went wrong',
+              'import.something_went_wrong'.tr(),
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
@@ -338,7 +339,7 @@ class _ErrorView extends StatelessWidget {
                 ),
               ),
               child: Text(
-                'Try again',
+                'import.try_again'.tr(),
                 style: TextStyle(color: Colors.red.shade400),
               ),
             ),
@@ -359,7 +360,7 @@ class _EmptyView extends StatelessWidget {
           Icon(Icons.link, size: 48, color: Colors.grey.shade300),
           const SizedBox(height: 16),
           Text(
-            'Paste a recipe link to get started',
+            'import.paste_to_start'.tr(),
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade400),

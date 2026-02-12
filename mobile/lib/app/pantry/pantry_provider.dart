@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../cookbooks/cookbook_provider.dart';
+import '../onboarding/domain/pantry_constants.dart';
 import '../recipe_import/import_provider.dart';
 import 'data/pantry_repository.dart';
 import 'domain/pantry_item.dart';
@@ -46,7 +47,6 @@ final pantryByCategoryProvider =
     for (final item in items) {
       map.putIfAbsent(item.category, () => []).add(item);
     }
-    // Sort categories alphabetically, but keep "Other" at the end.
     final sortedKeys = map.keys.toList()
       ..sort((a, b) {
         if (a == 'Other') return 1;
@@ -55,4 +55,10 @@ final pantryByCategoryProvider =
       });
     return {for (final key in sortedKeys) key: map[key]!};
   });
+});
+
+final pantryItemImagesProvider =
+    FutureProvider<Map<String, String?>>((ref) async {
+  final repo = ref.read(pantryRepositoryProvider);
+  return repo.fetchImages(PantryConstants.allItemNames);
 });
