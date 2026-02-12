@@ -188,10 +188,10 @@
     "generating_background": "La recette est générée en arrière-plan",
     "generating_photo": "La recette est générée à partir de votre photo",
     "url_hint": "Collez l'URL de la recette ici...",
-    "social_media": "Réseaux sociaux / Blog",
+    "social_media": "Réseaux sociaux",
     "enter_url": "Entrez l'URL de la recette",
     "camera": "Appareil photo",
-    "take_picture": "Prenez une photo de la recette"
+    "take_picture": "Photo de la recette"
   },
   "camera": {
     "could_not_start": "Impossible de démarrer l'appareil photo",
@@ -273,7 +273,7 @@
     "cookbook_subtitle": "Créez des recueils pour chaque occasion",
     "better_cook_title": "Devenez un meilleur cuisinier avec Rechef",
     "better_cook_body": "Vous êtes sur la bonne voie ! Regardez vos habitudes culinaires évoluer et votre expérience en cuisine devenir plus facile.",
-    "try_pro": "Essayer Rechef Pro",
+    "try_pro": "Essayer Rechef Pro gratuitement",
     "continue_without_pro": "Continuer sans Pro",
     "create_account_title": "Créez votre compte",
     "preferences_pantry_ready": "Préférences et garde-manger prêts",

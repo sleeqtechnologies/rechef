@@ -2,7 +2,6 @@ import { logger } from "../../../logger";
 import { Request, Response } from "express";
 import * as pantryRepository from "./pantry.repository";
 import { categorizeMany } from "../../services/ingredient-categorizer";
-import { searchFoodImages } from "../../services/image-search";
 
 const formatItem = (item: pantryRepository.PantryItem) => ({
   id: item.id,
@@ -10,15 +9,6 @@ const formatItem = (item: pantryRepository.PantryItem) => ({
   category: item.category,
   imageUrl: item.imageUrl ?? null,
 });
-
-async function fetchImageForItem(name: string): Promise<string | null> {
-  try {
-    const urls = await searchFoodImages(`${name} food`, 1, "small");
-    return urls[0] ?? null;
-  } catch {
-    return null;
-  }
-}
 
 const addItems = async (req: Request, res: Response) => {
   try {
@@ -39,18 +29,11 @@ const addItems = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "No valid item names provided" });
     }
 
-    const imageResults = await Promise.allSettled(
-      categorized.map((i) => fetchImageForItem(i.name)),
-    );
-
-    const parsed = categorized.map((i, idx) => ({
+    const parsed = categorized.map((i) => ({
       userId,
       name: i.name,
       category: i.category,
-      imageUrl:
-        imageResults[idx].status === "fulfilled"
-          ? imageResults[idx].value
-          : null,
+      imageUrl: null,
     }));
 
     const created = await pantryRepository.createMany(parsed);
@@ -69,20 +52,6 @@ const getItems = async (req: Request, res: Response) => {
   try {
     const userId = req.user.id;
     const items = await pantryRepository.findAllByUserId(userId);
-
-    const missingImages = items.filter((i) => !i.imageUrl);
-    if (missingImages.length > 0) {
-      await Promise.allSettled(
-        missingImages.map(async (item) => {
-          const url = await fetchImageForItem(item.name);
-          if (url) {
-            await pantryRepository.updateImageUrl(item.id, url);
-            item.imageUrl = url;
-          }
-        }),
-      );
-    }
-
     return res.status(200).json({ items: items.map(formatItem) });
   } catch (error) {
     logger.error("Error fetching pantry items:", error);
@@ -129,18 +98,9 @@ const getImages = async (req: Request, res: Response) => {
 
     const limited = names.slice(0, 50).map((n: string) => String(n).trim());
 
-    const results = await Promise.allSettled(
-      limited.map(async (name) => {
-        const url = await fetchImageForItem(name);
-        return { name, imageUrl: url };
-      }),
-    );
-
     const images: Record<string, string | null> = {};
-    for (const result of results) {
-      if (result.status === "fulfilled") {
-        images[result.value.name] = result.value.imageUrl;
-      }
+    for (const name of limited) {
+      images[name] = null;
     }
 
     return res.status(200).json({ images });

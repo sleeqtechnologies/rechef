@@ -27,11 +27,6 @@ type ImageCandidate = {
   description: string;
 };
 
-type ImageCandidate = {
-  url: string;
-  description: string;
-};
-
 const imageSelectionSchema = z.object({
   selectedIndex: z
     .number()
