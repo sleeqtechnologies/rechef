@@ -282,6 +282,8 @@ class _AllRecipesTab extends ConsumerWidget {
               _RecipeGridSliver(
                 recipes: filtered,
                 pendingJobs: searchQuery.trim().isEmpty ? pendingJobs : [],
+                onDismissJob: (id) =>
+                    ref.read(pendingJobsProvider.notifier).dismissJob(id),
               ),
           ],
         );
@@ -533,11 +535,13 @@ class _RecipeGridSliver extends StatelessWidget {
   const _RecipeGridSliver({
     required this.recipes,
     required this.pendingJobs,
+    required this.onDismissJob,
     this.title,
   });
 
   final List<Recipe> recipes;
   final List<ContentJob> pendingJobs;
+  final ValueChanged<String> onDismissJob;
   final String? title;
 
   @override
@@ -581,6 +585,13 @@ class _RecipeGridSliver extends StatelessWidget {
             ),
             delegate: SliverChildBuilderDelegate((context, index) {
               if (index < pendingJobs.length) {
+                final job = pendingJobs[index];
+                if (job.isFailed) {
+                  return _FailedRecipeCard(
+                    error: job.error,
+                    onDismiss: () => onDismissJob(job.id),
+                  );
+                }
                 return const _PendingRecipeCard();
               }
               final recipe = recipes[index - pendingJobs.length];
@@ -686,6 +697,123 @@ class _PendingRecipeCardState extends State<_PendingRecipeCard>
             color: Colors.grey.shade200,
             borderRadius: BorderRadius.circular(7),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FailedRecipeCard extends StatelessWidget {
+  const _FailedRecipeCard({required this.onDismiss, this.error});
+
+  final VoidCallback onDismiss;
+  final String? error;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final size = constraints.maxWidth;
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Container(
+                width: size,
+                height: size,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF0F0),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Stack(
+                  children: [
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFDADA),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.error_outline_rounded,
+                                color: Color(0xFFC62828),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              'Recipe failed',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: const Color(0xFFC62828),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                            if (error != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                error!,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelSmall
+                                    ?.copyWith(
+                                      color: Colors.grey.shade600,
+                                    ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: GestureDetector(
+                        onTap: onDismiss,
+                        behavior: HitTestBehavior.opaque,
+                        child: Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.06),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.close_rounded,
+                            size: 16,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'Generation failed',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
+                color: Colors.grey.shade500,
+              ),
         ),
       ],
     );
