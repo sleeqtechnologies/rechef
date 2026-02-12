@@ -174,7 +174,8 @@ Guidelines:
     } else if (input.imageBase64 && isValidDataUrl(input.imageBase64)) {
       imageUrl = input.imageBase64;
     } else if (env.UNSPLASH_ACCESS_KEY) {
-      const candidates = await searchFoodImages(name, 6, "regular", true);
+      const searchQuery = `${name} plated dish food photography`;
+      const candidates = await searchFoodImages(searchQuery);
       imageUrl = await selectBestImageUrl({
         recipeName: name,
         description,

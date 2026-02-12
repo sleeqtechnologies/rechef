@@ -4,19 +4,27 @@ import { openai } from "@ai-sdk/openai";
 import { env } from "../../env_config";
 import { logger } from "../../logger";
 
+type UnsplashPhoto = {
+  id: string;
+  alt_description: string | null;
+  description: string | null;
+  urls: {
+    raw: string;
+    full: string;
+    regular: string;
+    small: string;
+    thumb: string;
+  };
+};
+
 type UnsplashSearchResponse = {
-  results: Array<{
-    id: string;
-    alt_description: string | null;
-    description: string | null;
-    urls: {
-      raw: string;
-      full: string;
-      regular: string;
-      small: string;
-      thumb: string;
-    };
-  }>;
+  results: UnsplashPhoto[];
+};
+
+type ImageCandidate = {
+  regularUrl: string;
+  smallUrl: string;
+  description: string;
 };
 
 type ImageCandidate = {
@@ -28,29 +36,13 @@ const imageSelectionSchema = z.object({
   selectedIndex: z
     .number()
     .int()
-    .min(0)
-    .describe("Zero-based index of the best matching image"),
+    .describe("The 1-indexed number of the best matching image"),
 });
 
-type UnsplashImageSize = "raw" | "full" | "regular" | "small" | "thumb";
-
-async function searchFoodImages(
-  query: string,
-  limit?: number,
-  size?: UnsplashImageSize,
-): Promise<string[]>;
-async function searchFoodImages(
-  query: string,
-  limit: number,
-  size: UnsplashImageSize,
-  withMetadata: true,
-): Promise<ImageCandidate[]>;
 async function searchFoodImages(
   query: string,
   limit = 6,
-  size: UnsplashImageSize = "regular",
-  withMetadata = false,
-): Promise<string[] | ImageCandidate[]> {
+): Promise<ImageCandidate[]> {
   if (!env.UNSPLASH_ACCESS_KEY) {
     logger.warn("UNSPLASH_ACCESS_KEY is missing");
     return [];
@@ -80,18 +72,13 @@ async function searchFoodImages(
     }
 
     const data = (await response.json()) as UnsplashSearchResponse;
-
-    if (withMetadata) {
-      return data.results
-        .filter((r) => r.urls[size])
-        .map((r) => ({
-          url: r.urls[size],
-          description:
-            r.alt_description || r.description || "No description available",
-        }));
-    }
-
-    return data.results.map((result) => result.urls[size]).filter(Boolean);
+    return data.results
+      .filter((result) => result.urls.regular)
+      .map((result) => ({
+        regularUrl: result.urls.regular,
+        smallUrl: result.urls.small,
+        description: result.alt_description || result.description || "",
+      }));
   } catch (error) {
     logger.error("Unsplash search error", error);
     return [];
@@ -110,7 +97,7 @@ async function selectBestImageUrl(input: {
   }
 
   if (candidates.length === 1) {
-    return candidates[0].url;
+    return candidates[0].regularUrl;
   }
 
   try {
@@ -127,31 +114,53 @@ async function selectBestImageUrl(input: {
         {
           role: "system",
           content:
-            "You are selecting the best stock photo for a recipe. " +
-            "You will be given a recipe name, its description, and a numbered list of image descriptions from Unsplash. " +
-            "Pick the image whose description best matches the finished dish. " +
-            "Prefer images that show the actual prepared dish over raw ingredients or unrelated food. " +
-            "Return the zero-based index of your selection.",
+            "You are selecting the best photo for a recipe. " +
+            "Pick the image that best matches the dish AND follows these rules:\n" +
+            "- MUST show ONLY the food — no people, hands, or faces\n" +
+            "- Should be a clean, professional-looking photo\n" +
+            "- Food should be plated/presented and fill most of the frame\n" +
+            "- Prefer well-lit, appetizing, high-quality shots\n" +
+            "- Avoid busy backgrounds or cluttered scenes\n" +
+            "Respond with the number of the best image (1-indexed).",
         },
         {
           role: "user",
-          content:
-            `Recipe: ${recipeName}\n` +
-            `Description: ${description || "N/A"}\n\n` +
-            `Image candidates:\n${candidateList}`,
+          content: [
+            {
+              type: "text",
+              text:
+                `Recipe: ${recipeName}\n` +
+                `Description: ${description || "N/A"}\n\n` +
+                "Pick the best image from the following candidates:",
+            },
+            ...candidates.map((candidate, index) => [
+              {
+                type: "text" as const,
+                text: `\nImage ${index + 1}${candidate.description ? ` — ${candidate.description}` : ""}:`,
+              },
+              {
+                type: "image" as const,
+                image: candidate.smallUrl,
+              },
+            ]).flat(),
+          ],
         },
       ],
     });
 
-    const idx = object.selectedIndex;
-    if (idx >= 0 && idx < candidates.length) {
-      return candidates[idx].url;
+    const selectedIndex = object.selectedIndex;
+    if (
+      selectedIndex != null &&
+      selectedIndex >= 1 &&
+      selectedIndex <= candidates.length
+    ) {
+      return candidates[selectedIndex - 1].regularUrl;
     }
 
-    return candidates[0].url;
+    return candidates[0].regularUrl;
   } catch (error) {
     logger.error("Failed to select image URL", error);
-    return candidates[0].url;
+    return candidates[0].regularUrl;
   }
 }
 
