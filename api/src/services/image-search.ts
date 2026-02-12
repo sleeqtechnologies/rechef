@@ -27,6 +27,11 @@ type ImageCandidate = {
   description: string;
 };
 
+type ImageCandidate = {
+  url: string;
+  description: string;
+};
+
 const imageSelectionSchema = z.object({
   selectedIndex: z
     .number()
@@ -96,6 +101,12 @@ async function selectBestImageUrl(input: {
   }
 
   try {
+    const candidateList = candidates
+      .map(
+        (c, i) => `${i}. "${c.description}"`,
+      )
+      .join("\n");
+
     const { object } = await generateObject({
       model: openai("gpt-4o-mini"),
       schema: imageSelectionSchema,
@@ -153,4 +164,4 @@ async function selectBestImageUrl(input: {
   }
 }
 
-export { searchFoodImages, selectBestImageUrl };
+export { searchFoodImages, selectBestImageUrl, type ImageCandidate };

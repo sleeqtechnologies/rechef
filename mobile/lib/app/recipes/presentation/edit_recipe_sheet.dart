@@ -5,6 +5,7 @@ import '../../../core/widgets/app_snack_bar.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../domain/ingredient.dart';
 import '../domain/recipe.dart';
@@ -120,7 +121,7 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
     if (recipe.name.isEmpty) {
       AppSnackBar.show(
         context,
-        message: 'Recipe name is required',
+        message: 'edit_recipe.name_required'.tr(),
         type: SnackBarType.warning,
       );
       return;
@@ -249,7 +250,7 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
               ),
               Expanded(
                 child: Text(
-                  'Edit Recipe',
+                  'edit_recipe.title'.tr(),
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
@@ -272,7 +273,7 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: Text(
-                      'Save',
+                      'common.save'.tr(),
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
@@ -295,13 +296,13 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 16),
-        _buildLabel('Name'),
+        _buildLabel('edit_recipe.name_label'.tr()),
         const SizedBox(height: 6),
-        _buildTextField(_nameCtrl, hint: 'Recipe name'),
+        _buildTextField(_nameCtrl, hint: 'edit_recipe.name_hint'.tr()),
         const SizedBox(height: 16),
-        _buildLabel('Description'),
+        _buildLabel('edit_recipe.description_label'.tr()),
         const SizedBox(height: 6),
-        _buildTextField(_descCtrl, hint: 'A short description', maxLines: 3),
+        _buildTextField(_descCtrl, hint: 'edit_recipe.description_hint'.tr(), maxLines: 3),
       ],
     );
   }
@@ -313,7 +314,7 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildLabel('Servings'),
+              _buildLabel('edit_recipe.servings'.tr()),
               const SizedBox(height: 6),
               _buildNumberField(_servingsCtrl, hint: '4'),
             ],
@@ -324,7 +325,7 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildLabel('Prep (min)'),
+              _buildLabel('edit_recipe.prep_min'.tr()),
               const SizedBox(height: 6),
               _buildNumberField(_prepCtrl, hint: '15'),
             ],
@@ -335,7 +336,7 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildLabel('Cook (min)'),
+              _buildLabel('edit_recipe.cook_min'.tr()),
               const SizedBox(height: 6),
               _buildNumberField(_cookCtrl, hint: '30'),
             ],
@@ -351,7 +352,7 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
       children: [
         Row(
           children: [
-            _buildLabel('Ingredients'),
+            _buildLabel('edit_recipe.ingredients'.tr()),
             const Spacer(),
             GestureDetector(
               onTap: _addIngredient,
@@ -369,7 +370,7 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    'Add',
+                    'common.add'.tr(),
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.w500,
@@ -393,21 +394,21 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
                   width: 56,
                   child: _buildTextField(
                     ing.quantity,
-                    hint: 'Qty',
+                    hint: 'edit_recipe.qty_hint'.tr(),
                     fontSize: 13,
                   ),
                 ),
                 const SizedBox(width: 6),
                 SizedBox(
                   width: 48,
-                  child: _buildTextField(ing.unit, hint: 'Unit', fontSize: 13),
+                  child: _buildTextField(ing.unit, hint: 'edit_recipe.unit_hint'.tr(), fontSize: 13),
                 ),
                 const SizedBox(width: 6),
                 // Name
                 Expanded(
                   child: _buildTextField(
                     ing.name,
-                    hint: 'Ingredient',
+                    hint: 'edit_recipe.ingredient_hint'.tr(),
                     fontSize: 13,
                   ),
                 ),
@@ -434,7 +435,7 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
       children: [
         Row(
           children: [
-            _buildLabel('Instructions'),
+            _buildLabel('edit_recipe.instructions'.tr()),
             const Spacer(),
             GestureDetector(
               onTap: _addInstruction,
@@ -452,7 +453,7 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    'Add',
+                    'common.add'.tr(),
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.w500,
@@ -486,7 +487,7 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
                 Expanded(
                   child: _buildTextField(
                     _instructionCtrls[i],
-                    hint: 'Step ${i + 1}',
+                    hint: 'edit_recipe.step_hint'.tr(args: ['${i + 1}']),
                     maxLines: 3,
                     fontSize: 13,
                   ),

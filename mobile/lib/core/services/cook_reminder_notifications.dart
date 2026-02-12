@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -70,7 +71,7 @@ class CookReminderNotifications {
 
     await _plugin.zonedSchedule(
       id: _notificationId(recipeId),
-      title: 'Time to cook!',
+      title: 'notifications.time_to_cook'.tr(),
       body: recipeName,
       scheduledDate: scheduledDate,
       notificationDetails: details,

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -145,7 +146,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
 
       AppSnackBar.show(
         context,
-        message: 'Recipe is being generated in the background',
+        message: 'import.generating_background'.tr(),
         type: SnackBarType.info,
       );
 
@@ -170,7 +171,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
     // Show a loading indicator
     AppSnackBar.show(
       context,
-      message: 'Creating your shopping list...',
+        message: 'grocery.creating_list'.tr(),
       type: SnackBarType.info,
       duration: const Duration(seconds: 10),
     );
@@ -291,7 +292,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
           });
         },
         actionLabel: widget.location.startsWith('/grocery')
-            ? 'Order Online'
+            ? 'grocery.order_online'.tr()
             : null,
         actionColor: widget.location.startsWith('/grocery')
             ? const Color(0xFF2E7D32)

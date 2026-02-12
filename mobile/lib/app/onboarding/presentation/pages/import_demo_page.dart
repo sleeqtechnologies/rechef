@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,12 +14,12 @@ class ImportDemoPage extends ConsumerWidget {
 
   String _buildSourceText(List<String> sources) {
     final labels = sources
-        .map((s) => RecipeSources.labels[s])
+        .map((s) => RecipeSources.labels[s]?.tr())
         .where((l) => l != null)
         .cast<String>()
         .toList();
 
-    if (labels.isEmpty) return 'your favorite platforms';
+    if (labels.isEmpty) return 'onboarding.your_favorite_platforms'.tr();
     if (labels.length == 1) return labels.first;
     if (labels.length == 2) return '${labels[0]} and ${labels[1]}';
     return '${labels.take(labels.length - 1).join(', ')}, and ${labels.last}';
@@ -31,8 +32,8 @@ class ImportDemoPage extends ConsumerWidget {
     final sourceText = _buildSourceText(state.data.recipeSources);
 
     return OnboardingPageWrapper(
-      title: 'Import recipes from anywhere',
-      subtitle: 'Import from $sourceText and more',
+      title: 'onboarding.import_title'.tr(),
+      subtitle: 'onboarding.import_subtitle'.tr(args: [sourceText]),
       bottomAction: SizedBox(
         width: double.infinity,
         height: 56,
@@ -46,9 +47,9 @@ class ImportDemoPage extends ConsumerWidget {
             ),
             elevation: 0,
           ),
-          child: const Text(
-            'Continue',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+          child: Text(
+            'common.continue_btn'.tr(),
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
           ),
         ),
       ),
@@ -60,16 +61,16 @@ class ImportDemoPage extends ConsumerWidget {
           const SizedBox(height: 32),
           Row(
             children: [
-              _StepItem(number: '1', text: 'Find a recipe you love'),
+              _StepItem(number: '1', text: 'onboarding.import_step1'.tr()),
               const SizedBox(width: 12),
-              _StepItem(number: '2', text: 'Share the link to Rechef'),
+              _StepItem(number: '2', text: 'onboarding.import_step2'.tr()),
               const SizedBox(width: 12),
-              _StepItem(number: '3', text: 'Recipe saved and organized'),
+              _StepItem(number: '3', text: 'onboarding.import_step3'.tr()),
             ],
           ),
           const SizedBox(height: 24),
           Text(
-            'Just share a link or snap a photo of a recipe -- we handle the rest.',
+            'onboarding.import_body'.tr(),
             style: TextStyle(
               fontSize: 15,
               color: Colors.grey.shade600,
@@ -117,7 +118,7 @@ class _VideoPlaceholder extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Watch how it works',
+                'onboarding.watch_how'.tr(),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,

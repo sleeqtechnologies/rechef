@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:easy_localization/easy_localization.dart';
 
 import '../recipe_provider.dart';
 
@@ -220,7 +221,7 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
       if (mounted) {
         AppSnackBar.show(
           context,
-          message: 'Failed to send: $e',
+          message: 'cooking_help.failed_to_send'.tr(args: [e.toString()]),
           type: SnackBarType.error,
         );
       }
@@ -277,7 +278,7 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
     // Send with current text or a default message
     final text = _textController.text.trim().isNotEmpty
         ? _textController.text.trim()
-        : 'How does this look?';
+        : 'cooking_help.image_message'.tr();
 
     await _sendMessage(text, imageBase64: dataUrl);
   }
@@ -363,11 +364,11 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
 
   Widget _buildEmptyState(BuildContext context) {
     final suggestions = [
-      'What can I substitute for an ingredient I don\'t have?',
-      'How do I know when this is done cooking?',
-      'Can I make this recipe ahead of time?',
-      'What sides go well with this dish?',
-      'How do I adjust this for more servings?',
+      'cooking_help.suggestion_substitute'.tr(),
+      'cooking_help.suggestion_done_cooking'.tr(),
+      'cooking_help.suggestion_ahead_of_time'.tr(),
+      'cooking_help.suggestion_sides'.tr(),
+      'cooking_help.suggestion_more_servings'.tr(),
     ];
 
     return Center(
@@ -387,7 +388,7 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
             ),
             const SizedBox(height: 12),
             Text(
-              'Your AI cooking assistant',
+              'cooking_help.ai_assistant'.tr(),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
@@ -397,7 +398,7 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Try asking:',
+              'cooking_help.try_asking'.tr(),
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
             ),
@@ -576,9 +577,9 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
 
   Future<User> _resolveUser(String userId) async {
     if (userId == _assistantId) {
-      return const User(id: _assistantId, name: 'Chef AI');
+      return User(id: _assistantId, name: 'cooking_help.chef_ai'.tr());
     }
-    return const User(id: _currentUserId, name: 'You');
+    return User(id: _currentUserId, name: 'cooking_help.you'.tr());
   }
 
   void _onMessageSend(String text) {
@@ -642,7 +643,7 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
                   if (text.trim().isNotEmpty) _sendMessage(text);
                 },
                 decoration: InputDecoration(
-                  hintText: _isListening ? 'Listening...' : 'Ask anything...',
+                  hintText: _isListening ? 'cooking_help.listening'.tr() : 'cooking_help.ask_anything'.tr(),
                   hintStyle: TextStyle(
                     color: Colors.grey.shade400,
                     fontSize: 14,

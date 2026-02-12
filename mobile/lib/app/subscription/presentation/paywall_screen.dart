@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,7 +52,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                     const Icon(Icons.error_outline, size: 48),
                     const SizedBox(height: 16),
                     Text(
-                      'Unable to load subscription offerings',
+                      'subscription.unable_to_load_offerings'.tr(),
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 24),
@@ -62,7 +63,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                         });
                         _loadOffering();
                       },
-                      child: const Text('Retry'),
+                      child: Text('common.retry'.tr()),
                     ),
                   ],
                 ),

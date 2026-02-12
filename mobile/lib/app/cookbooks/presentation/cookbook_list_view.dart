@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../../core/constants/app_spacing.dart';
 import '../cookbook_provider.dart';
@@ -24,7 +25,7 @@ class CookbookListView extends ConsumerWidget {
             Icon(Icons.error_outline, size: 48, color: Colors.grey.shade300),
             const SizedBox(height: 12),
             Text(
-              'Failed to load cookbooks',
+              'cookbooks.failed_to_load'.tr(),
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
@@ -32,7 +33,7 @@ class CookbookListView extends ConsumerWidget {
             const SizedBox(height: 16),
             TextButton(
               onPressed: () => ref.invalidate(cookbooksProvider),
-              child: const Text('Retry'),
+              child: Text('common.retry'.tr()),
             ),
           ],
         ),
@@ -75,7 +76,7 @@ class CookbookListView extends ConsumerWidget {
                   }
                   if (index == 1) {
                     return _CookbookCard(
-                      name: 'All recipes',
+                      name: 'cookbooks.all_recipes'.tr(),
                       recipeCount: state.allRecipesCount,
                       coverImages: state.allRecipeImages,
                       onTap: () => context.push('/cookbooks/__all_recipes__'),
@@ -83,7 +84,7 @@ class CookbookListView extends ConsumerWidget {
                   }
                   if (index == 2) {
                     return _CookbookCard(
-                      name: 'Shared with me',
+                      name: 'cookbooks.shared_with_me'.tr(),
                       recipeCount: state.sharedWithMeCount,
                       coverImages: state.sharedImages,
                       onTap: () =>
@@ -92,7 +93,7 @@ class CookbookListView extends ConsumerWidget {
                   }
                   if (index == 3) {
                     return _CookbookCard(
-                      name: 'Pantry Picks',
+                      name: 'cookbooks.pantry_picks'.tr(),
                       recipeCount: null,
                       coverImages: const [],
                       svgIcon: 'assets/icons/pantry.svg',
@@ -125,6 +126,8 @@ class CookbookListView extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       useRootNavigator: true,
       builder: (ctx) => _CreateCookbookSheet(
+        title: 'cookbooks.new_cookbook'.tr(),
+        buttonLabel: 'cookbooks.create'.tr(),
         onSave: (name) async {
           Navigator.pop(ctx);
           await ref.read(cookbooksProvider.notifier).createCookbook(name: name);
@@ -156,7 +159,7 @@ class CookbookListView extends ConsumerWidget {
             const SizedBox(height: 16),
             ListTile(
               leading: const Icon(Icons.edit_outlined),
-              title: const Text('Rename'),
+              title: Text('common.rename'.tr()),
               onTap: () {
                 Navigator.pop(ctx);
                 _showRenameCookbookSheet(context, ref, cookbook);
@@ -165,7 +168,7 @@ class CookbookListView extends ConsumerWidget {
             ListTile(
               leading: Icon(Icons.delete_outline, color: Colors.red.shade400),
               title: Text(
-                'Delete',
+                'common.delete'.tr(),
                 style: TextStyle(color: Colors.red.shade400),
               ),
               onTap: () {
@@ -191,8 +194,8 @@ class CookbookListView extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       builder: (ctx) => _CreateCookbookSheet(
         initialName: cookbook.name,
-        title: 'Rename Cookbook',
-        buttonLabel: 'Rename',
+        title: 'cookbooks.rename_cookbook'.tr(),
+        buttonLabel: 'common.rename'.tr(),
         onSave: (name) async {
           Navigator.pop(ctx);
           await ref
@@ -211,15 +214,14 @@ class CookbookListView extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Cookbook?'),
+        title: Text('cookbooks.delete_cookbook_title'.tr()),
         content: Text(
-          'Are you sure you want to delete "${cookbook.name}"? '
-          'Recipes in this cookbook will not be deleted.',
+          'cookbooks.delete_cookbook_message'.tr(args: [cookbook.name]),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text('common.cancel'.tr()),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red.shade400),
@@ -229,7 +231,7 @@ class CookbookListView extends ConsumerWidget {
                   .read(cookbooksProvider.notifier)
                   .deleteCookbook(cookbook.id);
             },
-            child: const Text('Delete'),
+            child: Text('common.delete'.tr()),
           ),
         ],
       ),
@@ -321,7 +323,7 @@ class _CreateCookbookSheetState extends State<_CreateCookbookSheet> {
             textCapitalization: TextCapitalization.words,
             onSubmitted: (_) => _handleSave(),
             decoration: InputDecoration(
-              hintText: 'Cookbook name',
+              hintText: 'cookbooks.cookbook_name_hint'.tr(),
               filled: true,
               fillColor: Colors.grey.shade100,
               border: OutlineInputBorder(
@@ -579,7 +581,7 @@ class _CreateCookbookCard extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                'New Cookbook',
+                'cookbooks.new_cookbook'.tr(),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey.shade600,
                   fontWeight: FontWeight.w600,

@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 /// Bottom sheet for adding pantry items. Frosted glass style; text field at
@@ -96,7 +97,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                     focusNode: _focusNode,
                     autofocus: true,
                     decoration: InputDecoration(
-                      hintText: 'e.g. flour, sugar, salt',
+                      hintText: 'pantry.add_hint'.tr(),
                       hintStyle: TextStyle(
                         color: Colors.grey.shade600,
                         fontWeight: FontWeight.w400,

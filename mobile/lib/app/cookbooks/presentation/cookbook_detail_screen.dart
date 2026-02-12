@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../../core/constants/app_spacing.dart';
 import '../../recipes/data/recipe_repository.dart';
@@ -24,13 +25,13 @@ class CookbookDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (cookbookId == _allRecipesId) {
       return _VirtualCookbookScreen(
-        title: 'All recipes',
+        title: 'cookbooks.all_recipes'.tr(),
         filter: (recipes) => recipes,
       );
     }
     if (cookbookId == _sharedWithMeId) {
       return _VirtualCookbookScreen(
-        title: 'Shared with me',
+        title: 'cookbooks.shared_with_me'.tr(),
         filter: (recipes) => recipes.where((r) => r.isShared).toList(),
       );
     }
@@ -84,7 +85,7 @@ class _VirtualCookbookScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Failed to load recipes',
+                      'cookbooks.failed_to_load_recipes'.tr(),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Colors.grey.shade600,
                       ),
@@ -92,7 +93,7 @@ class _VirtualCookbookScreen extends ConsumerWidget {
                     const SizedBox(height: 16),
                     TextButton(
                       onPressed: () => ref.invalidate(recipesProvider),
-                      child: const Text('Retry'),
+                      child: Text('common.retry'.tr()),
                     ),
                   ],
                 ),
@@ -142,7 +143,7 @@ class _VirtualCookbookScreen extends ConsumerWidget {
 class _PantryPicksScreen extends ConsumerWidget {
   const _PantryPicksScreen();
 
-  static const _title = 'Pantry Picks';
+  static final _title = 'cookbooks.pantry_picks'.tr();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -153,7 +154,7 @@ class _PantryPicksScreen extends ConsumerWidget {
       body: picksAsync.when(
         loading: () => CustomScrollView(
           slivers: [
-            const _DetailAppBar(title: _title),
+            _DetailAppBar(title: _title),
             SliverFillRemaining(
               hasScrollBody: false,
               child: Center(
@@ -163,7 +164,7 @@ class _PantryPicksScreen extends ConsumerWidget {
                     const CupertinoActivityIndicator(),
                     const SizedBox(height: 16),
                     Text(
-                      'Recommending recipes...',
+                      'cookbooks.recommending'.tr(),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Colors.grey.shade600,
                         fontSize: 15,
@@ -177,7 +178,7 @@ class _PantryPicksScreen extends ConsumerWidget {
         ),
         error: (error, _) => CustomScrollView(
           slivers: [
-            const _DetailAppBar(title: _title),
+            _DetailAppBar(title: _title),
             SliverFillRemaining(
               hasScrollBody: false,
               child: Center(
@@ -191,7 +192,7 @@ class _PantryPicksScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Failed to load recommendations',
+                      'cookbooks.failed_recommendations'.tr(),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Colors.grey.shade600,
                       ),
@@ -199,7 +200,7 @@ class _PantryPicksScreen extends ConsumerWidget {
                     const SizedBox(height: 16),
                     TextButton(
                       onPressed: () => ref.invalidate(pantryPicksProvider),
-                      child: const Text('Retry'),
+                      child: Text('common.retry'.tr()),
                     ),
                   ],
                 ),
@@ -224,7 +225,7 @@ class _PantryPicksScreen extends ConsumerWidget {
                   await ref.read(pantryPicksProvider.future);
                 },
               ),
-              const _DetailAppBar(title: _title),
+              _DetailAppBar(title: _title),
               SliverToBoxAdapter(
                 child: _CookbookHeader(
                   title: _title,
@@ -237,8 +238,8 @@ class _PantryPicksScreen extends ConsumerWidget {
                   hasScrollBody: false,
                   child: _EmptyState(
                     message: response.pantryItemCount == 0
-                        ? 'Add items to your pantry\nto get recipe recommendations'
-                        : 'No matching recipes found\nfor your pantry items',
+                        ? 'cookbooks.add_pantry_items'.tr()
+                        : 'cookbooks.no_matching_recipes'.tr(),
                   ),
                 )
               else
@@ -320,7 +321,7 @@ class _CustomCookbookScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Failed to load recipes',
+                      'cookbooks.failed_to_load_recipes'.tr(),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Colors.grey.shade600,
                       ),
@@ -329,7 +330,7 @@ class _CustomCookbookScreen extends ConsumerWidget {
                     TextButton(
                       onPressed: () =>
                           ref.invalidate(cookbookRecipesProvider(cookbookId)),
-                      child: const Text('Retry'),
+                      child: Text('common.retry'.tr()),
                     ),
                   ],
                 ),
@@ -372,8 +373,8 @@ class _CustomCookbookScreen extends ConsumerWidget {
                 SliverFillRemaining(
                   hasScrollBody: false,
                   child: _EmptyState(
-                    message: 'No recipes in this cookbook',
-                    subtitle: 'Add recipes from the recipe detail screen',
+                    message: 'cookbooks.no_recipes_in_cookbook'.tr(),
+                    subtitle: 'cookbooks.add_from_detail'.tr(),
                   ),
                 )
               else
@@ -424,7 +425,7 @@ class _CustomCookbookScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 20),
               Text(
-                'Rename Cookbook',
+                'cookbooks.rename_cookbook'.tr(),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                   fontSize: 18,
@@ -436,7 +437,7 @@ class _CustomCookbookScreen extends ConsumerWidget {
                 autofocus: true,
                 textCapitalization: TextCapitalization.words,
                 decoration: InputDecoration(
-                  hintText: 'Cookbook name',
+                  hintText: 'cookbooks.cookbook_name_hint'.tr(),
                   filled: true,
                   fillColor: Colors.grey.shade100,
                   border: OutlineInputBorder(
@@ -467,9 +468,9 @@ class _CustomCookbookScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Text(
-                    'Rename',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  child: Text(
+                    'common.rename'.tr(),
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                   ),
                 ),
               ),
@@ -489,15 +490,14 @@ class _CustomCookbookScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Cookbook?'),
+        title: Text('cookbooks.delete_cookbook_title'.tr()),
         content: Text(
-          'Are you sure you want to delete "$cookbookName"? '
-          'Recipes in this cookbook will not be deleted.',
+          'cookbooks.delete_cookbook_message'.tr(args: [cookbookName]),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text('common.cancel'.tr()),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red.shade400),
@@ -508,7 +508,7 @@ class _CustomCookbookScreen extends ConsumerWidget {
                   .deleteCookbook(cookbookId);
               if (context.mounted) context.pop();
             },
-            child: const Text('Delete'),
+            child: Text('common.delete'.tr()),
           ),
         ],
       ),
@@ -535,14 +535,14 @@ class _DetailAppBar extends StatelessWidget {
   final VoidCallback? onRename;
   final VoidCallback? onDelete;
 
-  static const _menuItems = [
+  static List<AdaptivePopupMenuItem<_CookbookMoreAction>> get _menuItems => [
     AdaptivePopupMenuItem<_CookbookMoreAction>(
-      label: 'Rename',
+      label: 'common.rename'.tr(),
       icon: Icons.edit_outlined,
       value: _CookbookMoreAction.rename,
     ),
     AdaptivePopupMenuItem<_CookbookMoreAction>(
-      label: 'Delete',
+      label: 'common.delete'.tr(),
       icon: Icons.delete_outline,
       value: _CookbookMoreAction.delete,
     ),

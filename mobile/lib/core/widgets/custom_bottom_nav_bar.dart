@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -311,8 +312,8 @@ class CustomBottomNavBarState extends State<CustomBottomNavBar>
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       _buildMenuOption(
-                                        title: 'Social Media / Blog',
-                                        subtitle: 'Enter URL Of Recipe',
+                                        title: 'import.social_media'.tr(),
+                                        subtitle: 'import.enter_url'.tr(),
                                         iconPath: 'assets/icons/keyboard.svg',
                                         onTap: () => _handleOptionTap(
                                           widget.onSocialMediaTap,
@@ -320,8 +321,8 @@ class CustomBottomNavBarState extends State<CustomBottomNavBar>
                                       ),
                                       const SizedBox(height: 12),
                                       _buildMenuOption(
-                                        title: 'Camera',
-                                        subtitle: 'Take Picture Of Recipe',
+                                        title: 'import.camera'.tr(),
+                                        subtitle: 'import.take_picture'.tr(),
                                         iconPath: 'assets/icons/camera.svg',
                                         onTap: () =>
                                             _handleOptionTap(widget.onCameraTap),

@@ -40,6 +40,21 @@ class PantryRepository {
         .toList();
   }
 
+  Future<Map<String, String?>> fetchImages(List<String> names) async {
+    final response = await _apiClient.post(
+      ApiEndpoints.pantryImages,
+      body: {'names': names},
+    );
+
+    if (response.statusCode != 200) {
+      return {};
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final images = data['images'] as Map<String, dynamic>? ?? {};
+    return images.map((k, v) => MapEntry(k, v as String?));
+  }
+
   Future<void> delete(String id) async {
     final response = await _apiClient.delete(ApiEndpoints.pantryItem(id));
 

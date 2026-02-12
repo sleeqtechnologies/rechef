@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,8 +16,8 @@ class GoalsPage extends ConsumerWidget {
     final notifier = ref.read(onboardingProvider.notifier);
 
     return OnboardingPageWrapper(
-      title: 'Choose your goals',
-      subtitle: 'Select all that apply',
+      title: 'onboarding.goals_title'.tr(),
+      subtitle: 'onboarding.goals_subtitle'.tr(),
       bottomAction: SizedBox(
         width: double.infinity,
         height: 56,
@@ -32,9 +33,9 @@ class GoalsPage extends ConsumerWidget {
             ),
             elevation: 0,
           ),
-          child: const Text(
-            'Continue',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+          child: Text(
+            'common.continue_btn'.tr(),
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
           ),
         ),
       ),
@@ -45,7 +46,7 @@ class GoalsPage extends ConsumerWidget {
         children: OnboardingGoals.labels.entries.map((entry) {
           final isSelected = state.data.goals.contains(entry.key);
           return SelectableChip(
-            label: entry.value,
+            label: entry.value.tr(),
             isSelected: isSelected,
             onTap: () => notifier.toggleGoal(entry.key),
           );

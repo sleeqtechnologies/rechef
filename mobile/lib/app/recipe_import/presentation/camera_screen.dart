@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:camera/camera.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -70,7 +71,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
       if (mounted) {
         AppSnackBar.show(
           context,
-          message: 'Could not start camera',
+          message: 'camera.could_not_start'.tr(),
           type: SnackBarType.error,
         );
       }
@@ -95,7 +96,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
       if (mounted) {
         AppSnackBar.show(
           context,
-          message: 'Failed to take picture',
+          message: 'camera.failed_take_picture'.tr(),
           type: SnackBarType.error,
         );
       }
@@ -118,7 +119,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
       if (mounted) {
         AppSnackBar.show(
           context,
-          message: 'Could not open gallery',
+          message: 'camera.could_not_open_gallery'.tr(),
           type: SnackBarType.error,
         );
       }
@@ -159,7 +160,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
 
       AppSnackBar.show(
         context,
-        message: 'Recipe is being generated from your photo',
+        message: 'import.generating_photo'.tr(),
         type: SnackBarType.success,
       );
 
@@ -227,18 +228,18 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
             if (_isSubmitting)
               Container(
                 color: Colors.black.withValues(alpha: 0.6),
-                child: const Center(
+                child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      CupertinoActivityIndicator(
+                      const CupertinoActivityIndicator(
                         radius: 16,
                         color: Colors.white,
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       Text(
-                        'Submitting photo...',
-                        style: TextStyle(
+                        'camera.submitting_photo'.tr(),
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
@@ -378,10 +379,10 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
                 color: Colors.white.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(26),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
-                  'Retake',
-                  style: TextStyle(
+                  'camera.retake'.tr(),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -402,10 +403,10 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(26),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
-                  'Use Photo',
-                  style: TextStyle(
+                  'camera.use_photo'.tr(),
+                  style: const TextStyle(
                     color: Colors.black,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/constants/app_spacing.dart';
@@ -74,7 +75,7 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
 
     return Scaffold(
       appBar: CustomAppBar(
-        title: 'Recipes',
+        title: 'recipes.title'.tr(),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -120,7 +121,7 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
               10,
             ),
             child: AdaptiveSegmentedControl(
-              labels: const ['All Recipes', 'Cookbooks'],
+              labels: ['recipes.all_recipes'.tr(), 'recipes.cookbooks'.tr()],
               selectedIndex: _selectedSegment,
               onValueChanged: (index) {
                 setState(() => _selectedSegment = index);
@@ -231,7 +232,7 @@ class _AllRecipesTab extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Failed to load recipes',
+                    'recipes.failed_to_load'.tr(),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.grey.shade600,
                     ),
@@ -239,7 +240,7 @@ class _AllRecipesTab extends ConsumerWidget {
                   const SizedBox(height: 16),
                   TextButton(
                     onPressed: () => ref.invalidate(recipesProvider),
-                    child: const Text('Retry'),
+                    child: Text('common.retry'.tr()),
                   ),
                 ],
               ),
@@ -316,7 +317,7 @@ class _SearchField extends StatelessWidget {
         controller: controller,
         focusNode: focusNode,
         decoration: InputDecoration(
-          hintText: 'Search recipes…',
+          hintText: 'recipes.search_hint'.tr(),
           prefixIcon: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: SvgPicture.asset(
@@ -370,7 +371,7 @@ class _EmptyState extends StatelessWidget {
         children: [
           const SizedBox(height: 40),
           Text(
-            'Generate First Recipe',
+            'recipes.generate_first'.tr(),
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w700,
               color: Colors.black87,
@@ -378,7 +379,7 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'share a recipe with app or\nenter a url to a recipe',
+            'recipes.generate_first_subtitle'.tr(),
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Colors.grey.shade500,
@@ -506,8 +507,8 @@ class _NoSearchResults extends StatelessWidget {
             const SizedBox(height: 20),
             Text(
               query.trim().isEmpty
-                  ? 'No matches'
-                  : 'No matches for "${query.trim()}"',
+                  ? 'recipes.no_matches'.tr()
+                  : 'recipes.no_matches_for'.tr(args: [query.trim()]),
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
@@ -516,7 +517,7 @@ class _NoSearchResults extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Try a different search term',
+              'recipes.try_different_search'.tr(),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Colors.grey.shade500,
                 height: 1.4,
@@ -662,7 +663,7 @@ class _PendingRecipeCardState extends State<_PendingRecipeCard>
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            'Generating...',
+                            'recipes.generating'.tr(),
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
                                   color: Colors.grey.shade500,
@@ -784,7 +785,7 @@ class RecipeCard extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Shared',
+                                  'recipes.shared'.tr(),
                                   style: Theme.of(context).textTheme.labelSmall
                                       ?.copyWith(
                                         color: Colors.white,

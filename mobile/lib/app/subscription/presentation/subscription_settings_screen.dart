@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,7 +22,7 @@ class SubscriptionSettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Subscription'),
+        title: Text('subscription.title'.tr()),
       ),
       body: subscriptionAsync.when(
         loading: () => const Center(child: CupertinoActivityIndicator()),
@@ -34,7 +35,7 @@ class SubscriptionSettingsScreen extends ConsumerWidget {
                 Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
                 const SizedBox(height: 16),
                 Text(
-                  'Unable to load subscription info',
+                  'subscription.unable_to_load'.tr(),
                   style: theme.textTheme.titleMedium,
                 ),
                 const SizedBox(height: 8),
@@ -46,7 +47,7 @@ class SubscriptionSettingsScreen extends ConsumerWidget {
                 const SizedBox(height: 24),
                 FilledButton(
                   onPressed: () => ref.read(subscriptionProvider.notifier).refresh(),
-                  child: const Text('Retry'),
+                  child: Text('common.retry'.tr()),
                 ),
               ],
             ),
@@ -91,7 +92,7 @@ class _SubscriptionContent extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                isActive ? 'Rechef Pro Active' : 'Free Plan',
+                isActive ? 'subscription.pro_active'.tr() : 'subscription.free_plan'.tr(),
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: isActive
@@ -102,7 +103,7 @@ class _SubscriptionContent extends ConsumerWidget {
               if (isActive) ...[
                 const SizedBox(height: 4),
                 Text(
-                  'You have full access to all features',
+                  'subscription.full_access'.tr(),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: const Color(0xFF388E3C),
                   ),
@@ -110,7 +111,7 @@ class _SubscriptionContent extends ConsumerWidget {
               ] else ...[
                 const SizedBox(height: 4),
                 Text(
-                  'Upgrade to unlock all features',
+                  'subscription.upgrade_unlock'.tr(),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -129,7 +130,7 @@ class _SubscriptionContent extends ConsumerWidget {
               await ref.read(subscriptionProvider.notifier).showPaywall();
             },
             icon: const Icon(Icons.rocket_launch_rounded),
-            label: const Text('Upgrade to Rechef Pro'),
+            label: Text('subscription.upgrade_to_pro'.tr()),
             style: FilledButton.styleFrom(
               minimumSize: const Size.fromHeight(52),
               shape: RoundedRectangleBorder(
@@ -146,7 +147,7 @@ class _SubscriptionContent extends ConsumerWidget {
               await ref.read(subscriptionProvider.notifier).showCustomerCenter();
             },
             icon: const Icon(Icons.settings_rounded),
-            label: const Text('Manage Subscription'),
+            label: Text('subscription.manage'.tr()),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size.fromHeight(52),
               shape: RoundedRectangleBorder(
@@ -165,15 +166,15 @@ class _SubscriptionContent extends ConsumerWidget {
             AppSnackBar.show(
               context,
               message: restored
-                  ? 'Purchases restored successfully!'
-                  : 'No previous purchases found.',
+                  ? 'subscription.restored_success'.tr()
+                  : 'subscription.no_purchases'.tr(),
               type: restored
                   ? SnackBarType.success
                   : SnackBarType.info,
             );
           },
           icon: const Icon(Icons.restore_rounded),
-          label: const Text('Restore Purchases'),
+          label: Text('subscription.restore'.tr()),
           style: OutlinedButton.styleFrom(
             minimumSize: const Size.fromHeight(52),
             shape: RoundedRectangleBorder(

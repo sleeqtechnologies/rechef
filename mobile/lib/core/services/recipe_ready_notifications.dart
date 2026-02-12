@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 /// Shows a local notification when a recipe import job finishes.
@@ -58,8 +59,8 @@ class RecipeReadyNotifications {
 
     await _plugin.show(
       id: _nextId++,
-      title: 'Recipe Ready!',
-      body: 'Your recipe has been generated.',
+      title: 'notifications.recipe_ready'.tr(),
+      body: 'notifications.recipe_generated'.tr(),
       notificationDetails: details,
     );
   }

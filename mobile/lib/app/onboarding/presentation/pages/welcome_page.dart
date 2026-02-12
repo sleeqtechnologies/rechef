@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -42,7 +43,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
       );
     } catch (e) {
       if (mounted) {
-        setState(() => _error = 'Google sign-in failed. Please try again.');
+        setState(() => _error = 'auth.error_google'.tr());
       }
     } finally {
       if (mounted) setState(() => _loadingButton = null);
@@ -61,8 +62,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
     } catch (e) {
       if (mounted) {
         setState(
-          () => _error =
-              "Apple sign-in isn't available right now. Please try Google.",
+          () => _error = 'auth.error_apple'.tr(),
         );
       }
     } finally {
@@ -90,9 +90,9 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
               const Spacer(flex: 2),
               Image.asset('assets/rechef-logo.png', height: 90, width: 90),
               const SizedBox(height: 64),
-              const Text(
-                'Turn saved recipes into \n cooked meals',
-                style: TextStyle(
+              Text(
+                'auth.tagline'.tr(),
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
@@ -141,9 +141,9 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Get Started',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  child: Text(
+                    'auth.get_started'.tr(),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -152,9 +152,9 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
               // Already have an account
               TextButton(
                 onPressed: _loading ? null : () => _showLoginSheet(context),
-                child: const Text(
-                  'Already have an account? Log in',
-                  style: TextStyle(color: Colors.white, fontSize: 14),
+                child: Text(
+                  'auth.already_have_account'.tr(),
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
                 ),
               ),
               const SizedBox(height: 16),
@@ -189,9 +189,9 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const Text(
-                'Welcome back',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+              Text(
+                'auth.welcome_back'.tr(),
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 24),
 
@@ -231,9 +231,9 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                                   const Icon(Icons.g_mobiledata, size: 24),
                             ),
                             const SizedBox(width: 12),
-                            const Text(
-                              'Continue with Google',
-                              style: TextStyle(
+                            Text(
+                              'auth.continue_with_google'.tr(),
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -268,14 +268,14 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                           radius: 12,
                           color: Colors.white70,
                         )
-                      : const Row(
+                      : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.apple, size: 24),
-                            SizedBox(width: 12),
+                            const Icon(Icons.apple, size: 24),
+                            const SizedBox(width: 12),
                             Text(
-                              'Continue with Apple',
-                              style: TextStyle(
+                              'auth.continue_with_apple'.tr(),
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
                               ),

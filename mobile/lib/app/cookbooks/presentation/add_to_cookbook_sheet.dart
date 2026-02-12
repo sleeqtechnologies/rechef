@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/widgets/app_snack_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../cookbook_provider.dart';
 
@@ -123,7 +124,7 @@ class _AddToCookbookSheetState extends ConsumerState<AddToCookbookSheet> {
                   ),
                   // Title
                   Text(
-                    'Add to Cookbook',
+                    'cookbooks.add_to_cookbook'.tr(),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                       fontSize: 18,
@@ -145,7 +146,7 @@ class _AddToCookbookSheetState extends ConsumerState<AddToCookbookSheet> {
                       error: (_, __) => Padding(
                         padding: const EdgeInsets.all(32),
                         child: Text(
-                          'Failed to load cookbooks',
+                          'cookbooks.failed_to_load'.tr(),
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.grey.shade600),
                         ),
@@ -164,12 +165,12 @@ class _AddToCookbookSheetState extends ConsumerState<AddToCookbookSheet> {
                                 ),
                                 const SizedBox(height: 12),
                                 Text(
-                                  'No cookbooks yet',
+                                  'cookbooks.no_cookbooks_yet'.tr(),
                                   style: TextStyle(color: Colors.grey.shade600),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Create one to start organizing',
+                                  'cookbooks.create_to_organize'.tr(),
                                   style: TextStyle(
                                     color: Colors.grey.shade500,
                                     fontSize: 13,
@@ -232,9 +233,9 @@ class _AddToCookbookSheetState extends ConsumerState<AddToCookbookSheet> {
                           ? const CupertinoActivityIndicator(
                               color: Colors.white,
                             )
-                          : const Text(
-                              'Save',
-                              style: TextStyle(
+                          : Text(
+                              'common.save'.tr(),
+                              style: const TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 16,
                               ),
@@ -273,7 +274,7 @@ class _AddToCookbookSheetState extends ConsumerState<AddToCookbookSheet> {
       if (mounted) {
         AppSnackBar.show(
           context,
-          message: 'Failed to update cookbooks: $e',
+          message: 'cookbooks.failed_update'.tr(args: [e.toString()]),
           type: SnackBarType.error,
         );
       }

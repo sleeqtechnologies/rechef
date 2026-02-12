@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,8 +14,8 @@ class ShareFeaturePage extends ConsumerWidget {
     final notifier = ref.read(onboardingProvider.notifier);
 
     return OnboardingPageWrapper(
-      title: 'Share recipes with anyone',
-      subtitle: 'Send any recipe to friends and family with a single link',
+      title: 'onboarding.share_title'.tr(),
+      subtitle: 'onboarding.share_subtitle'.tr(),
       scrollable: false,
       bottomAction: SizedBox(
         width: double.infinity,
@@ -29,9 +30,9 @@ class ShareFeaturePage extends ConsumerWidget {
             ),
             elevation: 0,
           ),
-          child: const Text(
-            'Continue',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+          child: Text(
+            'common.continue_btn'.tr(),
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
           ),
         ),
       ),
