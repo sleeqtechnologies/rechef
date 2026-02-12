@@ -27,6 +27,7 @@ class RecipeListScreen extends ConsumerStatefulWidget {
 class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
   final _searchController = TextEditingController();
   final _searchFocusNode = FocusNode();
+  final _pageController = PageController();
   String _searchQuery = '';
   int _selectedSegment = 0;
 
@@ -45,6 +46,7 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     _searchFocusNode.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -122,6 +124,11 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
               selectedIndex: _selectedSegment,
               onValueChanged: (index) {
                 setState(() => _selectedSegment = index);
+                _pageController.animateToPage(
+                  index,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
               },
             ),
           ),
@@ -129,8 +136,11 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
       ),
       body: SafeArea(
         bottom: false,
-        child: IndexedStack(
-          index: _selectedSegment,
+        child: PageView(
+          controller: _pageController,
+          onPageChanged: (index) {
+            setState(() => _selectedSegment = index);
+          },
           children: [
             _AllRecipesTab(
               searchController: _searchController,
@@ -239,8 +249,7 @@ class _AllRecipesTab extends ConsumerWidget {
       ),
       data: (recipes) {
         final filtered = filterRecipes(recipes);
-        final hasAnyRecipes =
-            filtered.isNotEmpty || pendingJobs.isNotEmpty;
+        final hasAnyRecipes = filtered.isNotEmpty || pendingJobs.isNotEmpty;
 
         return CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
