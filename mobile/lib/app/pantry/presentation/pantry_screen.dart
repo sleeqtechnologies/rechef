@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -113,20 +112,6 @@ class _PantryItemRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 10),
         child: Row(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: item.imageUrl != null
-                  ? CachedNetworkImage(
-                      imageUrl: item.imageUrl!,
-                      width: 40,
-                      height: 40,
-                      fit: BoxFit.cover,
-                      placeholder: (_, __) => const _PlaceholderIcon(),
-                      errorWidget: (_, __, ___) => const _PlaceholderIcon(),
-                    )
-                  : const _PlaceholderIcon(),
-            ),
-            const SizedBox(width: 12),
             Expanded(
               child: Text(
                 item.name,
@@ -135,27 +120,6 @@ class _PantryItemRow extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _PlaceholderIcon extends StatelessWidget {
-  const _PlaceholderIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(
-        Icons.restaurant_outlined,
-        size: 20,
-        color: Colors.grey.shade400,
       ),
     );
   }
