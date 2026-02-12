@@ -21,6 +21,10 @@ class PendingJobsNotifier extends Notifier<List<ContentJob>> {
     _startPolling();
   }
 
+  void dismissJob(String jobId) {
+    state = state.where((j) => j.id != jobId).toList();
+  }
+
   Future<void> checkJobs() async {
     await _fetchPendingJobs();
   }
@@ -31,7 +35,8 @@ class PendingJobsNotifier extends Notifier<List<ContentJob>> {
       final jobs = _removeStaleJobs(
         await repo.fetchJobs(statuses: ['pending', 'processing']),
       );
-      state = jobs;
+      final existingFailed = state.where((j) => j.isFailed).toList();
+      state = [...existingFailed, ...jobs];
       if (jobs.isNotEmpty) {
         _startPolling();
       } else {
@@ -66,7 +71,8 @@ class PendingJobsNotifier extends Notifier<List<ContentJob>> {
   }
 
   Future<void> _pollJobs() async {
-    if (state.isEmpty) {
+    final pendingInState = state.where((j) => !j.isFailed).toList();
+    if (pendingInState.isEmpty) {
       _stopPolling();
       return;
     }
@@ -77,20 +83,36 @@ class PendingJobsNotifier extends Notifier<List<ContentJob>> {
         await repo.fetchJobs(statuses: ['pending', 'processing']),
       );
 
-      final previousIds = state.map((j) => j.id).toSet();
-      final currentIds = updatedJobs.map((j) => j.id).toSet();
-      final completedIds = previousIds.difference(currentIds);
+      final previousPendingIds = pendingInState.map((j) => j.id).toSet();
+      final currentPendingIds = updatedJobs.map((j) => j.id).toSet();
+      final disappearedIds = previousPendingIds.difference(currentPendingIds);
 
-      if (completedIds.isNotEmpty) {
+      final List<ContentJob> newFailedJobs = [];
+      bool hasCompleted = false;
+
+      for (final id in disappearedIds) {
+        try {
+          final job = await repo.fetchJob(id);
+          if (job.isFailed) {
+            newFailedJobs.add(job);
+          } else {
+            hasCompleted = true;
+          }
+        } catch (_) {
+          hasCompleted = true;
+        }
+      }
+
+      if (hasCompleted) {
         ref.invalidate(recipesProvider);
-        // Show local notification when app is not in foreground.
         if (WidgetsBinding.instance.lifecycleState !=
             AppLifecycleState.resumed) {
           RecipeReadyNotifications.instance.show();
         }
       }
 
-      state = updatedJobs;
+      final existingFailed = state.where((j) => j.isFailed).toList();
+      state = [...existingFailed, ...newFailedJobs, ...updatedJobs];
 
       if (updatedJobs.isEmpty) {
         _stopPolling();
