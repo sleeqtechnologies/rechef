@@ -31,7 +31,6 @@ class OnboardingPageWrapper extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Space for the overlay header (back button + progress bar)
             const SizedBox(height: 68),
 
             if (title != null) ...[
@@ -65,7 +64,7 @@ class OnboardingPageWrapper extends StatelessWidget {
                 ),
               ),
             ],
-            if (title != null || subtitle != null) const SizedBox(height: 24),
+            if (title != null || subtitle != null) const SizedBox(height: 16),
 
             if (scrollable)
               Expanded(

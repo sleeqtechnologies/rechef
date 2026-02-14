@@ -11,6 +11,7 @@ const env = cleanEnv(process.env, {
   SERVICE_ACCT_KEY: str(),
   UNSPLASH_ACCESS_KEY: str(),
   INSTACART_API_KEY: str(),
+  YOUTUBE_API_KEY: str({ default: "" }),
 });
 
 export { env };

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 import '../../../core/constants/app_spacing.dart';
+import '../../../core/widgets/recipe_image.dart';
 import '../cookbook_provider.dart';
 import '../domain/cookbook.dart';
 
@@ -515,8 +516,8 @@ class _FannedImages extends StatelessWidget {
                   clipBehavior: Clip.antiAlias,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      images[i],
+                    child: RecipeImage(
+                      imageUrl: images[i],
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Container(
                         color: Colors.grey.shade200,

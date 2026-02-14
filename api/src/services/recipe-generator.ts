@@ -38,6 +38,11 @@ function isValidDataUrl(s: string): boolean {
   return /^data:image\/[a-z]+;base64,/.test(s);
 }
 
+function toDataUrl(imageBase64: string): string {
+  if (isValidDataUrl(imageBase64)) return imageBase64;
+  return `data:image/jpeg;base64,${imageBase64}`;
+}
+
 interface RecipeGenerationInput {
   transcript?: string;
   foodFrames?: FrameWithFood[];
@@ -50,6 +55,7 @@ interface RecipeGenerationInput {
   firstFrameBase64?: string;
   sourceTitle?: string;
   sourceDescription?: string;
+  videoDescription?: string;
   sourceImageUrls?: string[];
 }
 
@@ -114,7 +120,11 @@ Guidelines:
     textPrompt += `Source Title: ${input.sourceTitle}\n`;
   }
 
-  if (input.sourceDescription) {
+  if (input.videoDescription?.trim()) {
+    textPrompt += `\nVideo Description (may contain the full recipe):\n${input.videoDescription}\n\n`;
+  }
+
+  if (input.sourceDescription && input.sourceDescription !== input.videoDescription) {
     textPrompt += `Description: ${input.sourceDescription}\n\n`;
   }
 
@@ -148,7 +158,7 @@ Guidelines:
   if (input.imageBase64) {
     userContent.push({
       type: "image",
-      image: input.imageBase64,
+      image: toDataUrl(input.imageBase64),
     });
   }
 
@@ -171,8 +181,8 @@ Guidelines:
       imageUrl = firstSourceUrl;
     } else if (input.firstFrameBase64 && isValidDataUrl(input.firstFrameBase64)) {
       imageUrl = input.firstFrameBase64;
-    } else if (input.imageBase64 && isValidDataUrl(input.imageBase64)) {
-      imageUrl = input.imageBase64;
+    } else if (input.imageBase64?.trim()) {
+      imageUrl = toDataUrl(input.imageBase64);
     } else if (env.UNSPLASH_ACCESS_KEY) {
       const searchQuery = `${name} plated dish food photography`;
       const candidates = await searchFoodImages(searchQuery);

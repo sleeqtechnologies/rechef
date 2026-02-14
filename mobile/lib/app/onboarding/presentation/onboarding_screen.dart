@@ -32,17 +32,17 @@ class OnboardingScreen extends ConsumerWidget {
             physics: const NeverScrollableScrollPhysics(),
             onPageChanged: notifier.setPage,
             children: const [
-              WelcomePage(),           // 0
-              GoalsPage(),             // 1
-              PainPointPage(),         // 2
-              RecipeSourcesPage(),     // 3
-              ImportDemoPage(),        // 4
-              OrganizationPage(),      // 5
-              CookbookFeaturePage(),   // 6
-              PantrySetupPage(),       // 7
-              GroceryFeaturePage(),    // 8
-              ShareFeaturePage(),      // 9
-              BetterCookPage(),        // 10
+              WelcomePage(), // 0
+              GoalsPage(), // 1
+              PainPointPage(), // 2
+              RecipeSourcesPage(), // 3
+              ImportDemoPage(), // 4
+              OrganizationPage(), // 5
+              CookbookFeaturePage(), // 6
+              PantrySetupPage(), // 7
+              GroceryFeaturePage(), // 8
+              ShareFeaturePage(), // 9
+              BetterCookPage(), // 10
             ],
           ),
 

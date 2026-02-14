@@ -5,13 +5,15 @@ import {
   detectContentSource,
   ContentSource,
 } from "../../services/content-detector";
-import { parseYouTubeContent } from "../../services/youtube";
+import {
+  parseYouTubeShort,
+  parseYouTubeVideo,
+} from "../../services/youtube";
 import { parseTikTokContent } from "../../services/tiktok";
 import { parseInstagramContent } from "../../services/instagram";
 import { parseFacebookContent } from "../../services/facebook";
 import { parseWebsiteContent } from "../../services/website";
 import {
-  extractFramesFromUrl,
   downloadImageAsBase64,
   downloadVideo,
   extractFramesStreaming,
@@ -249,37 +251,85 @@ async function generateRecipe(
       if (!contentInfo.videoId) {
         throw new Error("Invalid YouTube URL");
       }
-      const youtubeContent = await parseYouTubeContent(contentInfo.videoId);
 
-      await acquireProcessingSlot();
-      try {
-        const { foodFrames: bestFrames, firstFrameBase64 } =
-          await extractAndFilterFrames(youtubeContent.videoUrl, {
-            intervalSeconds: 3,
-            maxFrames: 10,
-          });
+      if (contentInfo.isShort) {
+        const shortContent = await parseYouTubeShort(contentInfo.videoId);
+
+        if (shortContent.videoUrl) {
+          await acquireProcessingSlot();
+          try {
+            const { foodFrames: bestFrames, firstFrameBase64 } =
+              await extractAndFilterFrames(shortContent.videoUrl, {
+                intervalSeconds: 2,
+                maxFrames: 8,
+              });
+            const recipe = await generateRecipeFromContent({
+              transcript: shortContent.transcript,
+              videoDescription: shortContent.metadata.description,
+              foodFrames: bestFrames,
+              firstFrameBase64,
+              sourceTitle: shortContent.metadata.title,
+              sourceDescription: shortContent.metadata.description,
+              sourceImageUrls: shortContent.metadata.thumbnailUrl
+                ? [shortContent.metadata.thumbnailUrl]
+                : undefined,
+            });
+            return {
+              recipe,
+              sourceUrl: input.url,
+              sourceTitle: shortContent.metadata.title,
+              sourceAuthorName: shortContent.metadata.channelName || null,
+              sourceAuthorAvatarUrl: null,
+              savedContentTitle: shortContent.metadata.title,
+              savedContentThumbnailUrl:
+                shortContent.metadata.thumbnailUrl || null,
+            };
+          } catch {
+            /* fall through to transcript-only fallback */
+          } finally {
+            releaseProcessingSlot();
+          }
+        }
+
         const recipe = await generateRecipeFromContent({
-          transcript: youtubeContent.transcript,
-          foodFrames: bestFrames,
-          firstFrameBase64,
-          sourceTitle: youtubeContent.metadata.title,
-          sourceDescription: youtubeContent.metadata.description,
-          sourceImageUrls: youtubeContent.metadata.thumbnailUrl
-            ? [youtubeContent.metadata.thumbnailUrl]
+          transcript: shortContent.transcript,
+          videoDescription: shortContent.metadata.description,
+          sourceTitle: shortContent.metadata.title,
+          sourceDescription: shortContent.metadata.description,
+          sourceImageUrls: shortContent.metadata.thumbnailUrl
+            ? [shortContent.metadata.thumbnailUrl]
             : undefined,
         });
         return {
           recipe,
           sourceUrl: input.url,
-          sourceTitle: youtubeContent.metadata.title,
-          sourceAuthorName: youtubeContent.metadata.channelName || null,
+          sourceTitle: shortContent.metadata.title,
+          sourceAuthorName: shortContent.metadata.channelName || null,
           sourceAuthorAvatarUrl: null,
-          savedContentTitle: youtubeContent.metadata.title,
-          savedContentThumbnailUrl: youtubeContent.metadata.thumbnailUrl || null,
+          savedContentTitle: shortContent.metadata.title,
+          savedContentThumbnailUrl: shortContent.metadata.thumbnailUrl || null,
         };
-      } finally {
-        releaseProcessingSlot();
       }
+
+      const videoContent = await parseYouTubeVideo(contentInfo.videoId);
+      const recipe = await generateRecipeFromContent({
+        transcript: videoContent.transcript,
+        videoDescription: videoContent.metadata.description,
+        sourceTitle: videoContent.metadata.title,
+        sourceDescription: videoContent.metadata.description,
+        sourceImageUrls: videoContent.metadata.thumbnailUrl
+          ? [videoContent.metadata.thumbnailUrl]
+          : undefined,
+      });
+      return {
+        recipe,
+        sourceUrl: input.url,
+        sourceTitle: videoContent.metadata.title,
+        sourceAuthorName: videoContent.metadata.channelName || null,
+        sourceAuthorAvatarUrl: null,
+        savedContentTitle: videoContent.metadata.title,
+        savedContentThumbnailUrl: videoContent.metadata.thumbnailUrl || null,
+      };
     }
 
     case "tiktok": {

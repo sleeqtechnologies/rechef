@@ -22,6 +22,7 @@ import 'share_recipe_sheet.dart';
 import '../../cookbooks/presentation/add_to_cookbook_sheet.dart';
 import '../../../core/services/cook_reminder_notifications.dart';
 import '../../../core/widgets/app_snack_bar.dart';
+import '../../../core/widgets/recipe_image.dart';
 
 bool _hasSourceOrAuthor(Recipe recipe) {
   final hasName =
@@ -487,39 +488,25 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                       children: [
                         Hero(
                           tag: 'recipe-image-${recipe.id}',
-                          child: recipe.imageUrl != null
-                              ? Image.network(
-                                  recipe.imageUrl!,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      color: Colors.grey.shade200,
-                                      alignment: Alignment.center,
-                                      child: SvgPicture.asset(
-                                        'assets/icons/recipe.svg',
-                                        width: 48,
-                                        height: 48,
-                                        colorFilter: ColorFilter.mode(
-                                          Colors.grey.shade500,
-                                          BlendMode.srcIn,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                )
-                              : Container(
-                                  color: Colors.grey.shade200,
-                                  alignment: Alignment.center,
-                                  child: SvgPicture.asset(
-                                    'assets/icons/recipe.svg',
-                                    width: 48,
-                                    height: 48,
-                                    colorFilter: ColorFilter.mode(
-                                      Colors.grey.shade500,
-                                      BlendMode.srcIn,
-                                    ),
+                          child: RecipeImage(
+                            imageUrl: recipe.imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey.shade200,
+                                alignment: Alignment.center,
+                                child: SvgPicture.asset(
+                                  'assets/icons/recipe.svg',
+                                  width: 48,
+                                  height: 48,
+                                  colorFilter: ColorFilter.mode(
+                                    Colors.grey.shade500,
+                                    BlendMode.srcIn,
                                   ),
                                 ),
+                              );
+                            },
+                          ),
                         ),
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 180),

@@ -9,9 +9,6 @@ import '../widgets/onboarding_page_wrapper.dart';
 class ImportDemoPage extends ConsumerWidget {
   const ImportDemoPage({super.key});
 
-  /// Placeholder video URL -- replace with real URL later.
-  static const _videoUrl = '';
-
   String _buildSourceText(List<String> sources) {
     final labels = sources
         .map((s) => RecipeSources.labels[s]?.tr())
@@ -55,79 +52,28 @@ class ImportDemoPage extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          const SizedBox(height: 8),
-          // Placeholder video player
-          _VideoPlaceholder(videoUrl: _videoUrl),
-          const SizedBox(height: 32),
-          Row(
-            children: [
-              _StepItem(number: '1', text: 'onboarding.import_step1'.tr()),
-              const SizedBox(width: 12),
-              _StepItem(number: '2', text: 'onboarding.import_step2'.tr()),
-              const SizedBox(width: 12),
-              _StepItem(number: '3', text: 'onboarding.import_step3'.tr()),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'onboarding.import_body'.tr(),
-            style: TextStyle(
-              fontSize: 15,
-              color: Colors.grey.shade600,
-              height: 1.4,
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.55,
             ),
-            textAlign: TextAlign.center,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(19),
+                child: Image.asset(
+                  'assets/import-recipe.gif',
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
           ),
+          const SizedBox(height: 32),
+
+          const SizedBox(height: 8),
         ],
-      ),
-    );
-  }
-}
-
-class _VideoPlaceholder extends StatelessWidget {
-  const _VideoPlaceholder({required this.videoUrl});
-
-  final String videoUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: 16 / 9,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.play_arrow_rounded,
-                  size: 32,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'onboarding.watch_how'.tr(),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

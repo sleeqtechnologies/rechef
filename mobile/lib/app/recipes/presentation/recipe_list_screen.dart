@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 import '../../../core/widgets/custom_app_bar.dart';
+import '../../../core/widgets/recipe_image.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../auth/presentation/account_sheet.dart';
 import '../../auth/providers/auth_providers.dart';
@@ -858,50 +859,22 @@ class RecipeCard extends StatelessWidget {
                       SizedBox(
                         width: imageSize,
                         height: imageSize,
-                        child: imageUrl != null
-                            ? Image.network(
-                                imageUrl!,
-                                fit: BoxFit.cover,
-                                loadingBuilder:
-                                    (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return Container(
-                                        color: Colors.grey.shade200,
-                                        alignment: Alignment.center,
-                                        child: const CupertinoActivityIndicator(
-                                          radius: 11,
-                                        ),
-                                      );
-                                    },
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    color: Colors.grey.shade200,
-                                    alignment: Alignment.center,
-                                    child: SvgPicture.asset(
-                                      'assets/icons/recipe.svg',
-                                      width: 28,
-                                      height: 28,
-                                      colorFilter: ColorFilter.mode(
-                                        Colors.grey.shade500,
-                                        BlendMode.srcIn,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              )
-                            : Container(
-                                color: Colors.grey.shade200,
-                                alignment: Alignment.center,
-                                child: SvgPicture.asset(
-                                  'assets/icons/recipe.svg',
-                                  width: 28,
-                                  height: 28,
-                                  colorFilter: ColorFilter.mode(
-                                    Colors.grey.shade500,
-                                    BlendMode.srcIn,
-                                  ),
-                                ),
+                        child: RecipeImage(
+                          imageUrl: imageUrl,
+                          fit: BoxFit.cover,
+                          width: imageSize,
+                          height: imageSize,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              color: Colors.grey.shade200,
+                              alignment: Alignment.center,
+                              child: const CupertinoActivityIndicator(
+                                radius: 11,
                               ),
+                            );
+                          },
+                        ),
                       ),
                       if (isShared)
                         Positioned(

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 import '../../../core/constants/app_spacing.dart';
+import '../../../core/widgets/recipe_image.dart';
 import '../../recipes/data/recipe_repository.dart';
 import '../../recipes/domain/recipe.dart';
 import '../../recipes/recipe_provider.dart';
@@ -713,9 +714,11 @@ class _HeaderFannedImages extends StatelessWidget {
                   clipBehavior: Clip.antiAlias,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(13),
-                    child: Image.network(
-                      images[i],
+                    child: RecipeImage(
+                      imageUrl: images[i],
                       fit: BoxFit.cover,
+                      width: imgSize,
+                      height: imgSize,
                       errorBuilder: (_, __, ___) => Container(
                         color: Colors.grey.shade200,
                         alignment: Alignment.center,
@@ -852,37 +855,25 @@ class _RecipeListTile extends StatelessWidget {
               child: SizedBox(
                 width: 70,
                 height: 70,
-                child: recipe.imageUrl != null
-                    ? Image.network(
-                        recipe.imageUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          color: Colors.grey.shade200,
-                          alignment: Alignment.center,
-                          child: SvgPicture.asset(
-                            'assets/icons/recipe.svg',
-                            width: 24,
-                            height: 24,
-                            colorFilter: ColorFilter.mode(
-                              Colors.grey.shade500,
-                              BlendMode.srcIn,
-                            ),
-                          ),
-                        ),
-                      )
-                    : Container(
-                        color: Colors.grey.shade200,
-                        alignment: Alignment.center,
-                        child: SvgPicture.asset(
-                          'assets/icons/recipe.svg',
-                          width: 24,
-                          height: 24,
-                          colorFilter: ColorFilter.mode(
-                            Colors.grey.shade500,
-                            BlendMode.srcIn,
-                          ),
-                        ),
+                child: RecipeImage(
+                  imageUrl: recipe.imageUrl,
+                  fit: BoxFit.cover,
+                  width: 70,
+                  height: 70,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: Colors.grey.shade200,
+                    alignment: Alignment.center,
+                    child: SvgPicture.asset(
+                      'assets/icons/recipe.svg',
+                      width: 24,
+                      height: 24,
+                      colorFilter: ColorFilter.mode(
+                        Colors.grey.shade500,
+                        BlendMode.srcIn,
                       ),
+                    ),
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 14),

@@ -4,6 +4,7 @@ interface ContentInfo {
   source: ContentSource;
   url: string;
   videoId?: string;
+  isShort?: boolean;
 }
 
 function detectContentSource(url: string): ContentInfo {
@@ -17,6 +18,7 @@ function detectContentSource(url: string): ContentInfo {
       source: "youtube",
       url,
       videoId: extractYouTubeVideoId(url),
+      isShort: normalizedUrl.includes("youtube.com/shorts/"),
     };
   }
 
