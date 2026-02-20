@@ -174,7 +174,7 @@
     "recipe": "Recipe",
     "empty": "Your grocery list is empty.\nAdd missing items from a recipe.",
     "failed_to_load": "Failed to load grocery list.\n{}",
-    "order_online": "Order Online",
+    "order_online": "Shop ingredients",
     "creating_list": "Creating your shopping list..."
   },
   "import": {

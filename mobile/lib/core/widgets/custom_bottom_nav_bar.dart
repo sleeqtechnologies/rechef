@@ -50,7 +50,7 @@ class CustomBottomNavBarState extends State<CustomBottomNavBar>
   static const double _expandedWidth = 220.0;
   static const double _expandedHeight = 140.0;
   static const double _collapsedSize = 56.0;
-  static const double _labelButtonWidth = 136.0;
+  static const double _labelButtonWidth = 146.0;
   static const double _pillOuterPadding = 8.0;
 
   @override
@@ -284,7 +284,7 @@ class CustomBottomNavBarState extends State<CustomBottomNavBar>
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w600,
-                                    fontSize: 16,
+                                    fontSize: 14,
                                   ),
                                 ),
                               ),
@@ -308,7 +308,8 @@ class CustomBottomNavBarState extends State<CustomBottomNavBar>
                                   ),
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       _buildMenuOption(
@@ -324,8 +325,9 @@ class CustomBottomNavBarState extends State<CustomBottomNavBar>
                                         title: 'import.camera'.tr(),
                                         subtitle: 'import.take_picture'.tr(),
                                         iconPath: 'assets/icons/camera.svg',
-                                        onTap: () =>
-                                            _handleOptionTap(widget.onCameraTap),
+                                        onTap: () => _handleOptionTap(
+                                          widget.onCameraTap,
+                                        ),
                                       ),
                                     ],
                                   ),

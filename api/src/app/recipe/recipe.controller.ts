@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { logger } from "../../../logger";
 import { Request, Response } from "express";
 import { and, eq } from "drizzle-orm";
@@ -9,6 +10,7 @@ import * as shareRepository from "../share/share.repository";
 import { sharedRecipeSaveTable } from "../share/share.table";
 import { matchIngredientsWithPantry } from "../../services/pantry-matcher";
 import { generateNutritionForRecipe } from "../../services/nutrition-generator";
+import { uploadRecipeImage } from "../../services/recipe-image-storage";
 import type { Recipe } from "./recipe.repository";
 
 interface IngredientJson {
@@ -71,6 +73,12 @@ const saveRecipe = async (req: Request, res: Response) => {
         .json({ error: "name, ingredients, and instructions are required" });
     }
 
+    let finalImageUrl = imageUrl ?? null;
+    if (finalImageUrl && finalImageUrl.trim() !== "") {
+      const persistedUrl = await uploadRecipeImage(finalImageUrl, randomUUID());
+      if (persistedUrl) finalImageUrl = persistedUrl;
+    }
+
     const recipe = await recipeRepository.create({
       userId,
       name,
@@ -80,7 +88,7 @@ const saveRecipe = async (req: Request, res: Response) => {
       servings: servings ?? null,
       prepTimeMinutes: prepTimeMinutes ?? null,
       cookTimeMinutes: cookTimeMinutes ?? null,
-      imageUrl: imageUrl ?? null,
+      imageUrl: finalImageUrl,
       sourceUrl: sourceUrl ?? null,
       sourceTitle: sourceTitle ?? null,
       sourceAuthorName: sourceAuthorName ?? null,

@@ -5,13 +5,18 @@ dotenv.config();
 
 const env = cleanEnv(process.env, {
   PORT: num({ default: 1234 }),
-  NODE_ENV: str({ choices: ["development", "production"], default: "production" }),
+  NODE_ENV: str({
+    choices: ["development", "production"],
+    default: "production",
+  }),
   DATABASE_URL: str(),
   OPENAI_API_KEY: str(),
   SERVICE_ACCT_KEY: str(),
   UNSPLASH_ACCESS_KEY: str(),
   INSTACART_API_KEY: str(),
   YOUTUBE_API_KEY: str({ default: "" }),
+  SUPABASE_URL: str(),
+  SUPABASE_SERVICE_ROLE_KEY: str(),
 });
 
 export { env };

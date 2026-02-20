@@ -33,6 +33,7 @@ import type { GeneratedRecipe } from "../../services/recipe-generator";
 import { generateRecipeFromContent } from "../../services/recipe-generator";
 import * as contentRepo from "./content.repository";
 import * as recipeRepo from "../recipe/recipe.repository";
+import { uploadRecipeImage } from "../../services/recipe-image-storage";
 
 interface GenerateRecipeResult {
   recipe: GeneratedRecipe;
@@ -136,6 +137,12 @@ async function processContentInBackground(
     await contentRepo.updateSavedContentStatus(savedContentId, "processed");
 
     const { recipe } = result;
+    let imageUrl = recipe.imageUrl ?? null;
+    if (imageUrl && imageUrl.trim() !== "") {
+      const persistedUrl = await uploadRecipeImage(imageUrl, savedContentId);
+      if (persistedUrl) imageUrl = persistedUrl;
+    }
+
     await recipeRepo.create({
       userId,
       savedContentId,
@@ -146,7 +153,7 @@ async function processContentInBackground(
       servings: recipe.servings ?? null,
       prepTimeMinutes: recipe.prepTimeMinutes ?? null,
       cookTimeMinutes: recipe.cookTimeMinutes ?? null,
-      imageUrl: recipe.imageUrl ?? null,
+      imageUrl,
       sourceUrl: result.sourceUrl ?? null,
       sourceTitle: result.sourceTitle ?? null,
       sourceAuthorName: result.sourceAuthorName ?? null,

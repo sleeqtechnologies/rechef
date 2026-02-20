@@ -179,10 +179,9 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
   }
 
   Future<void> _onOrderOnlineTap(BuildContext context) async {
-    // Show a loading indicator
     AppSnackBar.show(
       context,
-        message: 'grocery.creating_list'.tr(),
+      message: 'grocery.creating_list'.tr(),
       type: SnackBarType.info,
       duration: const Duration(seconds: 10),
     );
@@ -192,7 +191,6 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
 
       if (!mounted) return;
 
-      // Fire grocery_purchase for shared recipes that have items in this order
       final groceryList = ref.read(groceryProvider).value ?? [];
       final recipes = ref.read(recipesProvider).value ?? [];
       final sharedRecipeCodes = <String, String>{};
@@ -261,7 +259,6 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
   Widget build(BuildContext context) {
     final currentIndex = _getCurrentIndex(widget.location);
 
-    // If the import sheet was requested, show it after this frame completes.
     if (_pendingImportSheet) {
       debugPrint(
         '[MainLayout] build: _pendingImportSheet=true, scheduling postFrameCallback',
@@ -294,8 +291,8 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
         onPlusPrimaryAction: widget.location.startsWith('/pantry')
             ? () => _onPantryAddTap(context)
             : widget.location.startsWith('/grocery')
-                ? () => _onOrderOnlineTap(context)
-                : null,
+            ? () => _onOrderOnlineTap(context)
+            : null,
         accentColor: _accentColor,
         onMenuStateChanged: (isExpanded) {
           setState(() {
@@ -306,10 +303,9 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
             ? 'grocery.order_online'.tr()
             : null,
         actionColor: widget.location.startsWith('/grocery')
-            ? const Color(0xFF2E7D32)
+            ? const Color(0xFF003D29)
             : null,
       ),
     );
   }
 }
-
