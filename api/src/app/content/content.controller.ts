@@ -143,6 +143,15 @@ async function processContentInBackground(
       if (persistedUrl) imageUrl = persistedUrl;
     }
 
+    let sourceAuthorAvatarUrl = result.sourceAuthorAvatarUrl ?? null;
+    if (sourceAuthorAvatarUrl && sourceAuthorAvatarUrl.trim() !== "") {
+      const persistedAvatarUrl = await uploadRecipeImage(
+        sourceAuthorAvatarUrl,
+        `avatars/${savedContentId}`,
+      );
+      if (persistedAvatarUrl) sourceAuthorAvatarUrl = persistedAvatarUrl;
+    }
+
     await recipeRepo.create({
       userId,
       savedContentId,
@@ -157,7 +166,7 @@ async function processContentInBackground(
       sourceUrl: result.sourceUrl ?? null,
       sourceTitle: result.sourceTitle ?? null,
       sourceAuthorName: result.sourceAuthorName ?? null,
-      sourceAuthorAvatarUrl: result.sourceAuthorAvatarUrl ?? null,
+      sourceAuthorAvatarUrl,
     });
 
     logger.info(`Job ${jobId} completed successfully`);
