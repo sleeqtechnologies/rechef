@@ -1,9 +1,8 @@
-import 'dart:ui';
-
 import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../../../core/widgets/app_snack_bar.dart';
+import '../../../core/widgets/apple_glass_sheet.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
@@ -33,24 +32,15 @@ class AccountSheet extends ConsumerWidget {
     final user = ref.watch(userModelProvider);
     final theme = Theme.of(context);
 
-    return ClipRRect(
+    return AppleGlassSheet(
       borderRadius: const BorderRadius.only(
         topLeft: Radius.circular(20),
         topRight: Radius.circular(20),
       ),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          height: MediaQuery.of(context).size.height,
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.80),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-          ),
-          child: SafeArea(
-            child: Column(
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height,
+        child: SafeArea(
+          child: Column(
               children: [
                 // Header
                 Padding(
@@ -232,7 +222,6 @@ class AccountSheet extends ConsumerWidget {
                   ),
                 ),
               ],
-            ),
           ),
         ),
       ),

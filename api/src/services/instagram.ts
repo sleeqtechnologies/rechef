@@ -22,6 +22,20 @@ interface InstagramOEmbed {
   caption?: string;
 }
 
+/** Normalize Instagram URL to a canonical form (strip tracking params, fragments). */
+function normalizeInstagramUrl(url: string): string {
+  try {
+    const u = new URL(url.trim());
+    if (!/^(www\.)?instagram\.com$/i.test(u.hostname)) return url;
+    u.search = "";
+    u.hash = "";
+    u.pathname = u.pathname.replace(/\/+/g, "/").replace(/\/$/, "") || "/";
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
 async function fetchInstagramMetadata(url: string): Promise<InstagramOEmbed> {
   try {
     const response = await fetch(url, {
@@ -94,21 +108,33 @@ async function fetchInstagramMetadata(url: string): Promise<InstagramOEmbed> {
 }
 
 async function parseInstagramContent(url: string): Promise<InstagramContent> {
+  const normalizedUrl = normalizeInstagramUrl(url);
   try {
     const [data, metadata] = await Promise.all([
-      igdl(url),
-      fetchInstagramMetadata(url),
+      igdl(normalizedUrl),
+      fetchInstagramMetadata(normalizedUrl),
     ]);
 
     if (!Array.isArray(data) || data.length === 0) {
-      throw new Error("Instagram returned no media for this URL");
+      logger.warn("Instagram returned no media", {
+        url: normalizedUrl,
+        rawLength: Array.isArray(data) ? data.length : "not-array",
+      });
+      throw new Error(
+        "This Instagram post couldn't be loaded. The link may be private, deleted, or an unsupported type (e.g. story)."
+      );
     }
 
     const item = data[0] as IgdlItem;
     const mediaUrl = item?.url?.trim();
 
     if (!mediaUrl) {
-      throw new Error("Could not extract media URL from Instagram");
+      logger.warn("Could not extract media URL from Instagram response", {
+        url: normalizedUrl,
+      });
+      throw new Error(
+        "This Instagram post couldn't be loaded. The link may be private, deleted, or an unsupported type."
+      );
     }
 
     const thumbnailUrl =
@@ -123,7 +149,7 @@ async function parseInstagramContent(url: string): Promise<InstagramContent> {
     };
   } catch (error) {
     if (error instanceof Error) {
-      if (error.message.startsWith("Instagram returned") || error.message.startsWith("Could not extract")) {
+      if (error.message.startsWith("This Instagram post couldn't be loaded")) {
         throw error;
       }
       logger.error("Failed to parse Instagram content:", error);

@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:math' show min;
-import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import '../../../core/widgets/app_snack_bar.dart';
+import '../../../core/widgets/apple_glass_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_core/flutter_chat_core.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
@@ -286,8 +286,6 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
   // ── Build ─────────────────────────────────────────────────────────
 
   static const double _sheetRadius = 20;
-  static const double _blurSigma = 12;
-
   @override
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
@@ -299,63 +297,53 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
 
     return Padding(
       padding: EdgeInsets.only(bottom: keyboardHeight),
-      child: ClipRRect(
+      child: AppleGlassSheet(
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(_sheetRadius),
           topRight: Radius.circular(_sheetRadius),
         ),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: _blurSigma, sigmaY: _blurSigma),
-          child: Container(
-            height: sheetHeight,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(_sheetRadius),
-                topRight: Radius.circular(_sheetRadius),
-              ),
-            ),
-            child: Column(
-              children: [
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 10, bottom: 6),
-                    child: Container(
-                      width: 36,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
+        child: SizedBox(
+          height: sheetHeight,
+          child: Column(
+            children: [
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 10, bottom: 6),
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
-                Expanded(
-                  child: _loading
-                      ? const Center(child: CupertinoActivityIndicator())
-                      : Chat(
-                          chatController: _chatController,
-                          currentUserId: _currentUserId,
-                          resolveUser: _resolveUser,
-                          onMessageSend: _onMessageSend,
-                          backgroundColor: Colors.transparent,
-                          theme: ChatTheme.light().copyWith(
-                            colors: ChatColors.light().copyWith(
-                              primary: _accentColor,
-                              surface: Colors.transparent,
-                            ),
-                          ),
-                          builders: Builders(
-                            composerBuilder: (_) => const SizedBox.shrink(),
-                            emptyChatListBuilder: _buildEmptyState,
-                            textMessageBuilder: _buildMarkdownTextMessage,
-                            imageMessageBuilder: _buildImageMessage,
+              ),
+              Expanded(
+                child: _loading
+                    ? const Center(child: CupertinoActivityIndicator())
+                    : Chat(
+                        chatController: _chatController,
+                        currentUserId: _currentUserId,
+                        resolveUser: _resolveUser,
+                        onMessageSend: _onMessageSend,
+                        backgroundColor: Colors.transparent,
+                        theme: ChatTheme.light().copyWith(
+                          colors: ChatColors.light().copyWith(
+                            primary: _accentColor,
+                            surface: Colors.transparent,
                           ),
                         ),
-                ),
-                _buildComposer(context),
-              ],
-            ),
+                        builders: Builders(
+                          composerBuilder: (_) => const SizedBox.shrink(),
+                          emptyChatListBuilder: _buildEmptyState,
+                          textMessageBuilder: _buildMarkdownTextMessage,
+                          imageMessageBuilder: _buildImageMessage,
+                        ),
+                      ),
+              ),
+              _buildComposer(context),
+            ],
           ),
         ),
       ),
@@ -365,10 +353,10 @@ class _CookingHelpSheetState extends ConsumerState<CookingHelpSheet> {
   Widget _buildEmptyState(BuildContext context) {
     final suggestions = [
       'cooking_help.suggestion_substitute'.tr(),
-      'cooking_help.suggestion_done_cooking'.tr(),
-      'cooking_help.suggestion_ahead_of_time'.tr(),
+      'cooking_help.suggestion_done'.tr(),
+      'cooking_help.suggestion_ahead'.tr(),
       'cooking_help.suggestion_sides'.tr(),
-      'cooking_help.suggestion_more_servings'.tr(),
+      'cooking_help.suggestion_servings'.tr(),
     ];
 
     return Center(

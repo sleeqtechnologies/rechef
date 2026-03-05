@@ -8,7 +8,8 @@ const String _liveApiBaseUrl = 'https://rechef-eight.vercel.app';
 const String _defaultRevenueCatApiKey = 'test_HZPsnVkxuDTJGMjFiKBaxHhNTiu';
 
 String get apiBaseUrl {
-  if (kReleaseMode) {
+  // Any non-debug build should target the production backend.
+  if (!kDebugMode) {
     return dotenv.env['API_BASE_URL'] ?? _liveApiBaseUrl;
   }
   final useDev = dotenv.env['USE_DEV_URL']?.toLowerCase() == 'true';

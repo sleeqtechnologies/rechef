@@ -1,16 +1,13 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import '../../../core/widgets/app_snack_bar.dart';
+import '../../../core/widgets/apple_glass_sheet.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:easy_localization/easy_localization.dart';
-
 import '../domain/ingredient.dart';
 import '../domain/recipe.dart';
 
-/// Full-screen modal bottom sheet for editing a recipe.
 /// Returns the updated [Recipe] on save, or `null` if dismissed.
 class EditRecipeSheet extends StatefulWidget {
   const EditRecipeSheet({super.key, required this.recipe});
@@ -163,45 +160,33 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
   }
 
   static const double _sheetRadius = 20;
-  static const double _blurSigma = 12;
-
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
+    return AppleGlassSheet(
       borderRadius: const BorderRadius.only(
         topLeft: Radius.circular(_sheetRadius),
         topRight: Radius.circular(_sheetRadius),
       ),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: _blurSigma, sigmaY: _blurSigma),
-        child: Container(
-          height: MediaQuery.of(context).size.height * 0.92,
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.92),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(_sheetRadius),
-              topRight: Radius.circular(_sheetRadius),
-            ),
-          ),
-          child: Column(
-            children: [
-              _buildHeader(context),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
-                  children: [
-                    _buildBasicInfo(),
-                    const SizedBox(height: 24),
-                    _buildMeta(),
-                    const SizedBox(height: 28),
-                    _buildIngredientsSection(),
-                    const SizedBox(height: 28),
-                    _buildInstructionsSection(),
-                  ],
-                ),
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.92,
+        child: Column(
+          children: [
+            _buildHeader(context),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+                children: [
+                  _buildBasicInfo(),
+                  const SizedBox(height: 24),
+                  _buildMeta(),
+                  const SizedBox(height: 28),
+                  _buildIngredientsSection(),
+                  const SizedBox(height: 28),
+                  _buildInstructionsSection(),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -302,7 +287,11 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
         const SizedBox(height: 16),
         _buildLabel('edit_recipe.description_label'.tr()),
         const SizedBox(height: 6),
-        _buildTextField(_descCtrl, hint: 'edit_recipe.description_hint'.tr(), maxLines: 3),
+        _buildTextField(
+          _descCtrl,
+          hint: 'edit_recipe.description_hint'.tr(),
+          maxLines: 3,
+        ),
       ],
     );
   }
@@ -314,7 +303,7 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildLabel('edit_recipe.servings'.tr()),
+              _buildLabel('edit_recipe.servings_label'.tr()),
               const SizedBox(height: 6),
               _buildNumberField(_servingsCtrl, hint: '4'),
             ],
@@ -325,7 +314,7 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildLabel('edit_recipe.prep_min'.tr()),
+              _buildLabel('edit_recipe.prep_label'.tr()),
               const SizedBox(height: 6),
               _buildNumberField(_prepCtrl, hint: '15'),
             ],
@@ -336,7 +325,7 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildLabel('edit_recipe.cook_min'.tr()),
+              _buildLabel('edit_recipe.cook_label'.tr()),
               const SizedBox(height: 6),
               _buildNumberField(_cookCtrl, hint: '30'),
             ],
@@ -352,7 +341,7 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
       children: [
         Row(
           children: [
-            _buildLabel('edit_recipe.ingredients'.tr()),
+            _buildLabel('edit_recipe.ingredients_label'.tr()),
             const Spacer(),
             GestureDetector(
               onTap: _addIngredient,
@@ -401,7 +390,11 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
                 const SizedBox(width: 6),
                 SizedBox(
                   width: 48,
-                  child: _buildTextField(ing.unit, hint: 'edit_recipe.unit_hint'.tr(), fontSize: 13),
+                  child: _buildTextField(
+                    ing.unit,
+                    hint: 'edit_recipe.unit_hint'.tr(),
+                    fontSize: 13,
+                  ),
                 ),
                 const SizedBox(width: 6),
                 // Name
@@ -435,7 +428,7 @@ class _EditRecipeSheetState extends State<EditRecipeSheet> {
       children: [
         Row(
           children: [
-            _buildLabel('edit_recipe.instructions'.tr()),
+            _buildLabel('edit_recipe.instructions_label'.tr()),
             const Spacer(),
             GestureDetector(
               onTap: _addInstruction,

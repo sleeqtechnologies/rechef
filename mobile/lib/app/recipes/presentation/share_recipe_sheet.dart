@@ -1,9 +1,8 @@
 import 'dart:convert';
-import 'dart:ui';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../../core/widgets/app_snack_bar.dart';
+import '../../../core/widgets/apple_glass_sheet.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/api_endpoints.dart';
@@ -13,8 +12,6 @@ import '../data/recipe_repository.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../domain/recipe.dart';
 
-/// Bottom sheet for sharing a recipe: copy link, share via system, and analytics.
-/// Styled like the settings (AccountSheet) UI.
 class ShareRecipeSheet extends ConsumerStatefulWidget {
   const ShareRecipeSheet({
     super.key,
@@ -27,7 +24,6 @@ class ShareRecipeSheet extends ConsumerStatefulWidget {
   final String shareUrl;
   final String shareCode;
 
-  /// Creates share link via API, then shows the sheet. On failure, returns false.
   static Future<bool> show(
     BuildContext context, {
     required Recipe recipe,
@@ -115,84 +111,72 @@ class _ShareRecipeSheetState extends ConsumerState<ShareRecipeSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
+    return AppleGlassSheet(
       borderRadius: const BorderRadius.only(
         topLeft: Radius.circular(20),
         topRight: Radius.circular(20),
       ),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.80),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-          ),
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Drag handle
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 10, bottom: 20),
-                      child: Container(
-                        width: 36,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Drag handle
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 10, bottom: 20),
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+              ),
+              // Actions
+              _ActionTile(
+                icon: Icons.link_rounded,
+                label: _copied ? 'share.copied'.tr() : 'share.copy_link'.tr(),
+                onTap: _copyLink,
+              ),
+              const SizedBox(height: 10),
+              _ActionTile(
+                icon: Icons.share_outlined,
+                label: 'share.share_via'.tr(),
+                onTap: _shareViaSystem,
+              ),
+              const SizedBox(height: 20),
+              // Stats row
+              if (_statsLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Center(child: CupertinoActivityIndicator()),
+                )
+              else
+                Row(
+                  children: [
+                    Expanded(
+                      child: _StatTile(
+                        icon: Icons.visibility_outlined,
+                        label: 'share.views'.tr(),
+                        value: _getInt(_stats?['webViews']).toString(),
                       ),
                     ),
-                  ),
-                  // Actions
-                  _ActionTile(
-                    icon: Icons.link_rounded,
-                    label: _copied ? 'share.copied'.tr() : 'share.copy_link'.tr(),
-                    onTap: _copyLink,
-                  ),
-                  const SizedBox(height: 10),
-                  _ActionTile(
-                    icon: Icons.share_outlined,
-                    label: 'share.share_via'.tr(),
-                    onTap: _shareViaSystem,
-                  ),
-                  const SizedBox(height: 20),
-                  // Stats row
-                  if (_statsLoading)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      child: Center(child: CupertinoActivityIndicator()),
-                    )
-                  else
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _StatTile(
-                            icon: Icons.visibility_outlined,
-                            label: 'share.views'.tr(),
-                            value: '${_getInt(_stats?['webViews'])}',
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _StatTile(
-                            icon: Icons.bookmark_outline,
-                            label: 'share.saves'.tr(),
-                            value: '${_getInt(_stats?['recipeSaves'])}',
-                          ),
-                        ),
-                      ],
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _StatTile(
+                        icon: Icons.bookmark_outline,
+                        label: 'share.saves'.tr(),
+                        value: _getInt(_stats?['recipeSaves']).toString(),
+                      ),
                     ),
-                ],
-              ),
-            ),
+                  ],
+                ),
+            ],
           ),
         ),
       ),
@@ -214,7 +198,7 @@ class _ActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFFF7F5F0),
+      color: Colors.white,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
@@ -258,7 +242,7 @@ class _StatTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F5F0),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.grey.shade200),
       ),
