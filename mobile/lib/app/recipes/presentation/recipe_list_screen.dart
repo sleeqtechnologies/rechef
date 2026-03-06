@@ -1,5 +1,5 @@
-import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 import '../../../core/widgets/custom_app_bar.dart';
+import '../../../core/widgets/platform_segmented_control.dart';
 import '../../../core/widgets/recipe_image.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../auth/presentation/account_sheet.dart';
@@ -121,7 +122,7 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
               AppSpacing.horizontalMargin,
               10,
             ),
-            child: AdaptiveSegmentedControl(
+            child: PlatformSegmentedControl(
               labels: ['recipes.all_recipes'.tr(), 'recipes.cookbooks'.tr()],
               selectedIndex: _selectedSegment,
               onValueChanged: (index) {
@@ -178,17 +179,15 @@ class _AllRecipesTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final recipesAsync = ref.watch(recipesProvider);
     final pendingJobs = ref.watch(pendingJobsProvider);
+    Future<void> refreshRecipes() async {
+      ref.invalidate(recipesProvider);
+      await ref.read(recipesProvider.future);
+    }
 
     return recipesAsync.when(
-      loading: () => CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
+      loading: () => _PlatformRefreshableSliverScroll(
+        onRefresh: refreshRecipes,
         slivers: [
-          CupertinoSliverRefreshControl(
-            onRefresh: () async {
-              ref.invalidate(recipesProvider);
-              await ref.read(recipesProvider.future);
-            },
-          ),
           SliverToBoxAdapter(
             child: _SearchField(
               controller: searchController,
@@ -203,15 +202,9 @@ class _AllRecipesTab extends ConsumerWidget {
           ),
         ],
       ),
-      error: (error, _) => CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
+      error: (error, _) => _PlatformRefreshableSliverScroll(
+        onRefresh: refreshRecipes,
         slivers: [
-          CupertinoSliverRefreshControl(
-            onRefresh: () async {
-              ref.invalidate(recipesProvider);
-              await ref.read(recipesProvider.future);
-            },
-          ),
           SliverToBoxAdapter(
             child: _SearchField(
               controller: searchController,
@@ -253,15 +246,9 @@ class _AllRecipesTab extends ConsumerWidget {
         final filtered = filterRecipes(recipes);
         final hasAnyRecipes = filtered.isNotEmpty || pendingJobs.isNotEmpty;
 
-        return CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
+        return _PlatformRefreshableSliverScroll(
+          onRefresh: refreshRecipes,
           slivers: [
-            CupertinoSliverRefreshControl(
-              onRefresh: () async {
-                ref.invalidate(recipesProvider);
-                await ref.read(recipesProvider.future);
-              },
-            ),
             SliverToBoxAdapter(
               child: _SearchField(
                 controller: searchController,
@@ -290,6 +277,39 @@ class _AllRecipesTab extends ConsumerWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _PlatformRefreshableSliverScroll extends StatelessWidget {
+  const _PlatformRefreshableSliverScroll({
+    required this.onRefresh,
+    required this.slivers,
+  });
+
+  final Future<void> Function() onRefresh;
+  final List<Widget> slivers;
+
+  @override
+  Widget build(BuildContext context) {
+    final isIos = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+
+    if (isIos) {
+      return CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          CupertinoSliverRefreshControl(onRefresh: onRefresh),
+          ...slivers,
+        ],
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: slivers,
+      ),
     );
   }
 }
@@ -752,9 +772,7 @@ class _FailedRecipeCard extends StatelessWidget {
                             const SizedBox(height: 10),
                             Text(
                               'Recipe failed',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
+                              style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
                                     color: const Color(0xFFC62828),
                                     fontWeight: FontWeight.w600,
@@ -767,12 +785,8 @@ class _FailedRecipeCard extends StatelessWidget {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 textAlign: TextAlign.center,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelSmall
-                                    ?.copyWith(
-                                      color: Colors.grey.shade600,
-                                    ),
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(color: Colors.grey.shade600),
                               ),
                             ],
                           ],
@@ -812,10 +826,10 @@ class _FailedRecipeCard extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-                fontSize: 14,
-                color: Colors.grey.shade500,
-              ),
+            fontWeight: FontWeight.w500,
+            fontSize: 14,
+            color: Colors.grey.shade500,
+          ),
         ),
       ],
     );

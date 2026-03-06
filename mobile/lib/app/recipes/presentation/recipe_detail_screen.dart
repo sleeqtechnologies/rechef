@@ -22,6 +22,7 @@ import 'share_recipe_sheet.dart';
 import '../../cookbooks/presentation/add_to_cookbook_sheet.dart';
 import '../../../core/services/cook_reminder_notifications.dart';
 import '../../../core/widgets/app_snack_bar.dart';
+import '../../../core/widgets/platform_segmented_control.dart';
 import '../../../core/widgets/recipe_image.dart';
 
 bool _hasSourceOrAuthor(Recipe recipe) {
@@ -620,7 +621,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                       // Tab bar
                       Padding(
                         padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-                        child: AdaptiveSegmentedControl(
+                        child: PlatformSegmentedControl(
                           labels: ['recipes.ingredients'.tr(), 'recipes.cooking'.tr(), 'recipes.nutrition'.tr()],
                           selectedIndex: _selectedTab,
                           onValueChanged: (index) {

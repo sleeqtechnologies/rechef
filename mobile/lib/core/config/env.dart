@@ -25,7 +25,9 @@ String get revenueCatApiKey {
   final key = dotenv.env['REVENUE_CAT_API_KEY'] ?? _defaultRevenueCatApiKey;
   if (kDebugMode) {
     final isUsingEnv = dotenv.env['REVENUE_CAT_API_KEY'] != null;
-    debugPrint('[RevenueCat] Using ${isUsingEnv ? "ENV" : "DEFAULT"} API key: ${key.substring(0, 10)}...');
+    debugPrint(
+      '[RevenueCat] Using ${isUsingEnv ? "ENV" : "DEFAULT"} API key: ${key.substring(0, 10)}...',
+    );
   }
   return key;
 }

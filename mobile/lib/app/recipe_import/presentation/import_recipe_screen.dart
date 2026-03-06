@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/widgets/app_snack_bar.dart';
+import '../../../core/services/recipe_ready_notifications.dart';
 
 import '../../../core/utils/url_validator.dart';
 import '../data/import_repository.dart';
@@ -81,6 +82,8 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
       _error = null;
     });
 
+    await RecipeReadyNotifications.instance.requestAndroidPermissionIfNeeded();
+
     try {
       final repo = ref.read(importRepositoryProvider);
       final result = await repo.submitContent(url);
@@ -135,6 +138,8 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
       _isSubmitting = true;
       _error = null;
     });
+
+    await RecipeReadyNotifications.instance.requestAndroidPermissionIfNeeded();
 
     try {
       final repo = ref.read(importRepositoryProvider);
@@ -263,7 +268,9 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
                                 )
                               : Text(
                                   'import.import_btn'.tr(),
-                                  style: const TextStyle(fontWeight: FontWeight.w600),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                         ),
                       ),

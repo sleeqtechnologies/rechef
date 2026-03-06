@@ -5,10 +5,7 @@ import '../data/auth_repository.dart';
 import '../domain/user_model.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  final repository = AuthRepository();
-  // Initialize Google Sign-In
-  repository.initializeGoogleSignIn();
-  return repository;
+  return AuthRepository();
 });
 
 final authStateProvider = StreamProvider<User?>((ref) {

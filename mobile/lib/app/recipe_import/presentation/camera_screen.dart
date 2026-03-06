@@ -13,6 +13,7 @@ import '../import_provider.dart';
 import '../pending_jobs_provider.dart';
 import '../monthly_import_usage_provider.dart';
 import '../../subscription/subscription_provider.dart';
+import '../../../core/services/recipe_ready_notifications.dart';
 
 class CameraScreen extends ConsumerStatefulWidget {
   const CameraScreen({super.key});
@@ -144,17 +145,22 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
     setState(() => _isSubmitting = true);
 
     try {
+      await RecipeReadyNotifications.instance
+          .requestAndroidPermissionIfNeeded();
+
       final repo = ref.read(importRepositoryProvider);
       final result = await repo.submitImage(imagePath);
       if (!mounted) return;
 
-      ref.read(pendingJobsProvider.notifier).addJob(
-        ContentJob(
-          id: result.jobId,
-          status: 'pending',
-          savedContentId: result.savedContentId,
-        ),
-      );
+      ref
+          .read(pendingJobsProvider.notifier)
+          .addJob(
+            ContentJob(
+              id: result.jobId,
+              status: 'pending',
+              savedContentId: result.savedContentId,
+            ),
+          );
 
       ref.invalidate(monthlyImportUsageProvider);
 
@@ -259,10 +265,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _PillButton(
-                      icon: Icons.close,
-                      onTap: _close,
-                    ),
+                    _PillButton(icon: Icons.close, onTap: _close),
                     if (_capturedImage == null)
                       _PillButton(
                         icon: _flashEnabled
@@ -283,12 +286,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
                 right: 0,
                 bottom: 0,
                 child: Container(
-                  padding: EdgeInsets.fromLTRB(
-                    24,
-                    20,
-                    24,
-                    bottomPadding + 20,
-                  ),
+                  padding: EdgeInsets.fromLTRB(24, 20, 24, bottomPadding + 20),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.bottomCenter,
@@ -352,9 +350,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
                 height: _isCapturing ? 30 : 62,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(
-                    _isCapturing ? 8 : 31,
-                  ),
+                  borderRadius: BorderRadius.circular(_isCapturing ? 8 : 31),
                 ),
               ),
             ),

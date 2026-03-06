@@ -329,6 +329,13 @@ export default function PrivacyPage() {
               your account and associated personal information, subject to any
               legal obligations we may have to retain some data.
             </p>
+            <p className="mt-2 text-zinc-700 dark:text-zinc-300">
+              Submit a deletion request here: {" "}
+              <Link href="/support" className="text-blue-600 hover:underline dark:text-blue-400">
+                Request account and data deletion
+              </Link>
+              .
+            </p>
 
             <h3 className="mt-4 text-xl font-semibold text-black dark:text-zinc-50">
               6.3 Communication Preferences

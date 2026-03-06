@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "889706711750-v35ieacbk2d0vpf2in6uc4p9ro5g3jt8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rechef.app",
+            "certificate_hash": "e1e506bd2f20dac34a3a74f95e95e594c4e13e84"
+          }
+        },
+        {
           "client_id": "889706711750-fal61jertrsg6q91o14k8j2kne4o5f0i.apps.googleusercontent.com",
           "client_type": 3
         }

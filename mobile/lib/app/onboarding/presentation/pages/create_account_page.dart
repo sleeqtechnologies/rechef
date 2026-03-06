@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -19,6 +20,8 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
   String? _error;
 
   bool get _loading => _loadingButton != null;
+  bool get _showAppleSignIn =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
   Future<void> _completeOnboarding() async {
     final repo = ref.read(onboardingRepositoryProvider);
@@ -78,9 +81,7 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
       await _completeOnboarding();
     } catch (e) {
       if (mounted) {
-        setState(
-          () => _error = 'auth.error_apple_full'.tr(),
-        );
+        setState(() => _error = 'auth.error_apple_full'.tr());
       }
     } finally {
       if (mounted) {
@@ -100,9 +101,7 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
       await _completeOnboarding();
     } catch (e) {
       if (mounted) {
-        setState(
-          () => _error = 'auth.error_guest'.tr(),
-        );
+        setState(() => _error = 'auth.error_guest'.tr());
       }
     } finally {
       if (mounted) {
@@ -227,44 +226,48 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
                       ),
               ),
             ),
-            const SizedBox(height: 12),
+            if (_showAppleSignIn) ...[
+              const SizedBox(height: 12),
 
-            // Apple sign-in
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: _loading ? null : _signInWithApple,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: Colors.black.withOpacity(0.7),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
+              // Apple sign-in
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _loading ? null : _signInWithApple,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.black.withValues(
+                      alpha: 0.7,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                    elevation: 0,
                   ),
-                  elevation: 0,
-                ),
-                child: _loadingButton == 'apple'
-                    ? const CupertinoActivityIndicator(
-                        radius: 12,
-                        color: Colors.white70,
-                      )
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.apple, size: 24),
-                          const SizedBox(width: 12),
-                          Text(
-                            'auth.continue_with_apple'.tr(),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
+                  child: _loadingButton == 'apple'
+                      ? const CupertinoActivityIndicator(
+                          radius: 12,
+                          color: Colors.white70,
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.apple, size: 24),
+                            const SizedBox(width: 12),
+                            Text(
+                              'auth.continue_with_apple'.tr(),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
+                ),
               ),
-            ),
+            ],
             const SizedBox(height: 16),
 
             // Continue without account

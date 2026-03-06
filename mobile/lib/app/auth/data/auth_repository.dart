@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
@@ -25,7 +26,6 @@ class AuthRepository {
 
     try {
       await _googleSignIn.initialize(serverClientId: _googleServerClientId);
-      _googleSignIn.attemptLightweightAuthentication();
       _googleSignInInitialized = true;
     } catch (e) {
       // Initialization failed, will try again on sign in
@@ -38,19 +38,29 @@ class AuthRepository {
     }
 
     if (_googleSignIn.supportsAuthenticate()) {
-      final GoogleSignInAccount user = await _googleSignIn.authenticate();
-      final GoogleSignInClientAuthorization? authorization = await user
-          .authorizationClient
-          .authorizationForScopes(['openid', 'email', 'profile']);
+      try {
+        final GoogleSignInAccount user = await _googleSignIn.authenticate();
+        final GoogleSignInClientAuthorization? authorization = await user
+            .authorizationClient
+            .authorizationForScopes(['openid', 'email', 'profile']);
 
-      if (authorization?.accessToken == null) {
-        throw Exception('Failed to get Google access token');
+        if (authorization?.accessToken == null) {
+          throw Exception('Failed to get Google access token');
+        }
+        final credential = GoogleAuthProvider.credential(
+          accessToken: authorization!.accessToken,
+        );
+
+        return _firebaseAuth.signInWithCredential(credential);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            '[AuthRepository] Google authenticate() failed, falling back to signInWithProvider: $e',
+          );
+        }
+        final googleProvider = GoogleAuthProvider();
+        return _firebaseAuth.signInWithProvider(googleProvider);
       }
-      final credential = GoogleAuthProvider.credential(
-        accessToken: authorization!.accessToken,
-      );
-
-      return _firebaseAuth.signInWithCredential(credential);
     } else {
       final googleProvider = GoogleAuthProvider();
       return _firebaseAuth.signInWithProvider(googleProvider);
@@ -58,6 +68,10 @@ class AuthRepository {
   }
 
   Future<UserCredential> signInWithApple() async {
+    if (defaultTargetPlatform != TargetPlatform.iOS) {
+      throw UnsupportedError('Apple Sign In is only available on iOS.');
+    }
+
     final rawNonce = _generateNonce();
     final hashedNonce = _sha256ofString(rawNonce);
 

@@ -3,11 +3,16 @@ import 'package:go_router/go_router.dart';
 
 import 'navigation_utils.dart';
 
-/// Handles deep links from external sources (Instacart, share extensions, etc.)
 class DeepLinkHandler {
   DeepLinkHandler._();
 
-  /// Handle Instacart deep link
+  static const _validWebHosts = {
+    'rechef.app',
+    'www.rechef.app',
+    'rechef-ten.vercel.app',
+  };
+  static final _shareCodeRegex = RegExp(r'^[a-zA-Z0-9_-]+$');
+
   /// Format: instacart://callback?cart_id=123
   static bool handleInstacartLink(BuildContext context, Uri uri) {
     if (uri.scheme == 'instacart' || uri.host == 'instacart') {
@@ -23,14 +28,11 @@ class DeepLinkHandler {
   /// Also handles Universal Links: https://rechef.app/recipe/:code
   static bool handleAppDeepLink(BuildContext context, Uri uri) {
     // Handle Universal Links (recipe share URLs)
-    if (uri.scheme == 'https' &&
-        (uri.host == 'rechef.app' ||
-            uri.host == 'www.rechef.app' ||
-            uri.host == 'rechef-ten.vercel.app')) {
+    if (uri.scheme == 'https' && _validWebHosts.contains(uri.host)) {
       final path = uri.path;
       if (path.startsWith('/recipe/')) {
-        final code = path.substring('/recipe/'.length);
-        if (code.isNotEmpty) {
+        final code = path.substring('/recipe/'.length).trim();
+        if (code.isNotEmpty && _shareCodeRegex.hasMatch(code)) {
           context.go('/shared-recipe/$code');
           return true;
         }
@@ -45,9 +47,18 @@ class DeepLinkHandler {
       final queryParams = uri.queryParameters;
 
       if (path.startsWith('/recipes/import')) {
+        final url = queryParams['url'];
+        if (url != null) {
+          final parsed = Uri.tryParse(url);
+          if (parsed == null ||
+              !(parsed.scheme == 'http' || parsed.scheme == 'https')) {
+            return false;
+          }
+        }
+
         NavigationUtils.goToRecipeImport(
           context,
-          url: queryParams['url'],
+          url: url,
           imagePath: queryParams['image'],
         );
         return true;

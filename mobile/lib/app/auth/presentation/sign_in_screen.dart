@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,6 +19,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   String? _error;
 
   bool get _loading => _loadingButton != null;
+  bool get _showAppleSignIn =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
   /// After authentication, sync any locally saved onboarding data to the backend.
   Future<void> _syncOnboardingData() async {
@@ -130,7 +133,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.16),
+                      color: Colors.white.withValues(alpha: 0.16),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -154,7 +157,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: Colors.black87,
-                      disabledBackgroundColor: Colors.white.withOpacity(0.7),
+                      disabledBackgroundColor: Colors.white.withValues(
+                        alpha: 0.7,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(28),
                       ),
@@ -187,42 +192,46 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                           ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: _loading ? null : _signInWithApple,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: Colors.black.withOpacity(0.7),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(28),
+                if (_showAppleSignIn) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: _loading ? null : _signInWithApple,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: Colors.black.withValues(
+                          alpha: 0.7,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                        elevation: 0,
                       ),
-                      elevation: 0,
-                    ),
-                    child: _loadingButton == 'apple'
-                        ? const CupertinoActivityIndicator(
-                            radius: 12,
-                            color: Colors.white70,
-                          )
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.apple, size: 24),
-                              const SizedBox(width: 12),
-                              Text(
-                                'auth.continue_with_apple'.tr(),
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
+                      child: _loadingButton == 'apple'
+                          ? const CupertinoActivityIndicator(
+                              radius: 12,
+                              color: Colors.white70,
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.apple, size: 24),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'auth.continue_with_apple'.tr(),
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
+                              ],
+                            ),
+                    ),
                   ),
-                ),
+                ],
                 const SizedBox(height: 16),
                 TextButton(
                   onPressed: _loading ? null : _continueWithoutAccount,

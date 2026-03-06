@@ -1,12 +1,14 @@
+import 'dart:io';
+
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 /// Shows a local notification when a recipe import job finishes.
 class RecipeReadyNotifications {
   RecipeReadyNotifications._();
 
-  static final RecipeReadyNotifications instance =
-      RecipeReadyNotifications._();
+  static final RecipeReadyNotifications instance = RecipeReadyNotifications._();
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -23,8 +25,10 @@ class RecipeReadyNotifications {
   Future<void> _ensureInitialized() async {
     if (_initialized) return;
 
-    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    final androidPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
 
     const androidChannel = AndroidNotificationChannel(
       _channelId,
@@ -35,6 +39,17 @@ class RecipeReadyNotifications {
     await androidPlugin?.createNotificationChannel(androidChannel);
 
     _initialized = true;
+  }
+
+  /// Request Android notification permission on Android 13+.
+  Future<void> requestAndroidPermissionIfNeeded() async {
+    if (kIsWeb || !Platform.isAndroid) return;
+
+    final androidPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    await androidPlugin?.requestNotificationsPermission();
   }
 
   /// Show an immediate "Recipe Ready" notification.

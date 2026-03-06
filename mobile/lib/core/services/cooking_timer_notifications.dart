@@ -12,9 +12,11 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 class CookingTimerNotifications {
   CookingTimerNotifications._();
 
-  static final CookingTimerNotifications instance = CookingTimerNotifications._();
+  static final CookingTimerNotifications instance =
+      CookingTimerNotifications._();
 
-  final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _plugin =
+      FlutterLocalNotificationsPlugin();
 
   static const int _timerNotificationId = 1;
   static const String _channelId = 'cooking_timer';
@@ -30,16 +32,15 @@ class CookingTimerNotifications {
       requestAlertPermission: true,
       requestBadgePermission: false,
     );
-    const initSettings = InitializationSettings(
-      android: android,
-      iOS: ios,
-    );
+    const initSettings = InitializationSettings(android: android, iOS: ios);
 
     await _plugin.initialize(settings: initSettings);
 
     if (!kIsWeb && Platform.isIOS) {
-      final iosPlugin = _plugin.resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin>();
+      final iosPlugin = _plugin
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
       await iosPlugin?.requestPermissions(
         alert: true,
         sound: true,
@@ -53,11 +54,14 @@ class CookingTimerNotifications {
       importance: Importance.high,
       playSound: true,
     );
-    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    final androidPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     await androidPlugin?.createNotificationChannel(androidChannel);
 
     if (!kIsWeb && Platform.isAndroid) {
+      await androidPlugin?.requestNotificationsPermission();
       await androidPlugin?.requestExactAlarmsPermission();
     }
 
@@ -78,8 +82,9 @@ class CookingTimerNotifications {
   Future<void> scheduleTimerDone(int seconds, String label) async {
     if (!_initialized) await initialize();
 
-    final scheduledDate =
-        tz.TZDateTime.now(tz.local).add(Duration(seconds: seconds));
+    final scheduledDate = tz.TZDateTime.now(
+      tz.local,
+    ).add(Duration(seconds: seconds));
 
     const androidDetails = AndroidNotificationDetails(
       _channelId,

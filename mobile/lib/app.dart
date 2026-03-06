@@ -22,6 +22,9 @@ class RechefApp extends ConsumerStatefulWidget {
 
 class _RechefAppState extends ConsumerState<RechefApp>
     with WidgetsBindingObserver {
+  String? _lastShareSignature;
+  DateTime? _lastShareHandledAt;
+
   @override
   void initState() {
     super.initState();
@@ -69,6 +72,10 @@ class _RechefAppState extends ConsumerState<RechefApp>
   }
 
   void _handleSharedContent(SharedMedia media) {
+    if (_isDuplicateShareEvent(media)) {
+      return;
+    }
+
     final router = ref.read(routerProvider);
 
     final url = ShareHandlerService.extractUrl(media);
@@ -103,6 +110,24 @@ class _RechefAppState extends ConsumerState<RechefApp>
     if (targetPath != null) {
       router.go(targetPath);
     }
+  }
+
+  bool _isDuplicateShareEvent(SharedMedia media) {
+    final attachments = media.attachments ?? const [];
+    final attachmentSignature = attachments
+        .map((attachment) => '${attachment?.type}:${attachment?.path}')
+        .join('|');
+    final signature = '${media.content}|$attachmentSignature';
+    final now = DateTime.now();
+
+    final isDuplicate =
+        _lastShareSignature == signature &&
+        _lastShareHandledAt != null &&
+        now.difference(_lastShareHandledAt!) < const Duration(seconds: 2);
+
+    _lastShareSignature = signature;
+    _lastShareHandledAt = now;
+    return isDuplicate;
   }
 
   @override

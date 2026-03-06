@@ -26,10 +26,12 @@ class PendingJobsNotifier extends Notifier<List<ContentJob>> {
   }
 
   Future<void> checkJobs() async {
-    await _fetchPendingJobs();
+    await _fetchPendingJobs(fromManualCheck: true);
   }
 
-  Future<void> _fetchPendingJobs() async {
+  Future<void> _fetchPendingJobs({bool fromManualCheck = false}) async {
+    final hadPendingBefore = state.any((j) => !j.isFailed);
+
     try {
       final repo = ref.read(importRepositoryProvider);
       final jobs = _removeStaleJobs(
@@ -37,6 +39,11 @@ class PendingJobsNotifier extends Notifier<List<ContentJob>> {
       );
       final existingFailed = state.where((j) => j.isFailed).toList();
       state = [...existingFailed, ...jobs];
+      if ((hadPendingBefore && jobs.isEmpty) ||
+          (fromManualCheck && jobs.isEmpty)) {
+        ref.invalidate(recipesProvider);
+      }
+
       if (jobs.isNotEmpty) {
         _startPolling();
       } else {
@@ -126,5 +133,5 @@ class PendingJobsNotifier extends Notifier<List<ContentJob>> {
 
 final pendingJobsProvider =
     NotifierProvider<PendingJobsNotifier, List<ContentJob>>(
-  PendingJobsNotifier.new,
-);
+      PendingJobsNotifier.new,
+    );

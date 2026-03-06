@@ -43,6 +43,24 @@ export default function SupportPage() {
               possible.
             </p>
           </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold text-black dark:text-zinc-50">
+              Account Deletion Request
+            </h2>
+            <p className="mt-2 text-zinc-700 dark:text-zinc-300">
+              To request deletion of your Rechef account and associated data,
+              use the link below.
+            </p>
+            <p className="mt-4">
+              <a
+                href="mailto:lumi@notableai.ca?subject=Rechef%20Account%20Deletion%20Request&body=Hello%20Rechef%20Support%2C%0A%0AI%20would%20like%20to%20request%20deletion%20of%20my%20account%20and%20associated%20data.%0A%0AMy%20account%20email%3A%20%0AAny%20additional%20details%3A%20"
+                className="font-semibold text-blue-600 hover:underline dark:text-blue-400"
+              >
+                Request account and data deletion
+              </a>
+            </p>
+          </section>
         </div>
       </div>
     </div>

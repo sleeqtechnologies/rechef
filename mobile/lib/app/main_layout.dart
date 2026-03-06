@@ -1,5 +1,4 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/widgets/app_snack_bar.dart';
@@ -18,6 +17,7 @@ import '../app/recipe_import/monthly_import_usage_provider.dart';
 import '../app/subscription/subscription_provider.dart';
 import '../core/routing/app_router.dart';
 import '../core/widgets/custom_bottom_nav_bar.dart';
+import '../core/services/recipe_ready_notifications.dart';
 
 class MainLayout extends ConsumerStatefulWidget {
   final Widget child;
@@ -90,7 +90,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
               Container(
                 height: keyboardHeight,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.80),
+                  color: Colors.white.withValues(alpha: 0.80),
                 ),
               ),
             ],
@@ -137,6 +137,9 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
     }
 
     try {
+      await RecipeReadyNotifications.instance
+          .requestAndroidPermissionIfNeeded();
+
       final repo = ref.read(importRepositoryProvider);
       final result = await repo.submitContent(trimmedUrl);
 
@@ -178,7 +181,9 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
     router.push('/camera');
   }
 
-  Future<void> _onOrderOnlineTap(BuildContext context) async {
+  Future<void> _onOrderOnlineTap() async {
+    if (!mounted) return;
+
     AppSnackBar.show(
       context,
       message: 'grocery.creating_list'.tr(),
@@ -241,7 +246,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
               Container(
                 height: keyboardHeight,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.80),
+                  color: Colors.white.withValues(alpha: 0.80),
                 ),
               ),
             ],
@@ -291,7 +296,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
         onPlusPrimaryAction: widget.location.startsWith('/pantry')
             ? () => _onPantryAddTap(context)
             : widget.location.startsWith('/grocery')
-            ? () => _onOrderOnlineTap(context)
+            ? _onOrderOnlineTap
             : null,
         accentColor: _accentColor,
         onMenuStateChanged: (isExpanded) {

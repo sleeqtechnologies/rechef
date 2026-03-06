@@ -29,15 +29,19 @@ class ShareHandlerService {
   static String? extractUrl(SharedMedia media) {
     if (media.content != null) {
       final content = media.content!.trim();
-      if (_isUrl(content)) {
-        return content;
+      final directUrl = _extractFirstHttpUrl(content);
+      if (directUrl != null) {
+        return directUrl;
       }
     }
 
     if (media.attachments != null) {
       for (final attachment in media.attachments!) {
         if (attachment?.path != null) {
-          final path = attachment!.path!;
+          final path = attachment?.path;
+          if (path == null) {
+            continue;
+          }
           if (path.endsWith('.txt') || path.endsWith('.url')) {
             if (_isUrl(path)) {
               return path;
@@ -55,7 +59,7 @@ class ShareHandlerService {
       for (final attachment in media.attachments!) {
         if (attachment?.type == SharedAttachmentType.image &&
             attachment?.path != null) {
-          return attachment!.path;
+          return attachment?.path;
         }
       }
     }
@@ -69,5 +73,23 @@ class ShareHandlerService {
     } catch (e) {
       return false;
     }
+  }
+
+  static String? _extractFirstHttpUrl(String text) {
+    if (_isUrl(text)) {
+      return text;
+    }
+
+    final match = RegExp(r'https?://[^\s]+', caseSensitive: false)
+        .firstMatch(text);
+    if (match == null) {
+      return null;
+    }
+
+    final candidate = match.group(0);
+    if (candidate == null) {
+      return null;
+    }
+    return _isUrl(candidate) ? candidate : null;
   }
 }

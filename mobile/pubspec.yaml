@@ -53,26 +53,8 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   flutter_native_splash: ^2.4.7
 
-# For information on the generic Dart part of this file, see the
-# following page: https://dart.dev/tools/pub/pubspec
-
-# The following section is specific to Flutter packages.
 flutter:
-  # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
-  # the material Icons class.
   uses-material-design: true
-
-  # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
-
-  # An image asset can refer to one or more resolution-specific "variants", see
-  # https://flutter.dev/to/resolution-aware-images
-
-  # For details regarding adding assets from package dependencies, see
-  # https://flutter.dev/to/asset-from-package
 
   fonts:
     - family: Roobert
@@ -99,20 +81,17 @@ flutter:
     - assets/translations/
 
 flutter_native_splash:
-  # Background image for splash screen (gradient)
-  # Note: Android 12+ only supports solid colors, configured below
   background_image: "assets/splash_background.png"
 
-  # App logo displayed on top of the gradient background
-  image: "assets/rechef-logo.png"
+  ios: false
+  image_ios: "assets/rechef-logo.png"
+  image_android: "assets/rechef-logo-ad.png"
 
-  # Full screen mode (hides notification bar)
   fullscreen: true
 
-  # Android 12+ configuration (only supports solid color, not background images)
-  # Using a representative color from the gradient (#FF5E5E - middle of gradient)
+  android_gravity: center
+
   android_12:
     color: "#FF5E5E"
-    # App logo for Android 12+ (will be clipped to a circle)
-    image: "assets/rechef-logo.png"
+    image: "assets/rechef-logo-ad.png"
     icon_background_color: "#FF5E5E"
