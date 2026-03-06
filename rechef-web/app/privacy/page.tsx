@@ -330,8 +330,11 @@ export default function PrivacyPage() {
               legal obligations we may have to retain some data.
             </p>
             <p className="mt-2 text-zinc-700 dark:text-zinc-300">
-              Submit a deletion request here: {" "}
-              <Link href="/support" className="text-blue-600 hover:underline dark:text-blue-400">
+              Submit a deletion request here:{" "}
+              <Link
+                href="/support"
+                className="text-blue-600 hover:underline dark:text-blue-400"
+              >
                 Request account and data deletion
               </Link>
               .
