@@ -1,6 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+const rechefHomeUrl = "https://rechef-ten.vercel.app";
+const iosAppStoreUrl = "https://apps.apple.com/ca/app/rechef/id6758213347";
+const androidFallbackUrl = "https://onelink.to/b5bcjh";
+const appOpenScheme = "com.rechef.app";
+const appOpenDelayMs = 150;
+const storeRedirectDelayMs = 1200;
 
 type Recipe = {
   id: string;
@@ -19,19 +26,217 @@ type Recipe = {
   imageUrl?: string | null;
 };
 
-export function RecipeView({ recipe }: { recipe: Recipe }) {
+type RecipeViewProps = {
+  recipe: Recipe;
+  shareCode: string;
+  apiBaseUrl: string;
+};
+
+function detectMobilePlatform(): "ios" | "android" | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const userAgent = window.navigator.userAgent;
+  if (/bot|crawl|spider|facebookexternalhit|slurp/i.test(userAgent)) {
+    return null;
+  }
+
+  const isAppleMobile =
+    /iPhone|iPad|iPod/i.test(userAgent) ||
+    (window.navigator.platform === "MacIntel" &&
+      window.navigator.maxTouchPoints > 1);
+
+  if (isAppleMobile) {
+    return "ios";
+  }
+
+  if (/Android/i.test(userAgent)) {
+    return "android";
+  }
+
+  return null;
+}
+
+function getFallbackTarget(platform: "ios" | "android" | null): string | null {
+  if (platform === "ios") {
+    return iosAppStoreUrl;
+  }
+
+  if (platform === "android") {
+    return androidFallbackUrl;
+  }
+
+  return null;
+}
+
+function getOpenAppUrl(shareCode: string): string {
+  return `${appOpenScheme}://shared-recipe/${encodeURIComponent(shareCode)}`;
+}
+
+function getRedirectSessionKey(shareCode: string): string {
+  return `rechef:share-store-redirect:${shareCode}`;
+}
+
+export function RecipeView({ recipe, shareCode, apiBaseUrl }: RecipeViewProps) {
   const [activeTab, setActiveTab] = useState<"ingredients" | "steps">(
     "ingredients",
   );
+  const hasTrackedWebViewRef = useRef(false);
+  const hasTriggeredStoreRedirectRef = useRef(false);
 
   const totalMinutes =
     (recipe.prepTimeMinutes ?? 0) + (recipe.cookTimeMinutes ?? 0);
+
+  useEffect(() => {
+    if (hasTrackedWebViewRef.current) {
+      return;
+    }
+
+    hasTrackedWebViewRef.current = true;
+    const body = JSON.stringify({ eventType: "web_view" });
+    const endpoint = `${apiBaseUrl}/share/${shareCode}/events`;
+
+    if (typeof window.navigator.sendBeacon === "function") {
+      const blob = new Blob([body], { type: "application/json" });
+      if (window.navigator.sendBeacon(endpoint, blob)) {
+        return;
+      }
+    }
+
+    void fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body,
+      keepalive: true,
+    }).catch(() => {
+      // Best-effort analytics only.
+    });
+  }, [apiBaseUrl, shareCode]);
+
+  useEffect(() => {
+    const platform = detectMobilePlatform();
+    const fallbackTarget = getFallbackTarget(platform);
+    if (!platform || !fallbackTarget) {
+      return;
+    }
+
+    try {
+      if (window.sessionStorage.getItem(getRedirectSessionKey(shareCode))) {
+        return;
+      }
+    } catch {
+      // Ignore storage failures.
+    }
+
+    const openTimer = window.setTimeout(() => {
+      window.location.assign(getOpenAppUrl(shareCode));
+
+      window.setTimeout(() => {
+        if (document.visibilityState !== "visible") {
+          return;
+        }
+
+        if (hasTriggeredStoreRedirectRef.current) {
+          return;
+        }
+
+        hasTriggeredStoreRedirectRef.current = true;
+        try {
+          window.sessionStorage.setItem(getRedirectSessionKey(shareCode), "1");
+        } catch {
+          // Ignore storage failures.
+        }
+
+        const body = JSON.stringify({
+          eventType: "app_install",
+          metadata: {
+            platform,
+            trigger: "auto_fallback",
+            destination: fallbackTarget,
+          },
+        });
+        const endpoint = `${apiBaseUrl}/share/${shareCode}/events`;
+
+        if (typeof window.navigator.sendBeacon === "function") {
+          const blob = new Blob([body], { type: "application/json" });
+          window.navigator.sendBeacon(endpoint, blob);
+        } else {
+          void fetch(endpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body,
+            keepalive: true,
+          }).catch(() => {
+            // Ignore redirect analytics failures.
+          });
+        }
+
+        window.setTimeout(() => {
+          window.location.replace(fallbackTarget);
+        }, 80);
+      }, storeRedirectDelayMs);
+    }, appOpenDelayMs);
+
+    return () => {
+      window.clearTimeout(openTimer);
+    };
+  }, [apiBaseUrl, shareCode]);
+
+  function handleOpenInAppClick(event: React.MouseEvent<HTMLAnchorElement>) {
+    const platform = detectMobilePlatform();
+    const fallbackTarget = getFallbackTarget(platform);
+    if (!platform || !fallbackTarget) {
+      return;
+    }
+
+    event.preventDefault();
+    window.location.assign(getOpenAppUrl(shareCode));
+
+    window.setTimeout(() => {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+
+      const body = JSON.stringify({
+        eventType: "app_install",
+        metadata: {
+          platform,
+          trigger: "manual_cta",
+          destination: fallbackTarget,
+        },
+      });
+      const endpoint = `${apiBaseUrl}/share/${shareCode}/events`;
+
+      if (typeof window.navigator.sendBeacon === "function") {
+        const blob = new Blob([body], { type: "application/json" });
+        window.navigator.sendBeacon(endpoint, blob);
+      } else {
+        void fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body,
+          keepalive: true,
+        }).catch(() => {
+          // Ignore redirect analytics failures.
+        });
+      }
+
+      window.location.replace(fallbackTarget);
+    }, storeRedirectDelayMs);
+  }
 
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Image */}
       {recipe.imageUrl ? (
-        <div className="relative w-full aspect-square max-h-[420px] overflow-hidden bg-gray-100">
+        <div className="relative w-full aspect-square max-h-105 overflow-hidden bg-gray-100">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={recipe.imageUrl}
@@ -228,7 +433,8 @@ export function RecipeView({ recipe }: { recipe: Recipe }) {
         style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
       >
         <a
-          href="https://rechef-ten.vercel.app"
+          href={rechefHomeUrl}
+          onClick={handleOpenInAppClick}
           className="flex w-full items-center justify-center rounded-full bg-[#FF4F63] px-4 py-3.5 text-[0.9rem] font-semibold text-white shadow-lg shadow-[#FF4F63]/20 transition-all hover:brightness-110 active:scale-[0.98]"
         >
           Open in Rechef

@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { RecipeView } from "./recipe-view";
 
+const apiBaseUrl =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://api.rechef.app";
+
 type SharedRecipeResponse = {
   recipe: {
     id: string;
@@ -33,7 +36,7 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://api.rechef.app"}/share/${code}`,
+      `${apiBaseUrl}/share/${code}`,
       {
         // This is a public, cacheable endpoint
         next: { revalidate: 60 },
@@ -86,7 +89,7 @@ async function fetchSharedRecipe(
 ): Promise<SharedRecipeResponse | null> {
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://api.rechef.app"}/share/${code}`,
+      `${apiBaseUrl}/share/${code}`,
       {
         cache: "no-store",
       },
@@ -143,30 +146,10 @@ export default async function SharedRecipePage(props: PageProps) {
 
   const recipe = data.recipe;
 
-  // Fire a best-effort web_view event; ignore any error
-  void (async () => {
-    try {
-      await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://api.rechef.app"}/share/${code}/events`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            eventType: "web_view",
-          }),
-        },
-      );
-    } catch {
-      // ignore
-    }
-  })();
-
   return (
     <main className="min-h-screen bg-white flex justify-center">
       <div className="w-full max-w-lg">
-        <RecipeView recipe={recipe} />
+        <RecipeView recipe={recipe} shareCode={code} apiBaseUrl={apiBaseUrl} />
       </div>
     </main>
   );

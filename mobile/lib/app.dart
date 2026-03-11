@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:app_links/app_links.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,6 +12,7 @@ import 'app/auth/providers/auth_providers.dart';
 import 'app/recipe_import/pending_jobs_provider.dart';
 import 'app/subscription/subscription_provider.dart';
 import 'core/routing/app_router.dart';
+import 'core/routing/deep_link_handler.dart';
 import 'core/services/firebase_analytics_provider.dart';
 import 'core/services/share_handler_service.dart';
 import 'core/services/share_handler_provider.dart';
@@ -23,6 +27,10 @@ class RechefApp extends ConsumerStatefulWidget {
 
 class _RechefAppState extends ConsumerState<RechefApp>
     with WidgetsBindingObserver {
+  AppLinks? _appLinks;
+  StreamSubscription<Uri>? _deepLinkSubscription;
+  String? _lastDeepLink;
+  DateTime? _lastDeepLinkHandledAt;
   String? _lastShareSignature;
   DateTime? _lastShareHandledAt;
 
@@ -30,8 +38,46 @@ class _RechefAppState extends ConsumerState<RechefApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _initializeDeepLinks();
     _initializeShareHandler();
     _syncRevenueCatUser();
+  }
+
+  void _initializeDeepLinks() {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      _appLinks ??= AppLinks();
+
+      try {
+        final initialLink = await _appLinks!.getInitialLink();
+        await _handleIncomingDeepLink(initialLink);
+      } catch (error) {
+        debugPrint('[RechefApp] Failed to read initial app link: $error');
+      }
+
+      await _deepLinkSubscription?.cancel();
+      _deepLinkSubscription = _appLinks!.uriLinkStream.listen(
+        (uri) {
+          unawaited(_handleIncomingDeepLink(uri));
+        },
+        onError: (Object error) {
+          debugPrint('[RechefApp] App link stream error: $error');
+        },
+      );
+    });
+  }
+
+  Future<void> _handleIncomingDeepLink(Uri? uri) async {
+    if (!mounted || uri == null || _isDuplicateDeepLink(uri)) {
+      return;
+    }
+
+    final location = DeepLinkHandler.locationForAppDeepLink(uri);
+    if (location == null) {
+      return;
+    }
+
+    final router = ref.read(routerProvider);
+    router.go(location);
   }
 
   void _syncRevenueCatUser() {
@@ -146,6 +192,20 @@ class _RechefAppState extends ConsumerState<RechefApp>
     return isDuplicate;
   }
 
+  bool _isDuplicateDeepLink(Uri uri) {
+    final signature = uri.toString();
+    final now = DateTime.now();
+
+    final isDuplicate =
+        _lastDeepLink == signature &&
+        _lastDeepLinkHandledAt != null &&
+        now.difference(_lastDeepLinkHandledAt!) < const Duration(seconds: 2);
+
+    _lastDeepLink = signature;
+    _lastDeepLinkHandledAt = now;
+    return isDuplicate;
+  }
+
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
@@ -177,6 +237,7 @@ class _RechefAppState extends ConsumerState<RechefApp>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _deepLinkSubscription?.cancel();
     ref.read(shareHandlerServiceProvider).dispose();
     super.dispose();
   }

@@ -31,6 +31,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       final onboardingDone = onboardingComplete.value ?? false;
       final isAuthenticated = authState.value != null;
       final loc = state.matchedLocation;
+      final isPublicSharedRecipe = loc.startsWith('/shared-recipe/');
+
+      if (isPublicSharedRecipe) {
+        return null;
+      }
 
       // First-time users: send to onboarding
       if (!onboardingDone && loc != '/onboarding') {
