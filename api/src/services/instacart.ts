@@ -1,7 +1,7 @@
 import { env } from "../../env_config";
 import { logger } from "../../logger";
 
-const INSTACART_BASE_URL = "https://connect.dev.instacart.tools";
+const INSTACART_BASE_URL = "https://connect.instacart.com";
 
 interface LineItem {
   name: string;

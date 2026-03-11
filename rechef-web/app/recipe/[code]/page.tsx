@@ -35,13 +35,10 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const code = params.code;
 
   try {
-    const res = await fetch(
-      `${apiBaseUrl}/share/${code}`,
-      {
-        // This is a public, cacheable endpoint
-        next: { revalidate: 60 },
-      },
-    );
+    const res = await fetch(`${apiBaseUrl}/share/${code}`, {
+      // This is a public, cacheable endpoint
+      next: { revalidate: 60 },
+    });
 
     if (!res.ok) {
       return {
@@ -88,12 +85,9 @@ async function fetchSharedRecipe(
   code: string,
 ): Promise<SharedRecipeResponse | null> {
   try {
-    const res = await fetch(
-      `${apiBaseUrl}/share/${code}`,
-      {
-        cache: "no-store",
-      },
-    );
+    const res = await fetch(`${apiBaseUrl}/share/${code}`, {
+      cache: "no-store",
+    });
 
     if (!res.ok) return null;
     return (await res.json()) as SharedRecipeResponse;

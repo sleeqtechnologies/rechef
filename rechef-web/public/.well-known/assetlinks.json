@@ -4,7 +4,9 @@
     "target": {
       "namespace": "android_app",
       "package_name": "com.rechef.app",
-      "sha256_cert_fingerprints": ["BB:0B:F6:D2:AF:2B:62:D6:3B:B0:0F:D0:88:9A:86:C7:C9:BA:E4:92:30:24:0A:FF:EF:4B:43:B5:E4:28:89:FB"]
+      "sha256_cert_fingerprints": [
+        "BB:0B:F6:D2:AF:2B:62:D6:3B:B0:0F:D0:88:9A:86:C7:C9:BA:E4:92:30:24:0A:FF:EF:4B:43:B5:E4:28:89:FB"
+      ]
     }
   }
 ]
