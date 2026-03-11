@@ -306,15 +306,28 @@ export function RecipeView({ recipe, shareCode, apiBaseUrl }: RecipeViewProps) {
               <svg
                 width="16"
                 height="16"
-                viewBox="0 0 24 24"
+                viewBox="0 0 16 16"
                 fill="none"
-                stroke="#9CA3AF"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+                xmlns="http://www.w3.org/2000/svg"
               >
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
+                <g clipPath="url(#clip-clock)">
+                  <path
+                    d="M7.99992 14.6667C11.6818 14.6667 14.6666 11.6819 14.6666 8.00004C14.6666 4.31814 11.6818 1.33337 7.99992 1.33337C4.31802 1.33337 1.33325 4.31814 1.33325 8.00004C1.33325 11.6819 4.31802 14.6667 7.99992 14.6667Z"
+                    stroke="#9CA3AF"
+                  />
+                  <path
+                    opacity="0.4"
+                    d="M7.99731 6.99922C7.44505 6.99922 6.99731 7.44696 6.99731 7.99922C6.99731 8.55149 7.44505 8.99922 7.99731 8.99922C8.54958 8.99922 8.99731 8.55149 8.99731 7.99922C8.99731 7.44696 8.54958 6.99922 7.99731 6.99922ZM7.99731 6.99922V4.65979M10.0019 10.007L8.70285 8.70789"
+                    stroke="#9CA3AF"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </g>
+                <defs>
+                  <clipPath id="clip-clock">
+                    <rect width="16" height="16" fill="white" />
+                  </clipPath>
+                </defs>
               </svg>
               {totalMinutes} min
             </div>
@@ -324,17 +337,36 @@ export function RecipeView({ recipe, shareCode, apiBaseUrl }: RecipeViewProps) {
               <svg
                 width="16"
                 height="16"
-                viewBox="0 0 24 24"
+                viewBox="0 0 16 16"
                 fill="none"
-                stroke="#9CA3AF"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+                xmlns="http://www.w3.org/2000/svg"
               >
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                <g clipPath="url(#clip-servings)">
+                  <path
+                    d="M2.66675 9.33337H14.6667"
+                    stroke="#9CA3AF"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M3.33325 14.6667L3.95363 14.0463C4.30614 13.6938 4.48239 13.5176 4.70448 13.4174C4.92657 13.3171 5.17535 13.3016 5.6729 13.2705L7.84119 13.135C8.90685 13.0684 9.43972 13.035 9.90859 12.8099C10.3775 12.5847 10.7367 12.1896 11.4549 11.3996L13.3333 9.33337H10.9999L9.80465 10.5286C9.72519 10.6081 9.68539 10.6479 9.64405 10.683C9.43139 10.8636 9.16739 10.973 8.88932 10.9956C8.83519 11 8.77899 11 8.66659 11M8.66659 11C8.66659 10.6902 8.66659 10.5354 8.64099 10.4066C8.53579 9.87764 8.12232 9.46417 7.59339 9.35897C7.46459 9.33337 7.30972 9.33337 6.99992 9.33337H6.47891C5.78222 9.33337 5.43387 9.33337 5.10722 9.41737C4.86391 9.47991 4.63067 9.57651 4.41439 9.70431C4.12403 9.87591 3.87771 10.1222 3.38508 10.6149L1.33325 12.6667M8.66659 11H6.33325"
+                    stroke="#9CA3AF"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    opacity="0.4"
+                    d="M3.33325 7.66671C3.33325 4.72118 5.72106 2.33337 8.66659 2.33337M8.66659 2.33337C11.6121 2.33337 13.9999 4.72118 13.9999 7.66671M8.66659 2.33337V1.33337"
+                    stroke="#9CA3AF"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </g>
+                <defs>
+                  <clipPath id="clip-servings">
+                    <rect width="16" height="16" fill="white" />
+                  </clipPath>
+                </defs>
               </svg>
               {recipe.servings} servings
             </div>
@@ -429,19 +461,21 @@ export function RecipeView({ recipe, shareCode, apiBaseUrl }: RecipeViewProps) {
 
       {/* Bottom CTA — fixed, with safe area for mobile */}
       <div
-        className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-gray-100 px-5 pt-3"
+        className="fixed bottom-0 left-0 right-0 flex justify-center bg-white/80 backdrop-blur-xl border-t border-gray-100"
         style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
       >
-        <a
-          href={rechefHomeUrl}
-          onClick={handleOpenInAppClick}
-          className="flex w-full items-center justify-center rounded-full bg-[#FF4F63] px-4 py-3.5 text-[0.9rem] font-semibold text-white shadow-lg shadow-[#FF4F63]/20 transition-all hover:brightness-110 active:scale-[0.98]"
-        >
-          Open in Rechef
-        </a>
-        <p className="text-[11px] text-gray-400 text-center mt-2">
-          Save recipes, build grocery lists, and cook smarter
-        </p>
+        <div className="w-full max-w-lg px-5 pt-3">
+          <a
+            href={rechefHomeUrl}
+            onClick={handleOpenInAppClick}
+            className="flex w-full h-14 items-center justify-center rounded-full bg-[#FF4F63] px-4 text-base font-semibold text-white shadow-lg shadow-[#FF4F63]/20 transition-all hover:brightness-110 active:scale-[0.98]"
+          >
+            Open in Rechef
+          </a>
+          <p className="text-[11px] text-gray-400 text-center mt-2">
+            Save recipes, build grocery lists, and cook smarter
+          </p>
+        </div>
       </div>
     </div>
   );

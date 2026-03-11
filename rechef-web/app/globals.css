@@ -10,8 +10,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-accent: #ff4f63;
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-roobert);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -43,7 +42,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family:
-    var(--font-geist-sans),
+    var(--font-roobert),
     system-ui,
     -apple-system,
     sans-serif;
