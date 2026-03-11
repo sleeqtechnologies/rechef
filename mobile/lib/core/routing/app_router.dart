@@ -18,6 +18,7 @@ import '../../app/meal_planning/presentation/meal_plan_screen.dart';
 import '../../app/subscription/presentation/paywall_screen.dart';
 import '../../app/subscription/presentation/subscription_settings_screen.dart';
 import '../../app/cookbooks/presentation/cookbook_detail_screen.dart';
+import '../services/firebase_analytics_provider.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -25,6 +26,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     initialLocation: '/',
+    observers: [ref.watch(firebaseAnalyticsObserverProvider)],
     redirect: (context, state) {
       final onboardingDone = onboardingComplete.value ?? false;
       final isAuthenticated = authState.value != null;

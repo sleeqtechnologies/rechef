@@ -3,8 +3,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/widgets/app_snack_bar.dart';
+import '../../../core/services/firebase_analytics_provider.dart';
 import '../../../core/services/recipe_ready_notifications.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 
 import '../../../core/utils/url_validator.dart';
 import '../data/import_repository.dart';
@@ -28,6 +29,17 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
   bool _isSubmitting = false;
   String? _error;
 
+  String get _entrySource {
+    if (widget.initialImagePath != null &&
+        widget.initialImagePath!.isNotEmpty) {
+      return 'share_image';
+    }
+    if (widget.initialUrl != null && widget.initialUrl!.isNotEmpty) {
+      return 'share_url';
+    }
+    return 'manual';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -49,6 +61,7 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
   }
 
   Future<void> _submitContent() async {
+    final analytics = ref.read(appAnalyticsProvider);
     final url = _urlController.text.trim();
     if (url.isEmpty) return;
 
@@ -72,7 +85,13 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
       );
 
       if (usage != null && usage.used >= usage.limit) {
-        await ref.read(subscriptionProvider.notifier).showPaywall();
+        await analytics.logImportLimitReached(
+          inputType: 'url',
+          source: _entrySource,
+        );
+        await ref
+            .read(subscriptionProvider.notifier)
+            .showPaywall(source: 'recipe_import_limit');
         return;
       }
     }
@@ -85,8 +104,18 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
     await RecipeReadyNotifications.instance.requestAndroidPermissionIfNeeded();
 
     try {
+      await analytics.logImportSubmitted(
+        inputType: 'url',
+        source: _entrySource,
+      );
       final repo = ref.read(importRepositoryProvider);
       final result = await repo.submitContent(url);
+      if (!mounted) return;
+
+      await analytics.logImportSucceeded(
+        inputType: 'url',
+        source: _entrySource,
+      );
       if (!mounted) return;
 
       ref
@@ -111,6 +140,11 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
 
       context.go('/recipes');
     } catch (e) {
+      await analytics.logImportFailed(
+        inputType: 'url',
+        source: _entrySource,
+        error: e,
+      );
       if (!mounted) return;
       setState(() {
         _error = e.toString().replaceFirst('Exception: ', '');
@@ -120,6 +154,7 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
   }
 
   Future<void> _submitImage(String imagePath) async {
+    final analytics = ref.read(appAnalyticsProvider);
     final isPro = ref.read(isProUserProvider);
     if (!isPro) {
       final usageAsync = ref.read(monthlyImportUsageProvider);
@@ -129,7 +164,13 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
       );
 
       if (usage != null && usage.used >= usage.limit) {
-        await ref.read(subscriptionProvider.notifier).showPaywall();
+        await analytics.logImportLimitReached(
+          inputType: 'image',
+          source: _entrySource,
+        );
+        await ref
+            .read(subscriptionProvider.notifier)
+            .showPaywall(source: 'recipe_import_limit');
         return;
       }
     }
@@ -142,8 +183,18 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
     await RecipeReadyNotifications.instance.requestAndroidPermissionIfNeeded();
 
     try {
+      await analytics.logImportSubmitted(
+        inputType: 'image',
+        source: _entrySource,
+      );
       final repo = ref.read(importRepositoryProvider);
       final result = await repo.submitImage(imagePath);
+      if (!mounted) return;
+
+      await analytics.logImportSucceeded(
+        inputType: 'image',
+        source: _entrySource,
+      );
       if (!mounted) return;
 
       ref
@@ -166,6 +217,11 @@ class _ImportRecipeScreenState extends ConsumerState<ImportRecipeScreen> {
 
       context.go('/recipes');
     } catch (e) {
+      await analytics.logImportFailed(
+        inputType: 'image',
+        source: _entrySource,
+        error: e,
+      );
       if (!mounted) return;
       setState(() {
         _error = e.toString().replaceFirst('Exception: ', '');

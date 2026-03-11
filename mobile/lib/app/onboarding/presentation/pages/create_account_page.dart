@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/services/firebase_analytics_provider.dart';
 import '../../../auth/providers/auth_providers.dart';
 import '../../data/onboarding_repository.dart';
 import '../../providers/onboarding_provider.dart';
@@ -56,10 +57,26 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
       _error = null;
     });
 
+    final analytics = ref.read(appAnalyticsProvider);
+    await analytics.logAuthAttempt(
+      method: 'google',
+      location: 'onboarding_create_account',
+    );
+
     try {
       await ref.read(authRepositoryProvider).signInWithGoogle();
       await _completeOnboarding();
+      await analytics.logAuthSuccess(
+        method: 'google',
+        location: 'onboarding_create_account',
+        isAnonymous: false,
+      );
     } catch (e) {
+      await analytics.logAuthFailure(
+        method: 'google',
+        location: 'onboarding_create_account',
+        error: e,
+      );
       if (mounted) {
         setState(() => _error = 'auth.error_google'.tr());
       }
@@ -76,10 +93,26 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
       _error = null;
     });
 
+    final analytics = ref.read(appAnalyticsProvider);
+    await analytics.logAuthAttempt(
+      method: 'apple',
+      location: 'onboarding_create_account',
+    );
+
     try {
       await ref.read(authRepositoryProvider).signInWithApple();
       await _completeOnboarding();
+      await analytics.logAuthSuccess(
+        method: 'apple',
+        location: 'onboarding_create_account',
+        isAnonymous: false,
+      );
     } catch (e) {
+      await analytics.logAuthFailure(
+        method: 'apple',
+        location: 'onboarding_create_account',
+        error: e,
+      );
       if (mounted) {
         setState(() => _error = 'auth.error_apple_full'.tr());
       }
@@ -96,10 +129,26 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
       _error = null;
     });
 
+    final analytics = ref.read(appAnalyticsProvider);
+    await analytics.logAuthAttempt(
+      method: 'guest',
+      location: 'onboarding_create_account',
+    );
+
     try {
       await ref.read(authRepositoryProvider).signInAnonymously();
       await _completeOnboarding();
+      await analytics.logAuthSuccess(
+        method: 'guest',
+        location: 'onboarding_create_account',
+        isAnonymous: true,
+      );
     } catch (e) {
+      await analytics.logAuthFailure(
+        method: 'guest',
+        location: 'onboarding_create_account',
+        error: e,
+      );
       if (mounted) {
         setState(() => _error = 'auth.error_guest'.tr());
       }

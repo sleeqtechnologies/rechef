@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/services/firebase_analytics_provider.dart';
 import '../../onboarding/data/onboarding_repository.dart';
 import '../providers/auth_providers.dart';
 
@@ -44,10 +45,22 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       _loadingButton = 'google';
       _error = null;
     });
+    final analytics = ref.read(appAnalyticsProvider);
+    await analytics.logAuthAttempt(method: 'google', location: 'sign_in');
     try {
       await ref.read(authRepositoryProvider).signInWithGoogle();
       await _syncOnboardingData();
+      await analytics.logAuthSuccess(
+        method: 'google',
+        location: 'sign_in',
+        isAnonymous: false,
+      );
     } catch (e) {
+      await analytics.logAuthFailure(
+        method: 'google',
+        location: 'sign_in',
+        error: e,
+      );
       setState(() => _error = 'Google sign-in failed: $e');
     } finally {
       if (mounted) {
@@ -61,11 +74,23 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       _loadingButton = 'guest';
       _error = null;
     });
+    final analytics = ref.read(appAnalyticsProvider);
+    await analytics.logAuthAttempt(method: 'guest', location: 'sign_in');
 
     try {
       await ref.read(authRepositoryProvider).signInAnonymously();
       await _syncOnboardingData();
+      await analytics.logAuthSuccess(
+        method: 'guest',
+        location: 'sign_in',
+        isAnonymous: true,
+      );
     } catch (e) {
+      await analytics.logAuthFailure(
+        method: 'guest',
+        location: 'sign_in',
+        error: e,
+      );
       setState(() => _error = 'Could not continue without an account: $e');
     } finally {
       if (mounted) {
@@ -79,11 +104,23 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       _loadingButton = 'apple';
       _error = null;
     });
+    final analytics = ref.read(appAnalyticsProvider);
+    await analytics.logAuthAttempt(method: 'apple', location: 'sign_in');
 
     try {
       await ref.read(authRepositoryProvider).signInWithApple();
       await _syncOnboardingData();
+      await analytics.logAuthSuccess(
+        method: 'apple',
+        location: 'sign_in',
+        isAnonymous: false,
+      );
     } catch (e) {
+      await analytics.logAuthFailure(
+        method: 'apple',
+        location: 'sign_in',
+        error: e,
+      );
       debugPrint('Apple sign-in error: $e');
       setState(
         () => _error =
@@ -242,7 +279,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                         )
                       : Text(
                           'auth.continue_without_account'.tr(),
-                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
                         ),
                 ),
                 const SizedBox(height: 16),

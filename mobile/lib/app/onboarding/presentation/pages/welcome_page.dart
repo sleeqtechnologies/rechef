@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/services/firebase_analytics_provider.dart';
 import '../../../auth/providers/auth_providers.dart';
 import '../../data/onboarding_repository.dart';
 import '../../providers/onboarding_provider.dart';
@@ -40,11 +41,27 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
       _loadingButton = 'google';
       _error = null;
     });
+    final analytics = ref.read(appAnalyticsProvider);
+    await analytics.logAuthAttempt(
+      method: 'google',
+      location: 'onboarding_welcome',
+    );
+
     try {
       await _loginAndBypass(
         () => ref.read(authRepositoryProvider).signInWithGoogle(),
       );
+      await analytics.logAuthSuccess(
+        method: 'google',
+        location: 'onboarding_welcome',
+        isAnonymous: false,
+      );
     } catch (e) {
+      await analytics.logAuthFailure(
+        method: 'google',
+        location: 'onboarding_welcome',
+        error: e,
+      );
       if (mounted) {
         setState(() => _error = 'auth.error_google'.tr());
       }
@@ -58,11 +75,27 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
       _loadingButton = 'apple';
       _error = null;
     });
+    final analytics = ref.read(appAnalyticsProvider);
+    await analytics.logAuthAttempt(
+      method: 'apple',
+      location: 'onboarding_welcome',
+    );
+
     try {
       await _loginAndBypass(
         () => ref.read(authRepositoryProvider).signInWithApple(),
       );
+      await analytics.logAuthSuccess(
+        method: 'apple',
+        location: 'onboarding_welcome',
+        isAnonymous: false,
+      );
     } catch (e) {
+      await analytics.logAuthFailure(
+        method: 'apple',
+        location: 'onboarding_welcome',
+        error: e,
+      );
       if (mounted) {
         setState(() => _error = 'auth.error_apple'.tr());
       }

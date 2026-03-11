@@ -9,6 +9,7 @@ import 'app/auth/providers/auth_providers.dart';
 import 'app/recipe_import/pending_jobs_provider.dart';
 import 'app/subscription/subscription_provider.dart';
 import 'core/routing/app_router.dart';
+import 'core/services/firebase_analytics_provider.dart';
 import 'core/services/share_handler_service.dart';
 import 'core/services/share_handler_provider.dart';
 import 'core/theme/app_theme.dart';
@@ -33,22 +34,27 @@ class _RechefAppState extends ConsumerState<RechefApp>
     _syncRevenueCatUser();
   }
 
-  /// Keep RevenueCat user in sync with Firebase Auth state.
   void _syncRevenueCatUser() {
     ref.listenManual(authStateProvider, (previous, next) async {
       final user = next.value;
+      final analytics = ref.read(firebaseAnalyticsProvider);
+
       try {
         if (user != null) {
-          // User signed in – log in to RevenueCat with Firebase UID.
           await Purchases.logIn(user.uid);
         } else if (previous?.value != null) {
-          // User signed out – revert to anonymous RevenueCat user.
           await Purchases.logOut();
         }
       } catch (e) {
         debugPrint('[RechefApp] RevenueCat user sync error: $e');
       }
-      // Refresh subscription status after auth change.
+
+      try {
+        await analytics.setUserId(id: user?.uid);
+      } catch (e) {
+        debugPrint('[RechefApp] Analytics user sync error: $e');
+      }
+
       ref.invalidate(subscriptionProvider);
     });
   }
@@ -77,15 +83,19 @@ class _RechefAppState extends ConsumerState<RechefApp>
     }
 
     final router = ref.read(routerProvider);
+    final analytics = ref.read(appAnalyticsProvider);
 
     final url = ShareHandlerService.extractUrl(media);
     final imagePath = ShareHandlerService.extractImagePath(media);
 
     String? targetPath;
+    var contentType = 'unsupported';
     if (url != null) {
+      contentType = 'url';
       final uri = Uri(path: '/recipes/import', queryParameters: {'url': url});
       targetPath = uri.toString();
     } else if (imagePath != null) {
+      contentType = 'image';
       final uri = Uri(
         path: '/recipes/import',
         queryParameters: {'image': imagePath},
@@ -101,11 +111,17 @@ class _RechefAppState extends ConsumerState<RechefApp>
             queryParameters: {'url': content},
           );
           targetPath = importUri.toString();
+          contentType = 'url';
         }
-      } catch (e) {
-        // Content is not a URL, ignore
+      } catch (_) {
+        // Ignore non-URL share text.
       }
     }
+
+    analytics.logShareContentReceived(
+      contentType: contentType,
+      routedToImport: targetPath != null,
+    );
 
     if (targetPath != null) {
       router.go(targetPath);

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 
+import '../../../../core/services/firebase_analytics_provider.dart';
 import '../../../subscription/domain/subscription_status.dart';
 import '../../../subscription/subscription_provider.dart';
 import '../../providers/onboarding_provider.dart';
@@ -25,6 +26,7 @@ class _ProPlanPageState extends ConsumerState<ProPlanPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(appAnalyticsProvider).logPaywallViewed(source: 'onboarding_pro');
       _loadOffering();
     });
   }
@@ -33,6 +35,12 @@ class _ProPlanPageState extends ConsumerState<ProPlanPage> {
     try {
       final repo = ref.read(subscriptionRepositoryProvider);
       final offering = await repo.getOffering(SubscriptionConstants.offeringId);
+      await ref
+          .read(appAnalyticsProvider)
+          .logPaywallOfferingLoaded(
+            source: 'onboarding_pro',
+            success: offering != null,
+          );
       if (mounted) {
         setState(() {
           _offering = offering;
@@ -40,6 +48,9 @@ class _ProPlanPageState extends ConsumerState<ProPlanPage> {
         });
       }
     } catch (e) {
+      await ref
+          .read(appAnalyticsProvider)
+          .logPaywallOfferingLoaded(source: 'onboarding_pro', success: false);
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -62,7 +73,7 @@ class _ProPlanPageState extends ConsumerState<ProPlanPage> {
             alignment: Alignment.topRight,
             child: Padding(
               padding: const EdgeInsets.only(right: 16),
-                child: TextButton(
+              child: TextButton(
                 onPressed: () => notifier.nextPage(),
                 child: Text(
                   'onboarding.maybe_later'.tr(),
@@ -86,6 +97,14 @@ class _ProPlanPageState extends ConsumerState<ProPlanPage> {
                     offering: _offering!,
                     onDismiss: () => notifier.nextPage(),
                     onRestoreCompleted: (CustomerInfo customerInfo) {
+                      ref
+                          .read(appAnalyticsProvider)
+                          .logSubscriptionRestoreCompleted(
+                            source: 'onboarding_pro',
+                            active: customerInfo.entitlements.active.isNotEmpty,
+                            entitlementCount:
+                                customerInfo.entitlements.active.length,
+                          );
                       notifier.setProSubscription(true);
                       notifier.nextPage();
                     },
@@ -94,6 +113,13 @@ class _ProPlanPageState extends ConsumerState<ProPlanPage> {
                           CustomerInfo customerInfo,
                           StoreTransaction storeTransaction,
                         ) {
+                          ref
+                              .read(appAnalyticsProvider)
+                              .logSubscriptionPurchaseCompleted(
+                                source: 'onboarding_pro',
+                                entitlementCount:
+                                    customerInfo.entitlements.active.length,
+                              );
                           notifier.setProSubscription(true);
                           notifier.nextPage();
                         },
@@ -163,7 +189,10 @@ class _FallbackProContent extends StatelessWidget {
               ),
               child: Text(
                 'common.continue_btn'.tr(),
-                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),

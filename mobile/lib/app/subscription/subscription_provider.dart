@@ -5,6 +5,7 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 
 import '../../core/config/env.dart';
+import '../../core/services/firebase_analytics_provider.dart';
 import 'data/subscription_repository.dart';
 import 'domain/subscription_status.dart';
 
@@ -37,9 +38,15 @@ class SubscriptionNotifier extends AsyncNotifier<SubscriptionStatus> {
     });
   }
 
-  Future<PaywallResult> showPaywall() async {
+  Future<PaywallResult> showPaywall({String source = 'unknown'}) async {
     final repo = ref.read(subscriptionRepositoryProvider);
+    final analytics = ref.read(appAnalyticsProvider);
+    await analytics.logPaywallViewed(source: source);
     final result = await repo.presentPaywall();
+    await analytics.logPaywallResult(
+      source: source,
+      result: result.toString().split('.').last,
+    );
 
     if (result == PaywallResult.purchased || result == PaywallResult.restored) {
       await refresh();
@@ -48,9 +55,15 @@ class SubscriptionNotifier extends AsyncNotifier<SubscriptionStatus> {
     return result;
   }
 
-  Future<PaywallResult> showPaywallIfNeeded() async {
+  Future<PaywallResult> showPaywallIfNeeded({String source = 'unknown'}) async {
     final repo = ref.read(subscriptionRepositoryProvider);
+    final analytics = ref.read(appAnalyticsProvider);
+    await analytics.logPaywallViewed(source: source);
     final result = await repo.presentPaywallIfNeeded();
+    await analytics.logPaywallResult(
+      source: source,
+      result: result.toString().split('.').last,
+    );
 
     if (result == PaywallResult.purchased || result == PaywallResult.restored) {
       await refresh();
@@ -59,16 +72,29 @@ class SubscriptionNotifier extends AsyncNotifier<SubscriptionStatus> {
     return result;
   }
 
-  Future<void> showCustomerCenter() async {
+  Future<void> showCustomerCenter({String source = 'unknown'}) async {
     final repo = ref.read(subscriptionRepositoryProvider);
+    await ref
+        .read(appAnalyticsProvider)
+        .logCustomerCenterOpened(source: source);
     await repo.presentCustomerCenter();
     await refresh();
   }
 
-  Future<void> restorePurchases() async {
+  Future<void> restorePurchases({String source = 'unknown'}) async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() {
-      return ref.read(subscriptionRepositoryProvider).restorePurchases();
+    state = await AsyncValue.guard(() async {
+      final status = await ref
+          .read(subscriptionRepositoryProvider)
+          .restorePurchases();
+      await ref
+          .read(appAnalyticsProvider)
+          .logSubscriptionRestoreCompleted(
+            source: source,
+            active: status.isActive,
+            entitlementCount: status.customerInfo.entitlements.active.length,
+          );
+      return status;
     });
   }
 }

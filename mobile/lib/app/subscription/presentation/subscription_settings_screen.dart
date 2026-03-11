@@ -21,9 +21,7 @@ class SubscriptionSettingsScreen extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('subscription.title'.tr()),
-      ),
+      appBar: AppBar(title: Text('subscription.title'.tr())),
       body: subscriptionAsync.when(
         loading: () => const Center(child: CupertinoActivityIndicator()),
         error: (error, _) => Center(
@@ -32,7 +30,11 @@ class SubscriptionSettingsScreen extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
+                Icon(
+                  Icons.error_outline,
+                  size: 48,
+                  color: theme.colorScheme.error,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'subscription.unable_to_load'.tr(),
@@ -46,7 +48,8 @@ class SubscriptionSettingsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 24),
                 FilledButton(
-                  onPressed: () => ref.read(subscriptionProvider.notifier).refresh(),
+                  onPressed: () =>
+                      ref.read(subscriptionProvider.notifier).refresh(),
                   child: Text('common.retry'.tr()),
                 ),
               ],
@@ -92,7 +95,9 @@ class _SubscriptionContent extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                isActive ? 'subscription.pro_active'.tr() : 'subscription.free_plan'.tr(),
+                isActive
+                    ? 'subscription.pro_active'.tr()
+                    : 'subscription.free_plan'.tr(),
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: isActive
@@ -127,7 +132,9 @@ class _SubscriptionContent extends ConsumerWidget {
         if (!isActive) ...[
           FilledButton.icon(
             onPressed: () async {
-              await ref.read(subscriptionProvider.notifier).showPaywall();
+              await ref
+                  .read(subscriptionProvider.notifier)
+                  .showPaywall(source: 'subscription_settings');
             },
             icon: const Icon(Icons.rocket_launch_rounded),
             label: Text('subscription.upgrade_to_pro'.tr()),
@@ -144,7 +151,9 @@ class _SubscriptionContent extends ConsumerWidget {
         if (isActive) ...[
           OutlinedButton.icon(
             onPressed: () async {
-              await ref.read(subscriptionProvider.notifier).showCustomerCenter();
+              await ref
+                  .read(subscriptionProvider.notifier)
+                  .showCustomerCenter(source: 'subscription_settings');
             },
             icon: const Icon(Icons.settings_rounded),
             label: Text('subscription.manage'.tr()),
@@ -160,7 +169,9 @@ class _SubscriptionContent extends ConsumerWidget {
 
         OutlinedButton.icon(
           onPressed: () async {
-            await ref.read(subscriptionProvider.notifier).restorePurchases();
+            await ref
+                .read(subscriptionProvider.notifier)
+                .restorePurchases(source: 'subscription_settings');
             if (!context.mounted) return;
             final restored = ref.read(isProUserProvider);
             AppSnackBar.show(
@@ -168,9 +179,7 @@ class _SubscriptionContent extends ConsumerWidget {
               message: restored
                   ? 'subscription.restored_success'.tr()
                   : 'subscription.no_purchases'.tr(),
-              type: restored
-                  ? SnackBarType.success
-                  : SnackBarType.info,
+              type: restored ? SnackBarType.success : SnackBarType.info,
             );
           },
           icon: const Icon(Icons.restore_rounded),

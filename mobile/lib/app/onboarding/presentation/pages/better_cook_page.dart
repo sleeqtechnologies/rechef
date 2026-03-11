@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 
+import '../../../../core/services/firebase_analytics_provider.dart';
 import '../../../subscription/domain/subscription_status.dart';
 import '../../../subscription/subscription_provider.dart';
 import '../../data/onboarding_repository.dart';
@@ -134,9 +135,18 @@ class _BetterCookPageState extends ConsumerState<BetterCookPage>
         return;
       }
 
+      await ref
+          .read(appAnalyticsProvider)
+          .logPaywallViewed(source: 'onboarding_better_cook');
       final result = await RevenueCatUI.presentPaywallIfNeeded(
         offering.identifier,
       );
+      await ref
+          .read(appAnalyticsProvider)
+          .logPaywallResult(
+            source: 'onboarding_better_cook',
+            result: result.toString().split('.').last,
+          );
 
       if (mounted) {
         if (result == PaywallResult.purchased ||

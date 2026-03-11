@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 
+import '../../../core/services/firebase_analytics_provider.dart';
 import '../domain/subscription_status.dart';
 import '../subscription_provider.dart';
 
@@ -23,18 +24,37 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(appAnalyticsProvider).logPaywallViewed(source: 'paywall_screen');
       _loadOffering();
     });
   }
 
   Future<void> _loadOffering() async {
     final repo = ref.read(subscriptionRepositoryProvider);
-    final offering = await repo.getOffering(SubscriptionConstants.offeringId);
-    if (mounted) {
-      setState(() {
-        _offering = offering;
-        _isLoading = false;
-      });
+    final analytics = ref.read(appAnalyticsProvider);
+    try {
+      final offering = await repo.getOffering(SubscriptionConstants.offeringId);
+      await analytics.logPaywallOfferingLoaded(
+        source: 'paywall_screen',
+        success: offering != null,
+      );
+      if (mounted) {
+        setState(() {
+          _offering = offering;
+          _isLoading = false;
+        });
+      }
+    } catch (error) {
+      await analytics.logPaywallOfferingLoaded(
+        source: 'paywall_screen',
+        success: false,
+      );
+      if (mounted) {
+        setState(() {
+          _offering = null;
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -74,6 +94,14 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                   Navigator.of(context).maybePop();
                 },
                 onRestoreCompleted: (CustomerInfo customerInfo) {
+                  ref
+                      .read(appAnalyticsProvider)
+                      .logSubscriptionRestoreCompleted(
+                        source: 'paywall_screen',
+                        active: customerInfo.entitlements.active.isNotEmpty,
+                        entitlementCount:
+                            customerInfo.entitlements.active.length,
+                      );
                   debugPrint(
                     '[PaywallScreen] Restore completed: '
                     '${customerInfo.entitlements.active.keys}',
@@ -84,6 +112,13 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                       CustomerInfo customerInfo,
                       StoreTransaction storeTransaction,
                     ) {
+                      ref
+                          .read(appAnalyticsProvider)
+                          .logSubscriptionPurchaseCompleted(
+                            source: 'paywall_screen',
+                            entitlementCount:
+                                customerInfo.entitlements.active.length,
+                          );
                       debugPrint(
                         '[PaywallScreen] Purchase completed: '
                         '${customerInfo.entitlements.active.keys}',
