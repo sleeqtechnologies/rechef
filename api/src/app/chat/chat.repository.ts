@@ -43,10 +43,7 @@ const findRecentByRecipeAndUser = async (
 };
 
 const create = async (data: NewChatMessage): Promise<ChatMessage> => {
-  const [message] = await db
-    .insert(chatMessageTable)
-    .values(data)
-    .returning();
+  const [message] = await db.insert(chatMessageTable).values(data).returning();
 
   return message;
 };

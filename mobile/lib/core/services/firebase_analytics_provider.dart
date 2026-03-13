@@ -1,6 +1,7 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:posthog_flutter/posthog_flutter.dart';
 
 final firebaseAnalyticsProvider = Provider<FirebaseAnalytics>((ref) {
   return FirebaseAnalytics.instance;
@@ -155,11 +156,93 @@ class AppAnalytics {
     return _logEvent('customer_center_opened', {'source': source});
   }
 
+  Future<void> logRecipeViewed({
+    required String recipeId,
+    required String recipeName,
+    bool isShared = false,
+  }) {
+    return _logEvent('recipe_viewed', {
+      'recipe_id': recipeId,
+      'recipe_name': recipeName,
+      'is_shared': isShared ? 1 : 0,
+    });
+  }
+
+  Future<void> logCookingModeStarted({
+    required String recipeId,
+    required String recipeName,
+  }) {
+    return _logEvent('cooking_mode_started', {
+      'recipe_id': recipeId,
+      'recipe_name': recipeName,
+    });
+  }
+
+  Future<void> logIngredientsAddedToGrocery({
+    required String recipeId,
+    required int itemCount,
+  }) {
+    return _logEvent('ingredients_added_to_grocery', {
+      'recipe_id': recipeId,
+      'item_count': itemCount,
+    });
+  }
+
+  Future<void> logRecipeShared({required String recipeId}) {
+    return _logEvent('recipe_shared', {'recipe_id': recipeId});
+  }
+
+  Future<void> logRecipeDeleted({required String recipeId}) {
+    return _logEvent('recipe_deleted', {'recipe_id': recipeId});
+  }
+
+  Future<void> logRecipeEdited({required String recipeId}) {
+    return _logEvent('recipe_edited', {'recipe_id': recipeId});
+  }
+
+  Future<void> logRecipeAddedToCookbook({required String recipeId}) {
+    return _logEvent('recipe_added_to_cookbook', {'recipe_id': recipeId});
+  }
+
+  Future<void> logGroceryOrderOnlineTapped() {
+    return _logEvent('grocery_order_online_tapped');
+  }
+
+  Future<void> logPantryItemsAdded({required int count}) {
+    return _logEvent('pantry_items_added', {'item_count': count});
+  }
+
+  Future<void> logCameraOpened() {
+    return _logEvent('camera_opened');
+  }
+
+  Future<void> logImportSheetOpened() {
+    return _logEvent('import_sheet_opened');
+  }
+
+  Future<void> logOnboardingStepViewed({
+    required int step,
+    required String pageName,
+  }) {
+    return _logEvent('onboarding_step_viewed', {
+      'step': step,
+      'page_name': pageName,
+    });
+  }
+
   Future<void> _logEvent(String name, [Map<String, Object>? parameters]) async {
     try {
       await _analytics.logEvent(name: name, parameters: parameters);
     } catch (error) {
-      debugPrint('[Analytics] Failed to log $name: $error');
+      debugPrint('[Analytics] Firebase failed to log $name: $error');
+    }
+    try {
+      await Posthog().capture(
+        eventName: name,
+        properties: parameters?.map((k, v) => MapEntry(k, v)),
+      );
+    } catch (error) {
+      debugPrint('[Analytics] PostHog failed to log $name: $error');
     }
   }
 }

@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:posthog_flutter/posthog_flutter.dart';
 import 'app.dart';
 import 'app/subscription/data/subscription_repository.dart';
 import 'core/config/env.dart';
@@ -20,6 +21,13 @@ Future<void> main() async {
   await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
 
   await CookingTimerNotifications.instance.initialize();
+
+  final posthogConfig = PostHogConfig(posthogApiKey)
+    ..host = 'https://us.i.posthog.com'
+    ..sessionReplay = true
+    ..sessionReplayConfig.maskAllImages = false
+    ..sessionReplayConfig.maskAllTexts = true;
+  await Posthog().setup(posthogConfig);
 
   final repo = SubscriptionRepository(apiKey: revenueCatApiKey);
   final currentUser = FirebaseAuth.instance.currentUser;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/services/firebase_analytics_provider.dart';
 import '../providers/onboarding_provider.dart';
 import 'pages/welcome_page.dart';
 import 'pages/goals_page.dart';
@@ -17,11 +18,37 @@ import 'pages/better_cook_page.dart';
 class OnboardingScreen extends ConsumerWidget {
   const OnboardingScreen({super.key});
 
+  static const _pageNames = [
+    'welcome',
+    'goals',
+    'pain_point',
+    'recipe_sources',
+    'import_demo',
+    'organization',
+    'cookbook_feature',
+    'pantry_setup',
+    'grocery_feature',
+    'share_feature',
+    'better_cook',
+  ];
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(onboardingProvider);
     final notifier = ref.read(onboardingProvider.notifier);
     final isWelcomePage = state.currentPage == 0;
+
+    ref.listen<OnboardingState>(onboardingProvider, (previous, next) {
+      if (previous?.currentPage != next.currentPage) {
+        final pageName = next.currentPage < _pageNames.length
+            ? _pageNames[next.currentPage]
+            : 'unknown';
+        ref.read(appAnalyticsProvider).logOnboardingStepViewed(
+          step: next.currentPage,
+          pageName: pageName,
+        );
+      }
+    });
 
     return Scaffold(
       body: Stack(

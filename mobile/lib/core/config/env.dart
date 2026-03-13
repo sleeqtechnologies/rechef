@@ -21,6 +21,10 @@ String get apiBaseUrl {
   return dotenv.env['API_BASE_URL'] ?? _liveApiBaseUrl;
 }
 
+String get posthogApiKey =>
+    dotenv.env['POSTHOG_API_KEY'] ??
+    'phc_xFAUhqPOWDA6LSkjafaOSe73l1GggSvRP8xHRtidjkT';
+
 String get revenueCatApiKey {
   // Prefer platform-specific keys so Android uses `goog_` and iOS uses `appl_`.
   final platformKey = switch (defaultTargetPlatform) {
@@ -29,8 +33,7 @@ String get revenueCatApiKey {
     _ => null,
   };
 
-  final key =
-      platformKey ??
+  final key = platformKey ??
       dotenv.env['REVENUE_CAT_API_KEY'] ??
       _defaultRevenueCatApiKey;
   if (kDebugMode) {

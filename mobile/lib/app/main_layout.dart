@@ -16,6 +16,7 @@ import '../core/utils/url_validator.dart';
 import '../app/recipe_import/monthly_import_usage_provider.dart';
 import '../app/subscription/subscription_provider.dart';
 import '../core/routing/app_router.dart';
+import '../core/services/firebase_analytics_provider.dart';
 import '../core/widgets/custom_bottom_nav_bar.dart';
 import '../core/services/recipe_ready_notifications.dart';
 
@@ -64,6 +65,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
 
   void _onSocialMediaTap() {
     debugPrint('[MainLayout] _onSocialMediaTap called');
+    ref.read(appAnalyticsProvider).logImportSheetOpened();
     setState(() {
       _pendingImportSheet = true;
     });
@@ -177,12 +179,15 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
   }
 
   void _onCameraTap() {
+    ref.read(appAnalyticsProvider).logCameraOpened();
     final router = ref.read(routerProvider);
     router.push('/camera');
   }
 
   Future<void> _onOrderOnlineTap() async {
     if (!mounted) return;
+
+    ref.read(appAnalyticsProvider).logGroceryOrderOnlineTapped();
 
     AppSnackBar.show(
       context,
@@ -256,6 +261,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
     ).then((ingredients) {
       if (ingredients != null && ingredients.isNotEmpty) {
         ref.read(pantryProvider.notifier).addItems(ingredients);
+        ref.read(appAnalyticsProvider).logPantryItemsAdded(count: ingredients.length);
       }
     });
   }

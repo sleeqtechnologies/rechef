@@ -113,5 +113,7 @@
 		<false/>
 		<key>UIUserInterfaceStyle</key>
 		<string>Light</string>
+  <key>com.posthog.posthog.AUTO_INIT</key>
+    <false/>
 	</dict>
 </plist>

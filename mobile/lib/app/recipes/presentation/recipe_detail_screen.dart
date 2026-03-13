@@ -21,6 +21,7 @@ import 'edit_recipe_sheet.dart';
 import 'share_recipe_sheet.dart';
 import '../../cookbooks/presentation/add_to_cookbook_sheet.dart';
 import '../../../core/services/cook_reminder_notifications.dart';
+import '../../../core/services/firebase_analytics_provider.dart';
 import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/platform_segmented_control.dart';
 import '../../../core/widgets/recipe_image.dart';
@@ -63,6 +64,22 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     _loadReminder();
     // For shared recipes, always refresh to get latest version
     _refreshIfShared();
+    _logRecipeViewed();
+  }
+
+  void _logRecipeViewed() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final recipeAsync = ref.read(recipeByIdProvider(widget.recipeId));
+      recipeAsync.whenData((recipe) {
+        if (recipe != null) {
+          ref.read(appAnalyticsProvider).logRecipeViewed(
+            recipeId: recipe.id,
+            recipeName: recipe.name,
+            isShared: recipe.isShared,
+          );
+        }
+      });
+    });
   }
 
   Future<void> _refreshIfShared() async {
@@ -87,6 +104,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
   Future<void> _openEditSheet(Recipe recipe) async {
     final updated = await EditRecipeSheet.show(context, recipe);
     if (updated != null && mounted) {
+      ref.read(appAnalyticsProvider).logRecipeEdited(recipeId: recipe.id);
       try {
         await ref.read(recipesProvider.notifier).updateRecipe(updated);
         if (mounted) {
@@ -109,6 +127,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
   }
 
   Future<void> _openShareSheet(Recipe recipe) async {
+    ref.read(appAnalyticsProvider).logRecipeShared(recipeId: recipe.id);
     final ok = await ShareRecipeSheet.show(context, recipe: recipe);
     if (!mounted) return;
     if (!ok) {
@@ -184,6 +203,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
           title: 'common.delete'.tr(),
           style: AlertActionStyle.destructive,
           onPressed: () async {
+            ref.read(appAnalyticsProvider).logRecipeDeleted(recipeId: recipe.id);
             try {
               await ref.read(recipesProvider.notifier).deleteRecipe(recipe.id);
               if (!mounted) return;
@@ -705,6 +725,12 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                                 .toList(),
                           );
                       if (context.mounted) {
+                        if (added > 0) {
+                          ref.read(appAnalyticsProvider).logIngredientsAddedToGrocery(
+                            recipeId: widget.recipeId,
+                            itemCount: added,
+                          );
+                        }
                         if (recipe.isShared &&
                             recipe.shareCode != null &&
                             added > 0) {
@@ -734,6 +760,10 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                       }
                     }
                   } else {
+                    ref.read(appAnalyticsProvider).logCookingModeStarted(
+                      recipeId: recipe.id,
+                      recipeName: recipe.name,
+                    );
                     CookingModeSheet.show(context, recipe);
                   }
                 },

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:posthog_flutter/posthog_flutter.dart';
 
 import '../../app/auth/presentation/sign_in_screen.dart';
 import '../../app/auth/providers/auth_providers.dart';
@@ -26,7 +27,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     initialLocation: '/',
-    observers: [ref.watch(firebaseAnalyticsObserverProvider)],
+    observers: [ref.watch(firebaseAnalyticsObserverProvider), PosthogObserver()],
     redirect: (context, state) {
       final onboardingDone = onboardingComplete.value ?? false;
       final isAuthenticated = authState.value != null;

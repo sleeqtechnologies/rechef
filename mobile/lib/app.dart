@@ -5,6 +5,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:posthog_flutter/posthog_flutter.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:share_handler/share_handler.dart';
 
@@ -99,6 +100,23 @@ class _RechefAppState extends ConsumerState<RechefApp>
         await analytics.setUserId(id: user?.uid);
       } catch (e) {
         debugPrint('[RechefApp] Analytics user sync error: $e');
+      }
+
+      try {
+        if (user != null) {
+          await Posthog().identify(
+            userId: user.uid,
+            userProperties: {
+              if (user.email != null) 'email': user.email!,
+              if (user.displayName != null) 'name': user.displayName!,
+              'is_anonymous': user.isAnonymous,
+            },
+          );
+        } else if (previous?.value != null) {
+          await Posthog().reset();
+        }
+      } catch (e) {
+        debugPrint('[RechefApp] PostHog user sync error: $e');
       }
 
       ref.invalidate(subscriptionProvider);
@@ -220,15 +238,17 @@ class _RechefAppState extends ConsumerState<RechefApp>
       ),
       child: GestureDetector(
         onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-        child: MaterialApp.router(
-          title: 'Rechef',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light,
-          themeMode: ThemeMode.light,
-          routerConfig: router,
-          localizationsDelegates: context.localizationDelegates,
-          supportedLocales: context.supportedLocales,
-          locale: context.locale,
+        child: PostHogWidget(
+          child: MaterialApp.router(
+            title: 'Rechef',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light,
+            themeMode: ThemeMode.light,
+            routerConfig: router,
+            localizationsDelegates: context.localizationDelegates,
+            supportedLocales: context.supportedLocales,
+            locale: context.locale,
+          ),
         ),
       ),
     );
