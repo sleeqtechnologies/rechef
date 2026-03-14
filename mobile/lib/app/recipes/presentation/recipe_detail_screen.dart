@@ -1,4 +1,6 @@
 import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
+import 'dart:ui';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +18,7 @@ import '../data/share_event_service.dart';
 import '../recipe_provider.dart';
 import '../domain/nutrition_facts.dart';
 import '../../grocery/grocery_provider.dart';
+import '../../subscription/subscription_provider.dart';
 import 'cooking_mode_sheet.dart';
 import 'edit_recipe_sheet.dart';
 import 'share_recipe_sheet.dart';
@@ -1488,14 +1491,257 @@ class _NutritionTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isPro = ref.watch(isProUserProvider);
+
+    if (!isPro) {
+      return _NutritionProCta(
+        onUpgrade: () => ref
+            .read(subscriptionProvider.notifier)
+            .showPaywall(source: 'nutrition_tab'),
+      );
+    }
+
     final nutritionAsync = ref.watch(nutritionByRecipeProvider(recipeId));
 
     return nutritionAsync.when(
-      loading: () => const Center(child: CupertinoActivityIndicator()),
+      loading: () => const _NutritionSkeleton(),
       error: (error, _) => _NutritionError(
         onRetry: () => ref.invalidate(nutritionByRecipeProvider(recipeId)),
       ),
       data: (nutrition) => _NutritionContent(nutrition: nutrition),
+    );
+  }
+}
+
+class _NutritionSkeleton extends StatefulWidget {
+  const _NutritionSkeleton();
+
+  @override
+  State<_NutritionSkeleton> createState() => _NutritionSkeletonState();
+}
+
+class _NutritionSkeletonState extends State<_NutritionSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _shimmerController;
+
+  @override
+  void initState() {
+    super.initState();
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
+  }
+
+  Widget _bone({
+    required double width,
+    required double height,
+    double radius = 8,
+  }) {
+    return AnimatedBuilder(
+      animation: _shimmerController,
+      builder: (context, child) {
+        return Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(radius),
+            gradient: LinearGradient(
+              begin: Alignment(-1.0 + 2.0 * _shimmerController.value, 0),
+              end: Alignment(-1.0 + 2.0 * _shimmerController.value + 1.0, 0),
+              colors: const [
+                Color(0xFFE8E4DD),
+                Color(0xFFF3F0EA),
+                Color(0xFFE8E4DD),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        // Title bone
+        _bone(width: 100, height: 20),
+        const SizedBox(height: 20),
+        // Chart card
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF7F5F0),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            children: [
+              // Doughnut placeholder
+              _bone(width: 200, height: 200, radius: 100),
+              const SizedBox(height: 16),
+              // Legend row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _bone(width: 60, height: 12),
+                  const SizedBox(width: 24),
+                  _bone(width: 60, height: 12),
+                  const SizedBox(width: 24),
+                  _bone(width: 60, height: 12),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        // "Per serving" label bone
+        _bone(width: 90, height: 16),
+        const SizedBox(height: 12),
+        // Macro breakdown card bones
+        for (var i = 0; i < 3; i++) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.only(bottom: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF7F5F0),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _bone(width: 70, height: 14),
+                    _bone(width: 40, height: 14),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                _bone(width: double.infinity, height: 6, radius: 3),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _NutritionProCta extends StatelessWidget {
+  const _NutritionProCta({required this.onUpgrade});
+
+  static const _sampleNutrition = NutritionFacts(
+    calories: 320,
+    proteinGrams: 24,
+    carbsGrams: 38,
+    fatGrams: 12,
+  );
+
+  final VoidCallback onUpgrade;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Stack(
+      children: [
+        // Blurred nutrition preview
+        ClipRect(
+          child: ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+            child: IgnorePointer(
+              child: _NutritionContent(nutrition: _sampleNutrition),
+            ),
+          ),
+        ),
+        // CTA overlay
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.white.withValues(alpha: 0.3),
+                  Colors.white.withValues(alpha: 0.85),
+                  Colors.white.withValues(alpha: 0.95),
+                ],
+                stops: const [0.0, 0.45, 0.7],
+              ),
+            ),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 80),
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFE1E5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.lock_outline_rounded,
+                        size: 28,
+                        color: Color(0xFFFF4F63),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'recipes.nutrition_pro_title'.tr(),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'recipes.nutrition_pro_description'.tr(),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey.shade600,
+                        height: 1.4,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: CupertinoButton(
+                        color: const Color(0xFFFF4F63),
+                        borderRadius: BorderRadius.circular(14),
+                        onPressed: onUpgrade,
+                        child: Text(
+                          'recipes.nutrition_pro_cta'.tr(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
