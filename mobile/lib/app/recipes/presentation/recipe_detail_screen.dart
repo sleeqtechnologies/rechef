@@ -2167,12 +2167,11 @@ class _BottomButton extends StatelessWidget {
   final bool isIngredientsTab;
   final VoidCallback onPressed;
 
-  static const _green = Color(0xFF2E7D32);
+  static const _accent = Color(0xFFFF4F63);
 
   @override
   Widget build(BuildContext context) {
-    final isGreen = isIngredientsTab;
-    final fillColor = isGreen ? _green : Colors.red.shade400;
+    const fillColor = _accent;
     const foregroundColor = Colors.white;
 
     return SafeArea(
