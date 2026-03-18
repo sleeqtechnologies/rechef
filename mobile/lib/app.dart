@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:app_links/app_links.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +17,7 @@ import 'core/routing/deep_link_handler.dart';
 import 'core/services/firebase_analytics_provider.dart';
 import 'core/services/share_handler_service.dart';
 import 'core/services/share_handler_provider.dart';
+import 'core/config/env.dart';
 import 'core/theme/app_theme.dart';
 
 class RechefApp extends ConsumerStatefulWidget {
@@ -27,8 +29,12 @@ class RechefApp extends ConsumerStatefulWidget {
 
 class _RechefAppState extends ConsumerState<RechefApp>
     with WidgetsBindingObserver {
+  static const _shareImportAuthChannel = MethodChannel(
+    'com.rechef.app/share_import_auth',
+  );
   AppLinks? _appLinks;
   StreamSubscription<Uri>? _deepLinkSubscription;
+  StreamSubscription<User?>? _idTokenSubscription;
   String? _lastDeepLink;
   DateTime? _lastDeepLinkHandledAt;
   String? _lastShareSignature;
@@ -41,6 +47,7 @@ class _RechefAppState extends ConsumerState<RechefApp>
     _initializeDeepLinks();
     _initializeShareHandler();
     _syncRevenueCatUser();
+    _initializeShareImportAuthSync();
   }
 
   void _initializeDeepLinks() {
@@ -120,6 +127,38 @@ class _RechefAppState extends ConsumerState<RechefApp>
 
       ref.invalidate(subscriptionProvider);
     });
+  }
+
+  void _initializeShareImportAuthSync() {
+    _idTokenSubscription = FirebaseAuth.instance.idTokenChanges().listen(
+      (user) {
+        unawaited(_syncShareImportAuthContext(user));
+      },
+      onError: (Object error) {
+        debugPrint('[RechefApp] Share import auth sync stream error: $error');
+      },
+    );
+    unawaited(_syncShareImportAuthContext(FirebaseAuth.instance.currentUser));
+  }
+
+  Future<void> _syncShareImportAuthContext(User? user) async {
+    try {
+      if (user == null) {
+        await _shareImportAuthChannel.invokeMethod('clearAuthContext');
+        return;
+      }
+      final token = await user.getIdToken();
+      if (token == null || token.isEmpty) {
+        await _shareImportAuthChannel.invokeMethod('clearAuthContext');
+        return;
+      }
+      await _shareImportAuthChannel.invokeMethod('setAuthContext', {
+        'token': token,
+        'apiBaseUrl': apiBaseUrl,
+      });
+    } catch (e) {
+      debugPrint('[RechefApp] Share import auth sync error: $e');
+    }
   }
 
   @override
@@ -257,6 +296,7 @@ class _RechefAppState extends ConsumerState<RechefApp>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _deepLinkSubscription?.cancel();
+    _idTokenSubscription?.cancel();
     ref.read(shareHandlerServiceProvider).dispose();
     super.dispose();
   }
