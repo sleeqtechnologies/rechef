@@ -75,11 +75,13 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
       final recipeAsync = ref.read(recipeByIdProvider(widget.recipeId));
       recipeAsync.whenData((recipe) {
         if (recipe != null) {
-          ref.read(appAnalyticsProvider).logRecipeViewed(
-            recipeId: recipe.id,
-            recipeName: recipe.name,
-            isShared: recipe.isShared,
-          );
+          ref
+              .read(appAnalyticsProvider)
+              .logRecipeViewed(
+                recipeId: recipe.id,
+                recipeName: recipe.name,
+                isShared: recipe.isShared,
+              );
         }
       });
     });
@@ -147,8 +149,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     await AdaptiveAlertDialog.show(
       context: context,
       title: 'recipes.remove_from_library_title'.tr(),
-      message:
-          'recipes.remove_from_library_message'.tr(args: [recipe.name]),
+      message: 'recipes.remove_from_library_message'.tr(args: [recipe.name]),
       actions: [
         AlertAction(
           title: 'common.cancel'.tr(),
@@ -206,7 +207,9 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
           title: 'common.delete'.tr(),
           style: AlertActionStyle.destructive,
           onPressed: () async {
-            ref.read(appAnalyticsProvider).logRecipeDeleted(recipeId: recipe.id);
+            ref
+                .read(appAnalyticsProvider)
+                .logRecipeDeleted(recipeId: recipe.id);
             try {
               await ref.read(recipesProvider.notifier).deleteRecipe(recipe.id);
               if (!mounted) return;
@@ -645,7 +648,11 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                       Padding(
                         padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
                         child: PlatformSegmentedControl(
-                          labels: ['recipes.ingredients'.tr(), 'recipes.cooking'.tr(), 'recipes.nutrition'.tr()],
+                          labels: [
+                            'recipes.ingredients'.tr(),
+                            'recipes.cooking'.tr(),
+                            'recipes.nutrition'.tr(),
+                          ],
                           selectedIndex: _selectedTab,
                           onValueChanged: (index) {
                             setState(() => _selectedTab = index);
@@ -729,10 +736,12 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                           );
                       if (context.mounted) {
                         if (added > 0) {
-                          ref.read(appAnalyticsProvider).logIngredientsAddedToGrocery(
-                            recipeId: widget.recipeId,
-                            itemCount: added,
-                          );
+                          ref
+                              .read(appAnalyticsProvider)
+                              .logIngredientsAddedToGrocery(
+                                recipeId: widget.recipeId,
+                                itemCount: added,
+                              );
                         }
                         if (recipe.isShared &&
                             recipe.shareCode != null &&
@@ -763,10 +772,12 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                       }
                     }
                   } else {
-                    ref.read(appAnalyticsProvider).logCookingModeStarted(
-                      recipeId: recipe.id,
-                      recipeName: recipe.name,
-                    );
+                    ref
+                        .read(appAnalyticsProvider)
+                        .logCookingModeStarted(
+                          recipeId: recipe.id,
+                          recipeName: recipe.name,
+                        );
                     CookingModeSheet.show(context, recipe);
                   }
                 },
@@ -936,7 +947,9 @@ class _RecipeMorePopupMenu extends StatelessWidget {
       value: _RecipeMoreAction.addToCookbook,
     ),
     AdaptivePopupMenuItem<_RecipeMoreAction>(
-      label: hasReminder ? 'recipes.remove_reminder'.tr() : 'recipes.set_reminder'.tr(),
+      label: hasReminder
+          ? 'recipes.remove_reminder'.tr()
+          : 'recipes.set_reminder'.tr(),
       icon: hasReminder
           ? Icons.notifications_off_outlined
           : Icons.notifications_outlined,
@@ -1689,16 +1702,26 @@ class _NutritionProCta extends StatelessWidget {
                   children: [
                     const SizedBox(height: 80),
                     Container(
-                      width: 64,
-                      height: 64,
+                      width: 56,
+                      height: 56,
                       decoration: const BoxDecoration(
                         color: Color(0xFFFFE1E5),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.lock_outline_rounded,
-                        size: 28,
-                        color: Color(0xFFFF4F63),
+                      alignment: Alignment.center,
+                      child: SizedBox(
+                        width: 28,
+                        height: 28,
+                        child: SvgPicture.asset(
+                          'assets/icons/lock.svg',
+                          width: 14,
+                          height: 14,
+                          fit: BoxFit.contain,
+                          colorFilter: const ColorFilter.mode(
+                            Color(0xFFFF4F63),
+                            BlendMode.srcIn,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -1721,14 +1744,19 @@ class _NutritionProCta extends StatelessWidget {
                     const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
-                      child: CupertinoButton(
-                        color: const Color(0xFFFF4F63),
-                        borderRadius: BorderRadius.circular(14),
+                      height: 56,
+                      child: FilledButton(
                         onPressed: onUpgrade,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFFFF4F63),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(28),
+                          ),
+                        ),
                         child: Text(
                           'recipes.nutrition_pro_cta'.tr(),
                           style: const TextStyle(
-                            color: Colors.white,
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
                           ),
@@ -1782,7 +1810,10 @@ class _NutritionError extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              TextButton(onPressed: onRetry, child: Text('recipes.try_again'.tr())),
+              TextButton(
+                onPressed: onRetry,
+                child: Text('recipes.try_again'.tr()),
+              ),
             ],
           ),
         ),
@@ -1847,7 +1878,11 @@ class _NutritionContentState extends State<_NutritionContent>
         grams: nutrition.carbsGrams,
         color: _carbsColor,
       ),
-      _MacroData(label: 'recipes.fat'.tr(), grams: nutrition.fatGrams, color: _fatColor),
+      _MacroData(
+        label: 'recipes.fat'.tr(),
+        grams: nutrition.fatGrams,
+        color: _fatColor,
+      ),
     ];
     return items.where((m) => m.grams > 0).toList();
   }

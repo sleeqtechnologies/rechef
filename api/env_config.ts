@@ -14,6 +14,8 @@ const env = cleanEnv(process.env, {
   SERVICE_ACCT_KEY: str(),
   UNSPLASH_ACCESS_KEY: str(),
   INSTACART_API_KEY: str(),
+  INSTACART_IRAD: str({ default: "" }),
+  INSTACART_IRMP: str({ default: "" }),
   YOUTUBE_API_KEY: str({ default: "" }),
   SUPABASE_URL: str(),
   SUPABASE_SERVICE_ROLE_KEY: str(),

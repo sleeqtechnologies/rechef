@@ -53,7 +53,14 @@ async function createShoppingListPage(
   }
 
   const data = (await response.json()) as { products_link_url: string };
-  return data.products_link_url;
+  let url = data.products_link_url;
+  if (env.INSTACART_IRAD || env.INSTACART_IRMP) {
+    const u = new URL(url);
+    if (env.INSTACART_IRAD) u.searchParams.set("irad", env.INSTACART_IRAD);
+    if (env.INSTACART_IRMP) u.searchParams.set("irmp", env.INSTACART_IRMP);
+    url = u.toString();
+  }
+  return url;
 }
 
 export { createShoppingListPage };

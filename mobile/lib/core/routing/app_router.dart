@@ -14,6 +14,7 @@ import '../../app/recipes/presentation/shared_recipe_screen.dart';
 import '../../app/recipe_import/presentation/import_recipe_screen.dart';
 import '../../app/recipe_import/presentation/camera_screen.dart';
 import '../../app/grocery/presentation/grocery_list_screen.dart';
+import 'deep_link_handler.dart';
 import '../../app/instacart/presentation/checkout_screen.dart';
 import '../../app/meal_planning/presentation/meal_plan_screen.dart';
 import '../../app/subscription/presentation/paywall_screen.dart';
@@ -29,6 +30,12 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     observers: [ref.watch(firebaseAnalyticsObserverProvider), PosthogObserver()],
     redirect: (context, state) {
+      final uri = state.uri;
+      if (uri.scheme.isNotEmpty) {
+        final deepLinkLocation = DeepLinkHandler.locationForAppDeepLink(uri);
+        if (deepLinkLocation != null) return deepLinkLocation;
+      }
+
       final onboardingDone = onboardingComplete.value ?? false;
       final isAuthenticated = authState.value != null;
       final loc = state.matchedLocation;
@@ -38,17 +45,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         return null;
       }
 
-      // First-time users: send to onboarding
       if (!onboardingDone && loc != '/onboarding') {
         return '/onboarding';
       }
 
-      // After onboarding, unauthenticated users go to sign-in
       if (onboardingDone && !isAuthenticated && loc != '/') {
         return '/';
       }
 
-      // Authenticated users who land on auth or onboarding go to recipes
       if (onboardingDone &&
           isAuthenticated &&
           (loc == '/' || loc == '/onboarding')) {
@@ -58,41 +62,34 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      // Onboarding
       GoRoute(
         path: '/onboarding',
         name: 'onboarding',
         builder: (context, state) => const OnboardingScreen(),
       ),
 
-      // Auth
       GoRoute(
         path: '/',
         name: 'sign-in',
         builder: (context, state) => const SignInScreen(),
       ),
 
-      // Main navigation with bottom bar (shell route)
       ShellRoute(
         builder: (context, state, child) {
           return MainLayout(location: state.uri.path, child: child);
         },
         routes: [
-          // Recipes
           GoRoute(
             path: '/recipes',
             name: 'recipes',
             builder: (context, state) => const RecipeListScreen(),
           ),
 
-          // Pantry
           GoRoute(
             path: '/pantry',
             name: 'pantry',
             builder: (context, state) => const PantryScreen(),
           ),
-
-          // Grocery List
           GoRoute(
             path: '/grocery',
             name: 'grocery',
@@ -121,7 +118,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
 
-      // Shared Recipe (no bottom bar) - must be before /recipes/:id
       GoRoute(
         path: '/shared-recipe/:code',
         name: 'shared-recipe',
@@ -131,7 +127,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
 
-      // Recipe Detail (no bottom bar)
       GoRoute(
         path: '/recipes/:id',
         name: 'recipe-detail',
@@ -142,7 +137,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [],
       ),
 
-      // Cookbook Detail (no bottom bar)
       GoRoute(
         path: '/cookbooks/:id',
         name: 'cookbook-detail',
@@ -152,21 +146,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
 
-      // Camera Screen (for taking recipe photos) - no bottom bar
       GoRoute(
         path: '/camera',
         name: 'camera',
         builder: (context, state) => const CameraScreen(),
       ),
 
-      // Meal Planning - no bottom bar
       GoRoute(
         path: '/meal-plan',
         name: 'meal-plan',
         builder: (context, state) => const MealPlanScreen(),
       ),
 
-      // Instacart Callback (for deep linking) - no bottom bar
       GoRoute(
         path: '/instacart/callback',
         name: 'instacart-callback',
@@ -176,14 +167,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
 
-      // Subscription Paywall - no bottom bar
       GoRoute(
         path: '/paywall',
         name: 'paywall',
         builder: (context, state) => const PaywallScreen(),
       ),
 
-      // Subscription Settings - no bottom bar
       GoRoute(
         path: '/subscription',
         name: 'subscription',

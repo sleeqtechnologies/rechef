@@ -16,6 +16,7 @@ import '../../recipe_import/data/import_repository.dart';
 import '../../recipe_import/monthly_import_usage_provider.dart';
 import '../../recipe_import/pending_jobs_provider.dart';
 import '../../subscription/subscription_provider.dart';
+import '../../cookbooks/cookbook_provider.dart';
 import '../../cookbooks/presentation/cookbook_list_view.dart';
 import '../domain/recipe.dart';
 import '../recipe_provider.dart';
@@ -127,6 +128,7 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
               selectedIndex: _selectedSegment,
               onValueChanged: (index) {
                 setState(() => _selectedSegment = index);
+                if (index == 1) ref.invalidate(cookbooksProvider);
                 _pageController.animateToPage(
                   index,
                   duration: const Duration(milliseconds: 300),
@@ -143,6 +145,7 @@ class _RecipeListScreenState extends ConsumerState<RecipeListScreen> {
           controller: _pageController,
           onPageChanged: (index) {
             setState(() => _selectedSegment = index);
+            if (index == 1) ref.invalidate(cookbooksProvider);
           },
           children: [
             _AllRecipesTab(

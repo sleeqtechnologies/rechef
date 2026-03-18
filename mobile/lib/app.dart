@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:share_handler/share_handler.dart';
-
 import 'app/auth/providers/auth_providers.dart';
 import 'app/recipe_import/pending_jobs_provider.dart';
 import 'app/subscription/subscription_provider.dart';
