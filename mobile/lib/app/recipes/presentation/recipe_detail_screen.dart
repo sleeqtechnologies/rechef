@@ -687,7 +687,22 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                                       .toggleIngredient(widget.recipeId, index);
                                 },
                         ),
-                        1 => _CookingTab(recipe: recipe),
+                        1 => _CookingTab(
+                          recipe: recipe,
+                          onStepTap: (step) {
+                            ref
+                                .read(appAnalyticsProvider)
+                                .logCookingModeStarted(
+                                  recipeId: recipe.id,
+                                  recipeName: recipe.name,
+                                );
+                            CookingModeSheet.show(
+                              context,
+                              recipe,
+                              initialStep: step,
+                            );
+                          },
+                        ),
                         _ => _NutritionTab(recipeId: recipe.id),
                       },
                     ),
@@ -1466,9 +1481,10 @@ class _IngredientRow extends StatelessWidget {
 }
 
 class _CookingTab extends StatelessWidget {
-  const _CookingTab({required this.recipe});
+  const _CookingTab({required this.recipe, required this.onStepTap});
 
   final Recipe recipe;
+  final ValueChanged<int> onStepTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1486,7 +1502,11 @@ class _CookingTab extends StatelessWidget {
         Column(
           children: [
             for (var i = 0; i < recipe.instructions.length; i++) ...[
-              _StepRow(stepNumber: i + 1, text: recipe.instructions[i]),
+              GestureDetector(
+                onTap: () => onStepTap(i),
+                behavior: HitTestBehavior.opaque,
+                child: _StepRow(stepNumber: i + 1, text: recipe.instructions[i]),
+              ),
               if (i != recipe.instructions.length - 1)
                 Divider(height: 24, thickness: 1, color: Colors.grey.shade200),
             ],

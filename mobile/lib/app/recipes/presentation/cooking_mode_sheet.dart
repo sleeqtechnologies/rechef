@@ -14,19 +14,31 @@ import 'cooking_help_sheet.dart';
 
 /// Full-screen bottom sheet for step-by-step cooking mode.
 class CookingModeSheet extends StatefulWidget {
-  const CookingModeSheet({super.key, required this.recipe});
+  const CookingModeSheet({
+    super.key,
+    required this.recipe,
+    this.initialStep = 0,
+  });
 
   final Recipe recipe;
+  final int initialStep;
 
   /// Show as a full-screen modal bottom sheet (non-dismissible by drag).
-  static Future<void> show(BuildContext context, Recipe recipe) {
+  static Future<void> show(
+    BuildContext context,
+    Recipe recipe, {
+    int initialStep = 0,
+  }) {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       useSafeArea: true,
       enableDrag: false,
-      builder: (_) => CookingModeSheet(recipe: recipe),
+      builder: (_) => CookingModeSheet(
+        recipe: recipe,
+        initialStep: initialStep,
+      ),
     );
   }
 
@@ -52,7 +64,8 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
+    _currentStep = widget.initialStep;
+    _pageController = PageController(initialPage: widget.initialStep);
     WakelockPlus.enable();
   }
 
@@ -418,37 +431,48 @@ class _CookingModeSheetState extends State<CookingModeSheet> {
   }
 
   Widget _buildStepPage(int index) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Step number circle
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.grey.shade300, width: 1.5),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              (index + 1).toString().padLeft(2, '0'),
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: Colors.grey.shade700,
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTapUp: (details) {
+        final width = MediaQuery.of(context).size.width;
+        if (details.globalPosition.dx < width / 3) {
+          _goToStep(index - 1);
+        } else if (details.globalPosition.dx > width * 2 / 3) {
+          _goToStep(index + 1);
+        }
+      },
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Step number circle
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.grey.shade300, width: 1.5),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                (index + 1).toString().padLeft(2, '0'),
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: Colors.grey.shade700,
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 28),
-          // Instruction text with highlights
-          RichText(
-            text: _buildHighlightedText(
-              widget.recipe.instructions[index],
-              context,
+            const SizedBox(height: 28),
+            // Instruction text with highlights
+            RichText(
+              text: _buildHighlightedText(
+                widget.recipe.instructions[index],
+                context,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
