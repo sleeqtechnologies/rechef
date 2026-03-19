@@ -513,27 +513,24 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                     background: Stack(
                       fit: StackFit.expand,
                       children: [
-                        Hero(
-                          tag: 'recipe-image-${recipe.id}',
-                          child: RecipeImage(
-                            imageUrl: recipe.imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.grey.shade200,
-                                alignment: Alignment.center,
-                                child: SvgPicture.asset(
-                                  'assets/icons/recipe.svg',
-                                  width: 48,
-                                  height: 48,
-                                  colorFilter: ColorFilter.mode(
-                                    Colors.grey.shade500,
-                                    BlendMode.srcIn,
-                                  ),
+                        RecipeImage(
+                          imageUrl: recipe.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey.shade200,
+                              alignment: Alignment.center,
+                              child: SvgPicture.asset(
+                                'assets/icons/recipe.svg',
+                                width: 48,
+                                height: 48,
+                                colorFilter: ColorFilter.mode(
+                                  Colors.grey.shade500,
+                                  BlendMode.srcIn,
                                 ),
-                              );
-                            },
-                          ),
+                              ),
+                            );
+                          },
                         ),
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 180),

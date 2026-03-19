@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import 'expand_page_route.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 
 import '../../app/auth/presentation/sign_in_screen.dart';
@@ -82,7 +84,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/recipes',
             name: 'recipes',
-            builder: (context, state) => const RecipeListScreen(),
+            pageBuilder: (context, state) => CustomTransitionPage(
+              key: state.pageKey,
+              child: const RecipeListScreen(),
+              transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
+            ),
           ),
 
           GoRoute(
@@ -130,9 +136,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/recipes/:id',
         name: 'recipe-detail',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final id = state.pathParameters['id']!;
-          return RecipeDetailScreen(recipeId: id);
+          return ExpandPageTransition.page(
+            key: state.pageKey,
+            child: RecipeDetailScreen(recipeId: id),
+          );
         },
         routes: [],
       ),
