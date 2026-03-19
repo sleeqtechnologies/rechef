@@ -19,6 +19,7 @@ class Recipe {
     this.shareCode,
     this.sharedBy,
     this.sharedSaveId,
+    this.createdAt,
   });
 
   final String id;
@@ -39,6 +40,7 @@ class Recipe {
   final String? sharedBy; // Creator user ID
   /// Subscription id for DELETE /api/shared-with-me/:id
   final String? sharedSaveId;
+  final DateTime? createdAt;
 
   int get totalMinutes => (prepTimeMinutes ?? 0) + (cookTimeMinutes ?? 0);
 
@@ -75,6 +77,7 @@ class Recipe {
         shareCode: shareCode ?? this.shareCode,
         sharedBy: sharedBy ?? this.sharedBy,
         sharedSaveId: sharedSaveId ?? this.sharedSaveId,
+        createdAt: createdAt,
       );
 
   factory Recipe.fromJson(Map<String, dynamic> json) {
@@ -110,6 +113,9 @@ class Recipe {
       shareCode: json['shareCode'] as String?,
       sharedBy: json['sharedBy'] as String?,
       sharedSaveId: json['sharedSaveId'] as String?,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : null,
     );
   }
 
@@ -132,5 +138,6 @@ class Recipe {
         if (shareCode != null) 'shareCode': shareCode,
         if (sharedBy != null) 'sharedBy': sharedBy,
         if (sharedSaveId != null) 'sharedSaveId': sharedSaveId,
+        if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
       };
 }

@@ -35,6 +35,7 @@ const formatRecipe = (recipe: Recipe) => ({
   sourceTitle: recipe.sourceTitle ?? undefined,
   sourceAuthorName: recipe.sourceAuthorName ?? undefined,
   sourceAuthorAvatarUrl: recipe.sourceAuthorAvatarUrl ?? undefined,
+  createdAt: recipe.createdAt,
 });
 
 const formatNutrition = (nutrition: {
@@ -107,25 +108,19 @@ const saveRecipe = async (req: Request, res: Response) => {
 const getRecipes = async (req: Request, res: Response) => {
   try {
     const userId = req.user.id;
-    const recipes = await recipeRepository.findAllByUserId(userId);
-    const sharedRecipes = await shareRepository.findSharedWithUser(userId);
+    const rows = await recipeRepository.findAllForUser(userId);
 
-    const formattedOwned = recipes.map((r) => ({
-      ...formatRecipe(r),
-      isShared: false,
-    }));
-
-    const formattedShared = sharedRecipes.map((row) => ({
+    const recipes = rows.map((row) => ({
       ...formatRecipe(row.recipe),
-      isShared: true,
-      shareCode: row.shared.shareCode,
-      sharedBy: row.shared.userId, 
-      sharedSaveId: row.save.id, 
+      isShared: row.isShared,
+      ...(row.isShared && {
+        shareCode: row.shareCode,
+        sharedBy: row.sharedBy,
+        sharedSaveId: row.sharedSaveId,
+      }),
     }));
 
-    return res.status(200).json({
-      recipes: [...formattedOwned, ...formattedShared],
-    });
+    return res.status(200).json({ recipes });
   } catch (error) {
     logger.error("Error fetching recipes:", error);
     return res.status(500).json({
