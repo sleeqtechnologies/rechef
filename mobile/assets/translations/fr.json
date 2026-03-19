@@ -66,6 +66,7 @@
     "generate_first_subtitle": "partagez une recette avec l'app ou\nentrez l'URL d'une recette",
     "failed_to_load": "Échec du chargement des recettes",
     "generating": "Génération en cours...",
+    "share": "Partager",
     "shared": "Partagée",
     "no_matches": "Aucun résultat",
     "no_matches_for": "Aucun résultat pour \"{}\"",

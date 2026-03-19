@@ -1,6 +1,9 @@
+import 'dart:ui';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,8 +14,10 @@ import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/widgets/platform_segmented_control.dart';
 import '../../../core/widgets/recipe_image.dart';
 import '../../../core/constants/app_spacing.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 import '../../auth/presentation/account_sheet.dart';
 import '../../auth/providers/auth_providers.dart';
+import '../../cookbooks/presentation/add_to_cookbook_sheet.dart';
 import '../../recipe_import/data/import_repository.dart';
 import '../../recipe_import/monthly_import_usage_provider.dart';
 import '../../recipe_import/pending_jobs_provider.dart';
@@ -21,6 +26,7 @@ import '../../cookbooks/cookbook_provider.dart';
 import '../../cookbooks/presentation/cookbook_list_view.dart';
 import '../domain/recipe.dart';
 import '../recipe_provider.dart';
+import 'share_recipe_sheet.dart';
 
 class RecipeListScreen extends ConsumerStatefulWidget {
   const RecipeListScreen({super.key});
@@ -557,7 +563,7 @@ class _NoSearchResults extends StatelessWidget {
   }
 }
 
-class _RecipeGridSliver extends StatelessWidget {
+class _RecipeGridSliver extends ConsumerWidget {
   const _RecipeGridSliver({
     required this.recipes,
     required this.pendingJobs,
@@ -570,8 +576,87 @@ class _RecipeGridSliver extends StatelessWidget {
   final ValueChanged<String> onDismissJob;
   final String? title;
 
+  void _showLongPressMenu(BuildContext context, WidgetRef ref, Recipe recipe) {
+    HapticFeedback.mediumImpact();
+    showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Dismiss',
+      barrierColor: Colors.black.withValues(alpha: 0.35),
+      transitionDuration: const Duration(milliseconds: 260),
+      transitionBuilder: (_, anim, __, child) {
+        final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
+        return FadeTransition(
+          opacity: curved,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.92, end: 1.0).animate(curved),
+            child: child,
+          ),
+        );
+      },
+      pageBuilder: (ctx, _, __) => _RecipeContextMenu(
+        recipe: recipe,
+        onShare: () {
+          Navigator.pop(ctx);
+          ShareRecipeSheet.show(context, recipe: recipe);
+        },
+        onAddToCookbook: () {
+          Navigator.pop(ctx);
+          AddToCookbookSheet.show(context, recipeId: recipe.id);
+        },
+        onDelete: () {
+          Navigator.pop(ctx);
+          _confirmDelete(context, ref, recipe);
+        },
+      ),
+    );
+  }
+
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    Recipe recipe,
+  ) async {
+    final confirmed = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (ctx) => CupertinoAlertDialog(
+        title: Text('recipes.delete_recipe_title'.tr()),
+        content: Text('"${recipe.name}" will be permanently removed.'),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('common.cancel'.tr()),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('common.delete'.tr()),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ref.read(recipesProvider.notifier).deleteRecipe(recipe.id);
+      if (!context.mounted) return;
+      AppSnackBar.show(
+        context,
+        message: 'recipes.recipe_deleted'.tr(),
+        type: SnackBarType.success,
+      );
+    } catch (e) {
+      if (context.mounted) {
+        AppSnackBar.show(
+          context,
+          message: 'recipes.failed_to_delete'.tr(args: [e.toString()]),
+          type: SnackBarType.error,
+        );
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final totalItems = pendingJobs.length + recipes.length;
     final hasTitle = title != null && totalItems > 0;
 
@@ -627,6 +712,7 @@ class _RecipeGridSliver extends StatelessWidget {
                 imageUrl: recipe.imageUrl,
                 isShared: recipe.isShared,
                 onTap: () => context.push('/recipes/${recipe.id}'),
+                onLongPress: () => _showLongPressMenu(context, ref, recipe),
               );
             }, childCount: totalItems),
           ),
@@ -849,6 +935,7 @@ class RecipeCard extends StatelessWidget {
     this.imageUrl,
     this.isShared = false,
     required this.onTap,
+    this.onLongPress,
   });
 
   final String id;
@@ -856,10 +943,12 @@ class RecipeCard extends StatelessWidget {
   final String? imageUrl;
   final bool isShared;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
+      onLongPress: onLongPress,
       onTap: () {
         final box = context.findRenderObject() as RenderBox?;
         if (box != null) {
@@ -954,6 +1043,159 @@ class RecipeCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _RecipeContextMenu extends StatelessWidget {
+  const _RecipeContextMenu({
+    required this.recipe,
+    required this.onShare,
+    required this.onAddToCookbook,
+    required this.onDelete,
+  });
+
+  final Recipe recipe;
+  final VoidCallback onShare;
+  final VoidCallback onAddToCookbook;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 48),
+        child: Material(
+          color: Colors.transparent,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xE6FFFFFF),
+                      Color(0xD9F5F7FB),
+                      Color(0xCCECEFF5),
+                    ],
+                  ),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.62),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.10),
+                      blurRadius: 28,
+                      offset: const Offset(0, 10),
+                    ),
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      blurRadius: 10,
+                      offset: const Offset(0, -1),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
+                      child: Text(
+                        recipe.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style:
+                            Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                      ),
+                    ),
+                    Divider(
+                      height: 1,
+                      color: Colors.black.withValues(alpha: 0.08),
+                    ),
+                    _ContextMenuItem(
+                      icon: CupertinoIcons.share,
+                      label: 'recipes.share'.tr(),
+                      onTap: onShare,
+                    ),
+                    Divider(
+                      height: 1,
+                      indent: 52,
+                      color: Colors.black.withValues(alpha: 0.06),
+                    ),
+                    _ContextMenuItem(
+                      icon: Icons.menu_book_outlined,
+                      label: 'recipes.add_to_cookbook'.tr(),
+                      onTap: onAddToCookbook,
+                    ),
+                    Divider(
+                      height: 1,
+                      indent: 52,
+                      color: Colors.black.withValues(alpha: 0.06),
+                    ),
+                    _ContextMenuItem(
+                      icon: CupertinoIcons.delete,
+                      label: 'recipes.delete_recipe'.tr(),
+                      onTap: onDelete,
+                      isDestructive: true,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ContextMenuItem extends StatelessWidget {
+  const _ContextMenuItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.isDestructive = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool isDestructive;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isDestructive ? const Color(0xFFFF3B30) : Colors.black87;
+    return InkWell(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: color),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                  color: color,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

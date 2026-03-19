@@ -66,6 +66,7 @@
     "generate_first_subtitle": "share a recipe with app or\nenter a url to a recipe",
     "failed_to_load": "Failed to load recipes",
     "generating": "Generating...",
+    "share": "Share",
     "shared": "Shared",
     "no_matches": "No matches",
     "no_matches_for": "No matches for \"{}\"",
