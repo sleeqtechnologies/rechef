@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -683,6 +684,35 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                                       .read(recipesProvider.notifier)
                                       .toggleIngredient(widget.recipeId, index);
                                 },
+                          onCopy: () {
+                            final missing = recipe.ingredients
+                                .where((i) => !i.inPantry)
+                                .toList();
+
+                            if (missing.isEmpty) {
+                              AppSnackBar.show(
+                                context,
+                                message: 'recipes.all_in_pantry'.tr(),
+                                type: SnackBarType.info,
+                              );
+                              return;
+                            }
+
+                            final text = missing.map((i) {
+                              final qty = i.displayQuantity;
+                              return qty.isEmpty
+                                  ? '- ${i.name}'
+                                  : '- ${i.name} ($qty)';
+                            }).join('\n');
+
+                            Clipboard.setData(ClipboardData(text: text));
+                            AppSnackBar.show(
+                              context,
+                              message:
+                                  'Copied ${missing.length} missing item${missing.length == 1 ? '' : 's'}',
+                              type: SnackBarType.success,
+                            );
+                          },
                         ),
                         1 => _CookingTab(
                           recipe: recipe,
@@ -1349,11 +1379,13 @@ class _IngredientsTab extends StatelessWidget {
     required this.recipe,
     required this.onToggle,
     this.isMatchingPantry = false,
+    this.onCopy,
   });
 
   final Recipe recipe;
   final void Function(int index) onToggle;
   final bool isMatchingPantry;
+  final VoidCallback? onCopy;
 
   @override
   Widget build(BuildContext context) {
@@ -1377,6 +1409,30 @@ class _IngredientsTab extends StatelessWidget {
                 color: Colors.grey.shade400,
               ),
             ],
+            const Spacer(),
+            if (onCopy != null)
+              GestureDetector(
+                onTap: onCopy,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.copy,
+                      size: 16,
+                      color: Colors.grey.shade600,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Copy missing',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
         const SizedBox(height: 16),
@@ -2232,51 +2288,62 @@ class _BottomButton extends StatelessWidget {
         child: SizedBox(
           width: double.infinity,
           height: 56,
-          child: FilledButton(
-            onPressed: onPressed,
-            style: FilledButton.styleFrom(
-              backgroundColor: fillColor,
-              foregroundColor: foregroundColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(28),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  isIngredientsTab
-                      ? 'recipes.add_missing_to_grocery'.tr()
-                      : 'recipes.start_cooking'.tr(),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
+          child: Row(
+            children: [
+              Expanded(
+                child: FilledButton(
+                  onPressed: onPressed,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: fillColor,
+                    foregroundColor: foregroundColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                    minimumSize: const Size(0, 56),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          isIngredientsTab
+                              ? 'recipes.add_missing_to_grocery'.tr()
+                              : 'recipes.start_cooking'.tr(),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      if (isIngredientsTab)
+                        SvgPicture.asset(
+                          'assets/icons/cart.svg',
+                          width: 20,
+                          height: 20,
+                          colorFilter: const ColorFilter.mode(
+                            foregroundColor,
+                            BlendMode.srcIn,
+                          ),
+                        )
+                      else
+                        SvgPicture.asset(
+                          'assets/icons/fire.svg',
+                          width: 20,
+                          height: 20,
+                          colorFilter: const ColorFilter.mode(
+                            foregroundColor,
+                            BlendMode.srcIn,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                if (isIngredientsTab)
-                  SvgPicture.asset(
-                    'assets/icons/cart.svg',
-                    width: 20,
-                    height: 20,
-                    colorFilter: const ColorFilter.mode(
-                      foregroundColor,
-                      BlendMode.srcIn,
-                    ),
-                  )
-                else
-                  SvgPicture.asset(
-                    'assets/icons/fire.svg',
-                    width: 20,
-                    height: 20,
-                    colorFilter: const ColorFilter.mode(
-                      foregroundColor,
-                      BlendMode.srcIn,
-                    ),
-                  ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
