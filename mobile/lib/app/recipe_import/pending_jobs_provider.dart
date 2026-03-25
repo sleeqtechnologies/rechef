@@ -39,8 +39,7 @@ class PendingJobsNotifier extends Notifier<List<ContentJob>> {
       );
       final existingFailed = state.where((j) => j.isFailed).toList();
       state = [...existingFailed, ...jobs];
-      if ((hadPendingBefore && jobs.isEmpty) ||
-          (fromManualCheck && jobs.isEmpty)) {
+      if (hadPendingBefore && jobs.isEmpty) {
         ref.invalidate(recipesProvider);
       }
 

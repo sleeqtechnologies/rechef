@@ -276,7 +276,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     final recipeAsync = ref.watch(recipeByIdProvider(widget.recipeId));
     final recipe = recipeAsync.value;
 
-    if (recipeAsync.isLoading) {
+    if (recipeAsync.isLoading && !recipeAsync.hasValue) {
       return const Scaffold(
         backgroundColor: Colors.white,
         body: Center(child: CupertinoActivityIndicator()),
