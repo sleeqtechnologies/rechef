@@ -53,16 +53,28 @@ class RecipeDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
+  static final Map<String, double> _savedScrollOffsets = {};
+  static final Map<String, int> _savedTabs = {};
+
   late final ScrollController _scrollController;
   bool _isCollapsed = false;
   bool _isMatchingPantry = true;
   DateTime? _reminderDate;
   int _selectedTab = 0;
+  bool _restoredScroll = false;
+
+  void _onScroll() {
+    _savedScrollOffsets[widget.recipeId] = _scrollController.offset;
+  }
 
   @override
   void initState() {
     super.initState();
-    _scrollController = ScrollController();
+    _scrollController = ScrollController(
+      initialScrollOffset: _savedScrollOffsets[widget.recipeId] ?? 0.0,
+    );
+    _scrollController.addListener(_onScroll);
+    _selectedTab = _savedTabs[widget.recipeId] ?? 0;
     _runPantryMatch();
     _loadReminder();
     _logRecipeViewed();
@@ -267,6 +279,8 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _savedTabs[widget.recipeId] = _selectedTab;
     _scrollController.dispose();
     super.dispose();
   }
@@ -281,6 +295,24 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
         backgroundColor: Colors.white,
         body: Center(child: CupertinoActivityIndicator()),
       );
+    }
+
+    if (!_restoredScroll) {
+      _restoredScroll = true;
+      final savedOffset = _savedScrollOffsets[widget.recipeId] ?? 0.0;
+      if (savedOffset > 0) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || !_scrollController.hasClients) return;
+          _scrollController.jumpTo(savedOffset);
+          final screenWidth = MediaQuery.of(context).size.width;
+          final topPadding = MediaQuery.of(context).padding.top;
+          final collapseOffset =
+              (screenWidth - kToolbarHeight - topPadding).clamp(0.0, double.infinity);
+          if (savedOffset > collapseOffset && !_isCollapsed) {
+            setState(() => _isCollapsed = true);
+          }
+        });
+      }
     }
 
     if (recipeAsync.hasError) {
