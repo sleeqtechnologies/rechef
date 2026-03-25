@@ -540,12 +540,12 @@ class _DetailAppBar extends StatelessWidget {
   static List<AdaptivePopupMenuItem<_CookbookMoreAction>> get _menuItems => [
     AdaptivePopupMenuItem<_CookbookMoreAction>(
       label: 'common.rename'.tr(),
-      icon: Icons.edit_outlined,
+      icon: SvgPicture.asset('assets/icons/edit.svg', width: 20, height: 20),
       value: _CookbookMoreAction.rename,
     ),
     AdaptivePopupMenuItem<_CookbookMoreAction>(
       label: 'common.delete'.tr(),
-      icon: Icons.delete_outline,
+      icon: SvgPicture.asset('assets/icons/delete.svg', width: 20, height: 20),
       value: _CookbookMoreAction.delete,
     ),
   ];
@@ -586,7 +586,7 @@ class _DetailAppBar extends StatelessWidget {
                     break;
                 }
               },
-              child: const Center(child: Icon(Icons.more_vert, size: 22)),
+              child: Center(child: SvgPicture.asset('assets/icons/menu.svg', width: 22, height: 22)),
             ),
           ),
       ],
@@ -622,10 +622,11 @@ class _CookbookHeader extends StatelessWidget {
             height: 120,
             child: images.isNotEmpty
                 ? _HeaderFannedImages(images: images)
-                : Icon(
-                    Icons.menu_book_outlined,
-                    size: 64,
-                    color: Colors.grey.shade300,
+                : SvgPicture.asset(
+                    'assets/icons/cookbook.svg',
+                    width: 64,
+                    height: 64,
+                    colorFilter: ColorFilter.mode(Colors.grey.shade300, BlendMode.srcIn),
                   ),
           ),
           const SizedBox(height: 16),
@@ -901,10 +902,11 @@ class _RecipeListTile extends StatelessWidget {
             ),
             // Three-dot menu -> opens cookbook picker
             IconButton(
-              icon: Icon(
-                Icons.more_vert,
-                color: Colors.grey.shade500,
-                size: 22,
+              icon: SvgPicture.asset(
+                'assets/icons/menu.svg',
+                width: 22,
+                height: 22,
+                colorFilter: ColorFilter.mode(Colors.grey.shade500, BlendMode.srcIn),
               ),
               onPressed: () {
                 AddToCookbookSheet.show(context, recipeId: recipe.id);
@@ -1034,7 +1036,7 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.menu_book_outlined, size: 64, color: Colors.grey.shade300),
+          SvgPicture.asset('assets/icons/cookbook.svg', width: 64, height: 64, colorFilter: ColorFilter.mode(Colors.grey.shade300, BlendMode.srcIn)),
           const SizedBox(height: 20),
           Text(
             message,

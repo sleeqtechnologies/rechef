@@ -420,7 +420,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                     ),
                     const SizedBox(width: 4),
                     _AppBarButton(
-                      icon: Icons.share_outlined,
+                      icon: SvgPicture.asset('assets/icons/share.svg', width: 20, height: 20, colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn)),
                       iconColor: Colors.black,
                       glassColor: _isCollapsed
                           ? const Color(0xCCFFFFFF)
@@ -720,7 +720,7 @@ class _AppBarButton extends StatelessWidget {
     required this.onPressed,
   });
 
-  final IconData icon;
+  final dynamic icon;
   final Color iconColor;
   final Color glassColor;
   final VoidCallback onPressed;
@@ -734,7 +734,7 @@ class _AppBarButton extends StatelessWidget {
         width: 40,
         height: 40,
         child: IconButton(
-          icon: Icon(icon, color: iconColor, size: 20),
+          icon: icon is IconData ? Icon(icon, color: iconColor, size: 20) : icon as Widget,
           onPressed: onPressed,
           padding: EdgeInsets.zero,
         ),
@@ -807,7 +807,7 @@ class _RecipeMorePopupMenu extends StatelessWidget {
   List<AdaptivePopupMenuItem<_RecipeMoreAction>> get _items => [
     AdaptivePopupMenuItem<_RecipeMoreAction>(
       label: 'recipes.add_to_cookbook'.tr(),
-      icon: Icons.menu_book_outlined,
+      icon: SvgPicture.asset('assets/icons/cookbook.svg', width: 20, height: 20),
       value: _RecipeMoreAction.addToCookbook,
     ),
     AdaptivePopupMenuItem<_RecipeMoreAction>(
@@ -821,7 +821,7 @@ class _RecipeMorePopupMenu extends StatelessWidget {
     ),
     AdaptivePopupMenuItem<_RecipeMoreAction>(
       label: 'recipes.delete_recipe'.tr(),
-      icon: Icons.delete_outline,
+      icon: SvgPicture.asset('assets/icons/delete.svg', width: 20, height: 20),
       value: _RecipeMoreAction.delete,
     ),
   ];
@@ -861,7 +861,7 @@ class _RecipeMorePopupMenu extends StatelessWidget {
               }
             },
             child: Center(
-              child: Icon(Icons.more_vert, color: Colors.black, size: 20),
+              child: SvgPicture.asset('assets/icons/menu.svg', width: 20, height: 20, colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn)),
             ),
           ),
         ),
@@ -1238,10 +1238,11 @@ class _IngredientsTab extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.copy,
-                      size: 16,
-                      color: Colors.grey.shade600,
+                    SvgPicture.asset(
+                      'assets/icons/copy.svg',
+                      width: 16,
+                      height: 16,
+                      colorFilter: ColorFilter.mode(Colors.grey.shade600, BlendMode.srcIn),
                     ),
                     const SizedBox(width: 4),
                     Text(

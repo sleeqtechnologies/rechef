@@ -147,10 +147,11 @@ class _AddToCookbookSheetState extends ConsumerState<AddToCookbookSheet> {
                         padding: const EdgeInsets.all(32),
                         child: Column(
                           children: [
-                            Icon(
-                              Icons.menu_book_outlined,
-                              size: 48,
-                              color: Colors.grey.shade300,
+                            SvgPicture.asset(
+                              'assets/icons/cookbook.svg',
+                              width: 48,
+                              height: 48,
+                              colorFilter: ColorFilter.mode(Colors.grey.shade300, BlendMode.srcIn),
                             ),
                             const SizedBox(height: 12),
                             Text(

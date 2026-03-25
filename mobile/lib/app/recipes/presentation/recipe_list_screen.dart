@@ -1084,7 +1084,7 @@ class _RecipeContextMenu extends StatelessWidget {
                       color: Colors.black.withValues(alpha: 0.08),
                     ),
                     _ContextMenuItem(
-                      icon: CupertinoIcons.share,
+                      icon: SvgPicture.asset('assets/icons/share.svg', width: 20, height: 20, colorFilter: const ColorFilter.mode(Colors.black87, BlendMode.srcIn)),
                       label: 'recipes.share'.tr(),
                       onTap: onShare,
                     ),
@@ -1094,7 +1094,7 @@ class _RecipeContextMenu extends StatelessWidget {
                       color: Colors.black.withValues(alpha: 0.06),
                     ),
                     _ContextMenuItem(
-                      icon: Icons.menu_book_outlined,
+                      icon: SvgPicture.asset('assets/icons/cookbook.svg', width: 20, height: 20, colorFilter: const ColorFilter.mode(Colors.black87, BlendMode.srcIn)),
                       label: 'recipes.add_to_cookbook'.tr(),
                       onTap: onAddToCookbook,
                     ),
@@ -1104,7 +1104,7 @@ class _RecipeContextMenu extends StatelessWidget {
                       color: Colors.black.withValues(alpha: 0.06),
                     ),
                     _ContextMenuItem(
-                      icon: CupertinoIcons.delete,
+                      icon: SvgPicture.asset('assets/icons/delete.svg', width: 20, height: 20, colorFilter: const ColorFilter.mode(Color(0xFFFF3B30), BlendMode.srcIn)),
                       label: 'recipes.delete_recipe'.tr(),
                       onTap: onDelete,
                       isDestructive: true,
@@ -1128,7 +1128,7 @@ class _ContextMenuItem extends StatelessWidget {
     this.isDestructive = false,
   });
 
-  final IconData icon;
+  final dynamic icon;
   final String label;
   final VoidCallback onTap;
   final bool isDestructive;
@@ -1145,7 +1145,7 @@ class _ContextMenuItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: color),
+            icon is IconData ? Icon(icon, size: 20, color: color) : icon as Widget,
             const SizedBox(width: 12),
             Expanded(
               child: Text(

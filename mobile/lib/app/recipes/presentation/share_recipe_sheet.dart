@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/apple_glass_sheet.dart';
 import 'package:flutter/services.dart';
@@ -139,13 +140,13 @@ class _ShareRecipeSheetState extends ConsumerState<ShareRecipeSheet> {
               ),
               // Actions
               _ActionTile(
-                icon: Icons.link_rounded,
+                icon: SvgPicture.asset('assets/icons/copy.svg', width: 22, height: 22, colorFilter: ColorFilter.mode(Colors.grey.shade700, BlendMode.srcIn)),
                 label: _copied ? 'share.copied'.tr() : 'share.copy_link'.tr(),
                 onTap: _copyLink,
               ),
               const SizedBox(height: 10),
               _ActionTile(
-                icon: Icons.share_outlined,
+                icon: SvgPicture.asset('assets/icons/share.svg', width: 22, height: 22, colorFilter: ColorFilter.mode(Colors.grey.shade700, BlendMode.srcIn)),
                 label: 'share.share_via'.tr(),
                 onTap: _shareViaSystem,
               ),
@@ -191,7 +192,7 @@ class _ActionTile extends StatelessWidget {
     required this.onTap,
   });
 
-  final IconData icon;
+  final dynamic icon;
   final String label;
   final VoidCallback onTap;
 
@@ -207,7 +208,7 @@ class _ActionTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              Icon(icon, size: 22, color: Colors.grey.shade700),
+              icon is IconData ? Icon(icon, size: 22, color: Colors.grey.shade700) : icon as Widget,
               const SizedBox(width: 14),
               Expanded(
                 child: Text(

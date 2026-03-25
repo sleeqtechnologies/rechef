@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/widgets/custom_app_bar.dart';
@@ -106,7 +107,7 @@ class _PantryItemRow extends StatelessWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         color: Colors.red.shade400,
-        child: const Icon(Icons.delete_outline, color: Colors.white),
+        child: SvgPicture.asset('assets/icons/delete.svg', width: 24, height: 24, colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 10),

@@ -159,7 +159,7 @@ class CookbookListView extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             ListTile(
-              leading: const Icon(Icons.edit_outlined),
+              leading: SvgPicture.asset('assets/icons/edit.svg', width: 24, height: 24),
               title: Text('common.rename'.tr()),
               onTap: () {
                 Navigator.pop(ctx);
@@ -167,7 +167,7 @@ class CookbookListView extends ConsumerWidget {
               },
             ),
             ListTile(
-              leading: Icon(Icons.delete_outline, color: Colors.red.shade400),
+              leading: SvgPicture.asset('assets/icons/delete.svg', width: 24, height: 24, colorFilter: ColorFilter.mode(Colors.red.shade400, BlendMode.srcIn)),
               title: Text(
                 'common.delete'.tr(),
                 style: TextStyle(color: Colors.red.shade400),
@@ -452,10 +452,11 @@ class _CookbookCard extends StatelessWidget {
                           BlendMode.srcIn,
                         ),
                       )
-                    : Icon(
-                        Icons.menu_book_rounded,
-                        size: 32,
-                        color: Colors.grey.shade300,
+                    : SvgPicture.asset(
+                        'assets/icons/cookbook.svg',
+                        width: 32,
+                        height: 32,
+                        colorFilter: ColorFilter.mode(Colors.grey.shade300, BlendMode.srcIn),
                       ),
               ),
           ],
