@@ -268,9 +268,23 @@ const saveSharedRecipe = async (req: Request, res: Response) => {
       });
     }
 
-    const subscription = await shareRepository.saveSubscription({
-      sharedRecipeId: shared.id,
+    const original = shared.recipe;
+
+    // Create an owned copy of the recipe for the user
+    const copied = await recipeRepository.create({
       userId,
+      name: original.name,
+      description: original.description,
+      ingredients: original.ingredients,
+      instructions: original.instructions,
+      servings: original.servings,
+      prepTimeMinutes: original.prepTimeMinutes,
+      cookTimeMinutes: original.cookTimeMinutes,
+      imageUrl: original.imageUrl,
+      sourceUrl: original.sourceUrl,
+      sourceTitle: original.sourceTitle,
+      sourceAuthorName: original.sourceAuthorName,
+      sourceAuthorAvatarUrl: original.sourceAuthorAvatarUrl,
     });
 
     // Record recipe_save event
@@ -281,13 +295,22 @@ const saveSharedRecipe = async (req: Request, res: Response) => {
     });
 
     return res.status(201).json({
-      id: subscription.id,
-      shareCode: shared.shareCode,
-      recipe: formatSharedRecipeResponse({
-        recipe: shared.recipe,
-        creatorId: shared.userId,
-        shareCode: shared.shareCode,
-      }).recipe,
+      recipe: {
+        id: copied.id,
+        name: copied.name,
+        description: copied.description,
+        ingredients: copied.ingredients,
+        instructions: JSON.parse(copied.instructions),
+        servings: copied.servings,
+        prepTimeMinutes: copied.prepTimeMinutes,
+        cookTimeMinutes: copied.cookTimeMinutes,
+        imageUrl: copied.imageUrl,
+        sourceUrl: copied.sourceUrl ?? undefined,
+        sourceTitle: copied.sourceTitle ?? undefined,
+        sourceAuthorName: copied.sourceAuthorName ?? undefined,
+        sourceAuthorAvatarUrl: copied.sourceAuthorAvatarUrl ?? undefined,
+        createdAt: copied.createdAt,
+      },
     });
   } catch (error) {
     logger.error("Error saving shared recipe:", error);

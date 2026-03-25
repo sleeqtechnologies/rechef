@@ -710,7 +710,6 @@ class _RecipeGridSliver extends ConsumerWidget {
                 id: recipe.id,
                 title: recipe.name,
                 imageUrl: recipe.imageUrl,
-                isShared: recipe.isShared,
                 onTap: () => context.push('/recipes/${recipe.id}'),
                 onLongPress: () => _showLongPressMenu(context, ref, recipe),
               );
@@ -933,7 +932,6 @@ class RecipeCard extends StatelessWidget {
     required this.id,
     required this.title,
     this.imageUrl,
-    this.isShared = false,
     required this.onTap,
     this.onLongPress,
   });
@@ -941,7 +939,6 @@ class RecipeCard extends StatelessWidget {
   final String id;
   final String title;
   final String? imageUrl;
-  final bool isShared;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
 
@@ -990,41 +987,6 @@ class RecipeCard extends StatelessWidget {
                         },
                       ),
                     ),
-                    if (isShared)
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.7),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.share,
-                                size: 12,
-                                color: Colors.white,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'recipes.shared'.tr(),
-                                style: Theme.of(context).textTheme.labelSmall
-                                    ?.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 10,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
                   ],
                 ),
               );

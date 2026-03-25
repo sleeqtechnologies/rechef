@@ -13,6 +13,29 @@ import { generateNutritionForRecipe } from "../../services/nutrition-generator";
 import { uploadRecipeImage } from "../../services/recipe-image-storage";
 import type { Recipe } from "./recipe.repository";
 
+const hasAccessToRecipe = async (recipeId: string, userId: string): Promise<boolean> => {
+  const recipe = await recipeRepository.findById(recipeId);
+  if (!recipe) return false;
+  if (recipe.userId === userId) return true;
+
+  // Check if user has a shared subscription to this recipe
+  const shared = await shareRepository.findByRecipeId(recipeId);
+  if (!shared || !shared.isActive) return false;
+
+  const [sub] = await db
+    .select()
+    .from(sharedRecipeSaveTable)
+    .where(
+      and(
+        eq(sharedRecipeSaveTable.sharedRecipeId, shared.id),
+        eq(sharedRecipeSaveTable.userId, userId),
+      ),
+    )
+    .limit(1);
+
+  return !!sub;
+};
+
 interface IngredientJson {
   name: string;
   quantity: string;
@@ -185,7 +208,7 @@ const matchPantry = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Recipe not found" });
     }
 
-    if (recipe.userId !== req.user.id) {
+    if (recipe.userId !== req.user.id && !(await hasAccessToRecipe(id, req.user.id))) {
       return res.status(403).json({ error: "Forbidden" });
     }
 
@@ -213,14 +236,20 @@ const matchPantry = async (req: Request, res: Response) => {
         pantryNames,
       );
 
+      // Re-read recipe to avoid overwriting concurrent toggle changes
+      const freshRecipe = await recipeRepository.findById(id);
+      const freshIngredients = (freshRecipe?.ingredients ?? ingredients) as IngredientJson[];
+
       for (let ai = 0; ai < uncheckedIndices.length; ai++) {
         if (matched.has(ai)) {
-          ingredients[uncheckedIndices[ai]].inPantry = true;
+          freshIngredients[uncheckedIndices[ai]].inPantry = true;
         }
       }
-    }
 
-    await recipeRepository.updateIngredients(id, ingredients);
+      await recipeRepository.updateIngredients(id, freshIngredients);
+
+      return res.status(200).json({ ingredients: freshIngredients });
+    }
 
     return res.status(200).json({ ingredients });
   } catch (error) {
@@ -241,7 +270,7 @@ const toggleIngredient = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Recipe not found" });
     }
 
-    if (recipe.userId !== req.user.id) {
+    if (recipe.userId !== req.user.id && !(await hasAccessToRecipe(id, req.user.id))) {
       return res.status(403).json({ error: "Forbidden" });
     }
 

@@ -15,7 +15,6 @@ import 'package:easy_localization/easy_localization.dart';
 
 import '../domain/recipe.dart';
 import '../domain/ingredient.dart';
-import '../data/share_event_service.dart';
 import '../recipe_provider.dart';
 import '../domain/nutrition_facts.dart';
 import '../../grocery/grocery_provider.dart';
@@ -66,8 +65,6 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     _scrollController = ScrollController();
     _runPantryMatch();
     _loadReminder();
-    // For shared recipes, always refresh to get latest version
-    _refreshIfShared();
     _logRecipeViewed();
   }
 
@@ -81,22 +78,13 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
               .logRecipeViewed(
                 recipeId: recipe.id,
                 recipeName: recipe.name,
-                isShared: recipe.isShared,
               );
         }
       });
     });
   }
 
-  Future<void> _refreshIfShared() async {
-    final recipeAsync = ref.read(recipeByIdProvider(widget.recipeId));
-    recipeAsync.whenData((recipe) async {
-      if (recipe?.isShared == true && mounted) {
-        ref.invalidate(recipesProvider);
-        await ref.read(recipesProvider.future);
-      }
-    });
-  }
+
 
   Future<void> _runPantryMatch() async {
     try {
@@ -143,52 +131,6 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
         type: SnackBarType.error,
       );
     }
-  }
-
-  Future<void> _removeSharedRecipeFromLibrary(Recipe recipe) async {
-    if (recipe.sharedSaveId == null) return;
-    await AdaptiveAlertDialog.show(
-      context: context,
-      title: 'recipes.remove_from_library_title'.tr(),
-      message: 'recipes.remove_from_library_message'.tr(args: [recipe.name]),
-      actions: [
-        AlertAction(
-          title: 'common.cancel'.tr(),
-          style: AlertActionStyle.cancel,
-          onPressed: () {},
-        ),
-        AlertAction(
-          title: 'recipes.remove'.tr(),
-          style: AlertActionStyle.destructive,
-          onPressed: () async {
-            try {
-              await ref
-                  .read(recipesProvider.notifier)
-                  .removeSharedRecipe(recipe.sharedSaveId!);
-              if (!mounted) return;
-              AppSnackBar.show(
-                context,
-                message: 'recipes.removed_from_library'.tr(),
-                type: SnackBarType.success,
-              );
-              if (context.canPop()) {
-                context.pop();
-              } else {
-                context.go('/recipes');
-              }
-            } catch (e) {
-              if (mounted) {
-                AppSnackBar.show(
-                  context,
-                  message: 'recipes.failed_to_remove'.tr(args: [e.toString()]),
-                  type: SnackBarType.error,
-                );
-              }
-            }
-          },
-        ),
-      ],
-    );
   }
 
   Future<void> _deleteRecipe(Recipe recipe) async {
@@ -468,46 +410,35 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                     ),
                   ),
                   actions: [
-                    if (!recipe.isShared) ...[
-                      _AppBarTextButton(
-                        label: 'recipes.edit'.tr(),
-                        textColor: Colors.black,
-                        glassColor: _isCollapsed
-                            ? const Color(0xCCFFFFFF)
-                            : const Color(0x33FFFFFF),
-                        onPressed: () => _openEditSheet(recipe),
+                    _AppBarTextButton(
+                      label: 'recipes.edit'.tr(),
+                      textColor: Colors.black,
+                      glassColor: _isCollapsed
+                          ? const Color(0xCCFFFFFF)
+                          : const Color(0x33FFFFFF),
+                      onPressed: () => _openEditSheet(recipe),
+                    ),
+                    const SizedBox(width: 4),
+                    _AppBarButton(
+                      icon: Icons.share_outlined,
+                      iconColor: Colors.black,
+                      glassColor: _isCollapsed
+                          ? const Color(0xCCFFFFFF)
+                          : const Color(0x33FFFFFF),
+                      onPressed: () => _openShareSheet(recipe),
+                    ),
+                    const SizedBox(width: 4),
+                    _RecipeMorePopupMenu(
+                      recipe: recipe,
+                      isCollapsed: _isCollapsed,
+                      hasReminder: _reminderDate != null,
+                      onDelete: () => _deleteRecipe(recipe),
+                      onAddToCookbook: () => AddToCookbookSheet.show(
+                        context,
+                        recipeId: recipe.id,
                       ),
-                      const SizedBox(width: 4),
-                    ],
-                    if (!recipe.isShared)
-                      _AppBarButton(
-                        icon: Icons.share_outlined,
-                        iconColor: Colors.black,
-                        glassColor: _isCollapsed
-                            ? const Color(0xCCFFFFFF)
-                            : const Color(0x33FFFFFF),
-                        onPressed: () => _openShareSheet(recipe),
-                      ),
-                    if (!recipe.isShared) const SizedBox(width: 4),
-                    if (!recipe.isShared)
-                      _RecipeMorePopupMenu(
-                        recipe: recipe,
-                        isCollapsed: _isCollapsed,
-                        hasReminder: _reminderDate != null,
-                        onDelete: () => _deleteRecipe(recipe),
-                        onAddToCookbook: () => AddToCookbookSheet.show(
-                          context,
-                          recipeId: recipe.id,
-                        ),
-                        onSetReminder: () => _handleReminder(recipe),
-                      ),
-                    if (recipe.isShared && recipe.sharedSaveId != null)
-                      _SharedRecipeMorePopupMenu(
-                        recipe: recipe,
-                        isCollapsed: _isCollapsed,
-                        onRemoveFromLibrary: () =>
-                            _removeSharedRecipeFromLibrary(recipe),
-                      ),
+                      onSetReminder: () => _handleReminder(recipe),
+                    ),
                     const SizedBox(width: 8),
                   ],
                   flexibleSpace: FlexibleSpaceBar(
@@ -564,46 +495,6 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                                     height: 1.2,
                                   ),
                             ),
-                            if (recipe.isShared) ...[
-                              const SizedBox(height: 12),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.shade50,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: Colors.blue.shade200,
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.share,
-                                      size: 14,
-                                      color: Colors.blue.shade700,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'recipes.shared_recipe'.tr(),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelMedium
-                                          ?.copyWith(
-                                            color: Colors.blue.shade700,
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 12,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                            ],
                             if (_hasSourceOrAuthor(recipe)) ...[
                               const SizedBox(height: 16),
                               _AuthorRow(
@@ -677,9 +568,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                         0 => _IngredientsTab(
                           recipe: recipe,
                           isMatchingPantry: _isMatchingPantry,
-                          onToggle: recipe.isShared
-                              ? (_) {}
-                              : (index) {
+                          onToggle: (index) {
                                   ref
                                       .read(recipesProvider.notifier)
                                       .toggleIngredient(widget.recipeId, index);
@@ -785,14 +674,6 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                                 itemCount: added,
                               );
                         }
-                        if (recipe.isShared &&
-                            recipe.shareCode != null &&
-                            added > 0) {
-                          ShareEventService.recordEvent(
-                            shareCode: recipe.shareCode!,
-                            eventType: 'grocery_add',
-                          );
-                        }
                         final msg = added == 0
                             ? 'recipes.already_in_grocery'.tr()
                             : 'Added $added item${added == 1 ? '' : 's'} to grocery list';
@@ -896,65 +777,6 @@ class _AppBarTextButton extends StatelessWidget {
               color: textColor,
               fontWeight: FontWeight.w600,
               fontSize: 14,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-enum _SharedRecipeMoreAction { removeFromLibrary }
-
-class _SharedRecipeMorePopupMenu extends StatelessWidget {
-  const _SharedRecipeMorePopupMenu({
-    required this.recipe,
-    required this.isCollapsed,
-    required this.onRemoveFromLibrary,
-  });
-
-  final Recipe recipe;
-  final bool isCollapsed;
-  final VoidCallback onRemoveFromLibrary;
-
-  static final _items = [
-    AdaptivePopupMenuItem<_SharedRecipeMoreAction>(
-      label: 'recipes.remove_from_library'.tr(),
-      icon: Icons.remove_circle_outline,
-      value: _SharedRecipeMoreAction.removeFromLibrary,
-    ),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    const iconColor = Colors.black;
-    final glassColor = isCollapsed
-        ? const Color(0xCCFFFFFF)
-        : const Color(0x33FFFFFF);
-
-    return IconTheme(
-      data: const IconThemeData(color: Colors.black, size: 20),
-      child: FakeGlass(
-        shape: LiquidRoundedSuperellipse(borderRadius: 999),
-        settings: LiquidGlassSettings(blur: 10, glassColor: glassColor),
-        child: SizedBox(
-          width: 40,
-          height: 40,
-          child: AdaptivePopupMenuButton.widget<_SharedRecipeMoreAction>(
-            items: _items,
-            tint: iconColor,
-            buttonStyle: PopupButtonStyle.glass,
-            onSelected: (index, entry) {
-              switch (entry.value) {
-                case _SharedRecipeMoreAction.removeFromLibrary:
-                  onRemoveFromLibrary();
-                  break;
-                case null:
-                  break;
-              }
-            },
-            child: Center(
-              child: Icon(Icons.more_vert, color: Colors.black, size: 20),
             ),
           ),
         ),

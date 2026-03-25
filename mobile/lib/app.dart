@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:app_links/app_links.dart';
+import 'package:http/http.dart' as http;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -32,6 +34,15 @@ class _RechefAppState extends ConsumerState<RechefApp>
   static const _shareImportAuthChannel = MethodChannel(
     'com.rechef.app/share_import_auth',
   );
+  static Future<void> _debugLog(String msg) async {
+    try {
+      await http.post(
+        Uri.parse('http://localhost:9753'),
+        body: msg,
+      );
+    } catch (_) {}
+  }
+
   AppLinks? _appLinks;
   StreamSubscription<Uri>? _deepLinkSubscription;
   StreamSubscription<User?>? _idTokenSubscription;
@@ -130,33 +141,48 @@ class _RechefAppState extends ConsumerState<RechefApp>
   }
 
   void _initializeShareImportAuthSync() {
-    _idTokenSubscription = FirebaseAuth.instance.idTokenChanges().listen(
-      (user) {
-        unawaited(_syncShareImportAuthContext(user));
-      },
-      onError: (Object error) {
-        debugPrint('[RechefApp] Share import auth sync stream error: $error');
-      },
-    );
-    unawaited(_syncShareImportAuthContext(FirebaseAuth.instance.currentUser));
+    _debugLog('SHARE_AUTH: initializeShareImportAuthSync called');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _debugLog('SHARE_AUTH: postFrameCallback fired, subscribing to idTokenChanges');
+      _idTokenSubscription = FirebaseAuth.instance.idTokenChanges().listen(
+        (user) {
+          _debugLog('SHARE_AUTH: idTokenChanges stream event, user=${user?.uid ?? "null"}');
+          unawaited(_syncShareImportAuthContext(user, source: 'stream'));
+        },
+        onError: (Object error) {
+          debugPrint(
+              '[RechefApp] Share import auth sync stream error: $error');
+        },
+      );
+      final currentUser = FirebaseAuth.instance.currentUser;
+      _debugLog('SHARE_AUTH: calling manual sync, currentUser=${currentUser?.uid ?? "null"}');
+      unawaited(_syncShareImportAuthContext(currentUser, source: 'manual'));
+    });
   }
 
-  Future<void> _syncShareImportAuthContext(User? user) async {
+  Future<void> _syncShareImportAuthContext(User? user, {String source = 'unknown'}) async {
     try {
       if (user == null) {
+        _debugLog('SHARE_AUTH[$source]: user is null, calling clearAuthContext');
         await _shareImportAuthChannel.invokeMethod('clearAuthContext');
+        _debugLog('SHARE_AUTH[$source]: clearAuthContext succeeded');
         return;
       }
       final token = await user.getIdToken();
       if (token == null || token.isEmpty) {
+        _debugLog('SHARE_AUTH[$source]: token is null/empty, calling clearAuthContext');
         await _shareImportAuthChannel.invokeMethod('clearAuthContext');
+        _debugLog('SHARE_AUTH[$source]: clearAuthContext succeeded');
         return;
       }
+      _debugLog('SHARE_AUTH[$source]: calling setAuthContext with token length=${token.length}');
       await _shareImportAuthChannel.invokeMethod('setAuthContext', {
         'token': token,
         'apiBaseUrl': apiBaseUrl,
       });
+      _debugLog('SHARE_AUTH[$source]: setAuthContext succeeded');
     } catch (e) {
+      _debugLog('SHARE_AUTH[$source]: ERROR: $e');
       debugPrint('[RechefApp] Share import auth sync error: $e');
     }
   }

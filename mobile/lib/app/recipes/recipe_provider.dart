@@ -15,6 +15,9 @@ final nutritionRepositoryProvider = Provider<NutritionRepository>((ref) {
 });
 
 class RecipesNotifier extends AsyncNotifier<List<Recipe>> {
+  // Track ingredients toggled while matchPantry is in flight
+  final _pendingToggles = <String, Set<int>>{};
+
   @override
   Future<List<Recipe>> build() async {
     final repo = ref.read(recipeRepositoryProvider);
@@ -65,9 +68,32 @@ class RecipesNotifier extends AsyncNotifier<List<Recipe>> {
   }
 
   Future<void> matchPantry(String recipeId) async {
+    _pendingToggles.remove(recipeId);
     final repo = ref.read(recipeRepositoryProvider);
-    final updatedIngredients = await repo.matchPantry(recipeId);
-    _updateRecipeIngredients(recipeId, updatedIngredients);
+    try {
+      final serverIngredients = await repo.matchPantry(recipeId);
+
+      // Merge: preserve local state for any ingredients toggled while we were waiting
+      final toggled = _pendingToggles.remove(recipeId) ?? {};
+      if (toggled.isEmpty) {
+        _updateRecipeIngredients(recipeId, serverIngredients);
+      } else {
+        final recipes = state.value ?? [];
+        final idx = recipes.indexWhere((r) => r.id == recipeId);
+        if (idx == -1) return;
+        final currentIngredients = recipes[idx].ingredients;
+        final merged = List<Ingredient>.from(serverIngredients);
+        for (final i in toggled) {
+          if (i < currentIngredients.length && i < merged.length) {
+            merged[i] = merged[i].copyWith(inPantry: currentIngredients[i].inPantry);
+          }
+        }
+        _updateRecipeIngredients(recipeId, merged);
+      }
+    } catch (e) {
+      _pendingToggles.remove(recipeId);
+      rethrow;
+    }
   }
 
   Future<void> toggleIngredient(String recipeId, int index) async {
@@ -77,6 +103,9 @@ class RecipesNotifier extends AsyncNotifier<List<Recipe>> {
 
     final recipe = recipes[recipeIndex];
     if (index < 0 || index >= recipe.ingredients.length) return;
+    // Track this toggle so matchPantry won't overwrite it
+    _pendingToggles.putIfAbsent(recipeId, () => {}).add(index);
+
     final updatedIngredients = List<Ingredient>.from(recipe.ingredients);
     updatedIngredients[index] = updatedIngredients[index].copyWith(
       inPantry: !updatedIngredients[index].inPantry,

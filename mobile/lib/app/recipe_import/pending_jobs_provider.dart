@@ -12,7 +12,7 @@ class PendingJobsNotifier extends Notifier<List<ContentJob>> {
   @override
   List<ContentJob> build() {
     ref.onDispose(() => _pollTimer?.cancel());
-    _fetchPendingJobs();
+    Future.microtask(() => _fetchPendingJobs());
     return [];
   }
 

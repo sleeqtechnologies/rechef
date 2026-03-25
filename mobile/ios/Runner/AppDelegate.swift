@@ -17,14 +17,14 @@ import UserNotifications
     if #available(iOS 10.0, *) {
       UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
     }
-    if let controller = window?.rootViewController as? FlutterViewController {
-      configureShareImportChannel(messenger: controller.binaryMessenger)
-    }
     return didFinish
   }
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "ShareImportAuthPlugin") {
+      configureShareImportChannel(messenger: registrar.messenger())
+    }
   }
 
   private func configureShareImportChannel(messenger: FlutterBinaryMessenger) {

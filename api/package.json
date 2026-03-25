@@ -6,6 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx watch ./app.ts",
+    "postinstall": "chmod +x node_modules/.pnpm/@ffprobe-installer+darwin-arm64@*/node_modules/@ffprobe-installer/darwin-arm64/ffprobe 2>/dev/null; chmod +x node_modules/.pnpm/@ffmpeg-installer+darwin-arm64@*/node_modules/@ffmpeg-installer/darwin-arm64/ffmpeg 2>/dev/null; true",
     "build": "npx tsc",
     "start": "node dist/app.js"
   },
