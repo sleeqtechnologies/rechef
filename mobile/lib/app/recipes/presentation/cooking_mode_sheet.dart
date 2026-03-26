@@ -34,7 +34,7 @@ class CookingModeSheet extends StatefulWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       useSafeArea: true,
-      enableDrag: false,
+      enableDrag: true,
       builder: (_) => CookingModeSheet(
         recipe: recipe,
         initialStep: initialStep,
