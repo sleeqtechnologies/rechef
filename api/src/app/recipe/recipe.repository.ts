@@ -45,6 +45,16 @@ interface UserRecipeRow {
   sharedSaveId: string | null;
 }
 
+function toUserRecipeRow(row: Record<string, unknown>): UserRecipeRow {
+  return {
+    recipe: row.recipe as Recipe,
+    isShared: row.isShared === true,
+    shareCode: typeof row.shareCode === "string" ? row.shareCode : null,
+    sharedBy: typeof row.sharedBy === "string" ? row.sharedBy : null,
+    sharedSaveId: typeof row.sharedSaveId === "string" ? row.sharedSaveId : null,
+  };
+}
+
 const findAllForUser = async (userId: string): Promise<UserRecipeRow[]> => {
   const owned = db
     .select({
@@ -80,7 +90,7 @@ const findAllForUser = async (userId: string): Promise<UserRecipeRow[]> => {
     .unionAll(shared)
     .orderBy(desc(recipeTable.createdAt));
 
-  return rows as UserRecipeRow[];
+  return rows.map(toUserRecipeRow);
 };
 
 const findById = async (id: string): Promise<Recipe | undefined> => {

@@ -191,6 +191,7 @@ class _RechefAppState extends ConsumerState<RechefApp>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       ref.read(pendingJobsProvider.notifier).checkJobs();
+      unawaited(_syncShareImportAuthContext(FirebaseAuth.instance.currentUser));
     }
   }
 

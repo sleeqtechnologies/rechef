@@ -8,6 +8,7 @@ import UserNotifications
   private let appGroupSuiteName = "group.com.rechef.app"
   private let tokenKey = "firebase_id_token"
   private let apiBaseUrlKey = "api_base_url"
+  private var shareImportChannel: FlutterMethodChannel?
 
   override func application(
     _ application: UIApplication,
@@ -25,11 +26,14 @@ import UserNotifications
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "ShareImportAuthPlugin") {
       configureShareImportChannel(messenger: registrar.messenger())
     }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "ShareImportAuthBridge") {
+      configureShareImportChannel(messenger: registrar.messenger())
+    }
   }
 
   private func configureShareImportChannel(messenger: FlutterBinaryMessenger) {
-    let channel = FlutterMethodChannel(name: shareImportChannelName, binaryMessenger: messenger)
-    channel.setMethodCallHandler { [weak self] call, result in
+    shareImportChannel = FlutterMethodChannel(name: shareImportChannelName, binaryMessenger: messenger)
+    shareImportChannel?.setMethodCallHandler { [weak self] call, result in
       guard let self else {
         result(FlutterError(code: "app_delegate_missing", message: "App delegate missing", details: nil))
         return

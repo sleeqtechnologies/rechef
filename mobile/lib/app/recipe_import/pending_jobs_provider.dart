@@ -12,7 +12,7 @@ class PendingJobsNotifier extends Notifier<List<ContentJob>> {
   @override
   List<ContentJob> build() {
     ref.onDispose(() => _pollTimer?.cancel());
-    Future.microtask(() => _fetchPendingJobs());
+    unawaited(_fetchPendingJobs());
     return [];
   }
 
@@ -30,14 +30,15 @@ class PendingJobsNotifier extends Notifier<List<ContentJob>> {
   }
 
   Future<void> _fetchPendingJobs({bool fromManualCheck = false}) async {
-    final hadPendingBefore = state.any((j) => !j.isFailed);
+    final currentState = _safeState();
+    final hadPendingBefore = currentState.any((j) => !j.isFailed);
 
     try {
       final repo = ref.read(importRepositoryProvider);
       final jobs = _removeStaleJobs(
         await repo.fetchJobs(statuses: ['pending', 'processing']),
       );
-      final existingFailed = state.where((j) => j.isFailed).toList();
+      final existingFailed = _safeState().where((j) => j.isFailed).toList();
       state = [...existingFailed, ...jobs];
       if (hadPendingBefore && jobs.isEmpty) {
         ref.invalidate(recipesProvider);
@@ -77,7 +78,7 @@ class PendingJobsNotifier extends Notifier<List<ContentJob>> {
   }
 
   Future<void> _pollJobs() async {
-    final pendingInState = state.where((j) => !j.isFailed).toList();
+    final pendingInState = _safeState().where((j) => !j.isFailed).toList();
     if (pendingInState.isEmpty) {
       _stopPolling();
       return;
@@ -117,7 +118,7 @@ class PendingJobsNotifier extends Notifier<List<ContentJob>> {
         }
       }
 
-      final existingFailed = state.where((j) => j.isFailed).toList();
+      final existingFailed = _safeState().where((j) => j.isFailed).toList();
       state = [...existingFailed, ...newFailedJobs, ...updatedJobs];
 
       if (updatedJobs.isEmpty) {
@@ -126,6 +127,14 @@ class PendingJobsNotifier extends Notifier<List<ContentJob>> {
     } catch (_) {
       _stopPolling();
       state = [];
+    }
+  }
+
+  List<ContentJob> _safeState() {
+    try {
+      return state;
+    } catch (_) {
+      return const [];
     }
   }
 }
