@@ -1,0 +1,8 @@
+node_modules
+dist
+.env*
+.git
+.gitignore
+service_account_key.json
+*-player-script.js
+.DS_Store

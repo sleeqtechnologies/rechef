@@ -13,8 +13,18 @@ function getServiceAccount(): admin.ServiceAccount {
   return JSON.parse(raw) as admin.ServiceAccount;
 }
 
+const serviceAccount = getServiceAccount();
+const projectId =
+  serviceAccount.projectId ??
+  (serviceAccount as admin.ServiceAccount & { project_id?: string }).project_id;
+
+if (!projectId) {
+  throw new Error("Firebase service account project ID is required");
+}
+
 admin.initializeApp({
-  credential: admin.credential.cert(getServiceAccount()),
+  credential: admin.credential.cert(serviceAccount),
+  storageBucket: env.FIREBASE_STORAGE_BUCKET || `${projectId}.firebasestorage.app`,
 });
 
 export default admin;

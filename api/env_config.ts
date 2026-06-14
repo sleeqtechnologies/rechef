@@ -12,6 +12,7 @@ const env = cleanEnv(process.env, {
   DATABASE_URL: str(),
   OPENAI_API_KEY: str(),
   SERVICE_ACCT_KEY: str(),
+  FIREBASE_STORAGE_BUCKET: str({ default: "" }),
   UNSPLASH_ACCESS_KEY: str(),
   INSTACART_API_KEY: str(),
   INSTACART_IRAD: str({ default: "" }),

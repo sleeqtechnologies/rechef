@@ -1,12 +1,8 @@
-import { createClient } from "@supabase/supabase-js";
-import { env } from "../../env_config";
+import { randomUUID } from "crypto";
 import { logger } from "../../logger";
+import admin from "./firebase";
 
-const BUCKET = "recipe_images";
-
-const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { persistSession: false },
-});
+const STORAGE_PREFIX = "recipe_images";
 
 function getExtensionFromMime(mime: string): string {
   const map: Record<string, string> = {
@@ -19,6 +15,10 @@ function getExtensionFromMime(mime: string): string {
   return map[mime] ?? "jpg";
 }
 
+function getDownloadUrl(bucketName: string, path: string, token: string): string {
+  const encodedPath = encodeURIComponent(path);
+  return `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encodedPath}?alt=media&token=${token}`;
+}
 
 export async function uploadRecipeImage(
   imageUrlOrDataUrl: string,
@@ -45,22 +45,22 @@ export async function uploadRecipeImage(
     }
 
     const ext = getExtensionFromMime(contentType);
-    const path = `${key}.${ext}`;
+    const path = `${STORAGE_PREFIX}/${key}.${ext}`;
+    const bucket = admin.storage().bucket();
+    const token = randomUUID();
 
-    const { error } = await supabase.storage.from(BUCKET).upload(path, buffer, {
-      contentType,
-      upsert: true,
+    await bucket.file(path).save(buffer, {
+      resumable: false,
+      metadata: {
+        contentType,
+        cacheControl: "public, max-age=31536000",
+        metadata: {
+          firebaseStorageDownloadTokens: token,
+        },
+      },
     });
 
-    if (error) {
-      logger.warn("Recipe image upload failed", { key, error: error.message });
-      return null;
-    }
-
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from(BUCKET).getPublicUrl(path);
-    return publicUrl;
+    return getDownloadUrl(bucket.name, path, token);
   } catch (err) {
     logger.warn("Recipe image upload error", { key, error: err });
     return null;
