@@ -33,7 +33,7 @@ const getCookbooks = async (req: Request, res: Response) => {
       cookbookRepository.getCoverImagesByCookbookIds(cookbookIds),
     ]);
 
-    // Compute virtual cookbook counts
+    // Compute virtual cookbook count
     const ownedRecipes = await recipeRepository.findAllByUserId(userId);
     const sharedRecipes = await shareRepository.findSharedWithUser(userId);
 
