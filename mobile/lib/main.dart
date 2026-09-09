@@ -24,6 +24,7 @@ Future<void> main() async {
 
   final posthogConfig = PostHogConfig(posthogApiKey)
     ..host = 'https://us.i.posthog.com'
+    ..captureApplicationLifecycleEvents = true
     ..sessionReplay = true
     ..sessionReplayConfig.maskAllImages = false
     ..sessionReplayConfig.maskAllTexts = true;
